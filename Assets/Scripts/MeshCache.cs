@@ -45,11 +45,9 @@ public class MeshCache : ScriptableObject, ISerializationCallbackReceiver {
     private SubMeshCache[] subMeshes;
 
     public void OnBeforeSerialize() {
-        Debug.Log("OnBeforeSerialize");
         if (!mesh) {
             return;
         }
-        Debug.Log("OnBeforeSerialize mesh not null");
 
         uv = mesh.uv;
         uv2 = mesh.uv2;
@@ -72,12 +70,10 @@ public class MeshCache : ScriptableObject, ISerializationCallbackReceiver {
     }
 
     public void OnAfterDeserialize() {
-        Debug.Log("OnAfterDeserialize");
         if (!mesh)
         {
             return;
         }
-        Debug.Log("OnAfterDeserialize mesh not null");
 
         mesh.Clear();
 
