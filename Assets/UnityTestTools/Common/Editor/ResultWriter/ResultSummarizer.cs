@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityTest
+namespace OctreeTest
 {
     /// <summary>
     /// Summary description for ResultSummarizer.

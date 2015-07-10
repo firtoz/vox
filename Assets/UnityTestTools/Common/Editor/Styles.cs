@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace UnityTest
+namespace OctreeTest
 {
     public static class Styles
     {

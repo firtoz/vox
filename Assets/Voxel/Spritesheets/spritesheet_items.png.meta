@@ -1,0 +1,671 @@
+fileFormatVersion: 2
+guid: d88c2f38b5e0f164b90a60d44828666d
+timeCreated: 1436215697
+licenseType: Free
+TextureImporter:
+  fileIDToRecycleName:
+    21300000: apple.png
+    21300002: arrow.png
+    21300004: axe_bronze.png
+    21300006: axe_diamond.png
+    21300008: axe_gold.png
+    21300010: axe_iron.png
+    21300012: axe_silver.png
+    21300014: boat.png
+    21300016: bow.png
+    21300018: bowArrow.png
+    21300020: bowl.png
+    21300022: fish.png
+    21300024: fish_cooked.png
+    21300026: fishingPole.png
+    21300028: flail_bronze.png
+    21300030: flail_diamond.png
+    21300032: flail_gold.png
+    21300034: flail_iron.png
+    21300036: flail_silver.png
+    21300038: hammer_bronze.png
+    21300040: hammer_diamond.png
+    21300042: hammer_gold.png
+    21300044: hammer_iron.png
+    21300046: hammer_silver.png
+    21300048: hoe_bronze.png
+    21300050: hoe_diamond.png
+    21300052: hoe_gold.png
+    21300054: hoe_iron.png
+    21300056: hoe_silver.png
+    21300058: minecart.png
+    21300060: ore_coal.png
+    21300062: ore_diamond.png
+    21300064: ore_emerald.png
+    21300066: ore_gold.png
+    21300068: ore_iron.png
+    21300070: ore_ironAlt.png
+    21300072: ore_ruby.png
+    21300074: ore_silver.png
+    21300076: pick_bronze.png
+    21300078: pick_diamond.png
+    21300080: pick_gold.png
+    21300082: pick_iron.png
+    21300084: pick_silver.png
+    21300086: seed.png
+    21300088: shovel_bronze.png
+    21300090: shovel_diamond.png
+    21300092: shovel_gold.png
+    21300094: shovel_iron.png
+    21300096: shovel_silver.png
+    21300098: stew.png
+    21300100: sword_bronze.png
+    21300102: sword_diamond.png
+    21300104: sword_gold.png
+    21300106: sword_iron.png
+    21300108: sword_silver.png
+    21300110: wheat.png
+  serializedVersion: 2
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 1
+    linearTexture: 0
+    correctGamma: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: .25
+    normalMapFilter: 0
+  isReadable: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 0
+  cubemapConvolution: 0
+  cubemapConvolutionSteps: 8
+  cubemapConvolutionExponent: 1.5
+  seamlessCubemap: 0
+  textureFormat: -1
+  maxTextureSize: 2048
+  textureSettings:
+    filterMode: -1
+    aniso: 16
+    mipBias: -1
+    wrapMode: 1
+  nPOTScale: 0
+  lightmap: 0
+  rGBM: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: .5, y: .5}
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spritePixelsToUnits: 100
+  alphaIsTransparency: 1
+  textureType: 8
+  buildTargetSettings: []
+  spriteSheet:
+    sprites:
+    - name: apple.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 1660
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: arrow.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 1790
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: axe_bronze.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 1920
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: axe_diamond.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 100
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: axe_gold.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 230
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: axe_iron.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 360
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: axe_silver.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 490
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: boat.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 620
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: bow.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 750
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: bowArrow.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 880
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: bowl.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 1010
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: fish.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 1140
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: fish_cooked.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 1270
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: fishingPole.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 1400
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: flail_bronze.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 1530
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: flail_diamond.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 1660
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: flail_gold.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 1790
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: flail_iron.png
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 1920
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: flail_silver.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 100
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hammer_bronze.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 230
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hammer_diamond.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 620
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hammer_gold.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 490
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hammer_iron.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 620
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hammer_silver.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 750
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hoe_bronze.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 880
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hoe_diamond.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 1010
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hoe_gold.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 1140
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hoe_iron.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 1270
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hoe_silver.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 1400
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: minecart.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 1530
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: ore_coal.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 1660
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: ore_diamond.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 1790
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: ore_emerald.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 1920
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: ore_gold.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 100
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: ore_iron.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 230
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: ore_ironAlt.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 360
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: ore_ruby.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 490
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: ore_silver.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 620
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: pick_bronze.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 750
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: pick_diamond.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 880
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: pick_gold.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1010
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: pick_iron.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1140
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: pick_silver.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1270
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: seed.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1400
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: shovel_bronze.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1530
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: shovel_diamond.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1660
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: shovel_gold.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1790
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: shovel_iron.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1920
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: shovel_silver.png
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 360
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: stew.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 750
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: sword_bronze.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 880
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: sword_diamond.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 1010
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: sword_gold.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 1140
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: sword_iron.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 1270
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: sword_silver.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 1400
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: wheat.png
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 1530
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+  spritePackingTag: 
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

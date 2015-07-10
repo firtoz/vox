@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OctreeTest.UnitTestRunner;
 using UnityEditor;
 using UnityEngine;
-using UnityTest.UnitTestRunner;
 
-namespace UnityTest
+namespace OctreeTest
 {
     public partial class UnitTestView
     {

@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace UnityTest.IntegrationTests
+namespace OctreeTest.IntegrationTests
 {
     public class PlatformRunner
     {

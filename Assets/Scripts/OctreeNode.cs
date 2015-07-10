@@ -18,303 +18,95 @@ public class OctreeNeighbour<T>
     }
 }
 
-public struct OctreeCoordinate
+
+public abstract class OctreeNode
 {
-    public int x;
-    public int y;
-    public int z;
-
-    public OctreeCoordinate(int x, int y, int z)
+    public enum ChildIndex
     {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        Invalid = -1,
+        TopFwdLeft = 0,
+        TopFwdRight = 1,
+        TopBackLeft = 2,
+        TopBackRight = 3,
+        BotFwdLeft = 4,
+        BotFwdRight = 5,
+        BotBackLeft = 6,
+        BotBackRight = 7
     }
 
-    public override string ToString()
+    public enum NeighbourSide
     {
-        return string.Format("[{0},{1},{2}]", x, y, z);
+        Above,
+        Below,
+        Left,
+        Right,
+        Forward,
+        Back
     }
 
-    // override object.Equals
-    public override bool Equals(object obj)
-    {
-        //       
-        // See the full list of guidelines at
-        //   http://go.microsoft.com/fwlink/?LinkID=85237  
-        // and also the guidance for operator== at
-        //   http://go.microsoft.com/fwlink/?LinkId=85238
-        //
-
-        if (obj == null || GetType() != obj.GetType())
-        {
-            return false;
-        }
-
-        // TODO: write your implementation of Equals() here
-
-        var otherCoordinates = (OctreeCoordinate) obj;
-
-        return otherCoordinates.x == x && otherCoordinates.y == y && otherCoordinates.z == z;
-    }
-
-// override object.GetHashCode
-    public override int GetHashCode()
-    {
-        // TODO: write your implementation of GetHashCode() here
-        throw new NotImplementedException();
-        return base.GetHashCode();
-    }
+    
 }
 
-public enum OctreeNodeChildIndex
+public class OctreeNodeCoordinates
 {
-    Invalid = -1,
-    TopFwdLeft = 0,
-    TopFwdRight = 1,
-    TopBackLeft = 2,
-    TopBackRight = 3,
-    BotFwdLeft = 4,
-    BotFwdRight = 5,
-    BotBackLeft = 6,
-    BotBackRight = 7
-}
+    private readonly OctreeChildCoordinates[] _coords;
+    public readonly int Length;
 
-public enum OctreeNodeNeighbourSide
-{
-    Above,
-    Below,
-    Left,
-    Right,
-    Forward,
-    Back
-}
-
-public class OctreeNode<T>
-{
-
-    private readonly OctreeCoordinate[] _coords;
-    private readonly int _depth;
-    private readonly OctreeNodeChildIndex _indexInParent;
-    private readonly OctreeNode<T> _parent;
-    private readonly OctreeNode<T> _root;
-    private Bounds _bounds;
-    private int _childCount;
-    private OctreeNode<T>[] _children;
-    private T _item;
-
-    public OctreeNode(Bounds bounds) : this(bounds, null, OctreeNodeChildIndex.Invalid, 0)
+    public OctreeNodeCoordinates()
     {
+        _coords = new OctreeChildCoordinates[0];
+        Length = _coords.Length;
     }
 
-    public OctreeNode(Bounds bounds, OctreeNode<T> parent, OctreeNodeChildIndex indexInParent, int depth)
+    public OctreeNodeCoordinates(OctreeNodeCoordinates parentCoordinates, OctreeChildCoordinates octreeChildCoordinates)
     {
-        _bounds = bounds;
-        _parent = parent;
-        if (parent == null)
-        {
-            _root = this;
-            _coords = new OctreeCoordinate[0];
-        }
-        else
-        {
-            _root = _parent._root;
-            _coords = parent._coords.Concat(new[] {GetCoordinate(indexInParent)}).ToArray();
-        }
-        _indexInParent = indexInParent;
-        _item = default(T);
-        _depth = depth;
+        _coords = parentCoordinates._coords.Concat(new[] {octreeChildCoordinates}).ToArray();
+        Length = _coords.Length;
     }
 
-    private OctreeCoordinate GetCoordinate(OctreeNodeChildIndex index)
+    private OctreeNodeCoordinates(OctreeChildCoordinates[] coords)
     {
-        switch (index)
-        {
-            case OctreeNodeChildIndex.TopFwdLeft:
-                return new OctreeCoordinate(0, 1, 1);
-            case OctreeNodeChildIndex.TopFwdRight:
-                return new OctreeCoordinate(1, 1, 1);
-            case OctreeNodeChildIndex.TopBackLeft:
-                return new OctreeCoordinate(0, 1, 0);
-            case OctreeNodeChildIndex.TopBackRight:
-                return new OctreeCoordinate(1, 1, 0);
-            case OctreeNodeChildIndex.BotFwdLeft:
-                return new OctreeCoordinate(0, 0, 1);
-            case OctreeNodeChildIndex.BotFwdRight:
-                return new OctreeCoordinate(1, 0, 1);
-            case OctreeNodeChildIndex.BotBackLeft:
-                return new OctreeCoordinate(0, 0, 0);
-            case OctreeNodeChildIndex.BotBackRight:
-                return new OctreeCoordinate(1, 0, 0);
-            default:
-                throw new ArgumentOutOfRangeException("index", index, null);
-        }
+        _coords = coords;
+        Length = _coords.Length;
     }
 
-    public OctreeNode<T> GetChildAtCoords(OctreeNodeChildIndex[] coords)
-    {
-        var current = this;
 
-        foreach (var coord in coords)
+    public OctreeNodeCoordinates GetNeighbourCoords(OctreeNode.NeighbourSide side)
+    {
+
+        OctreeChildCoordinates[] newCoords;
+
+        if (_coords.Length > 0)
         {
-            current = current.GetChild(coord);
-            if (current == null)
+            newCoords = new OctreeChildCoordinates[_coords.Length];
+
+            OctreeChildCoordinates? lastCoords = null;
+
+            for (var i = _coords.Length - 1; i >= 0; --i)
             {
-                break;
-            }
-        }
-
-        return current;
-    }
-
-    //above = index < 4
-    private static bool IsAbove(OctreeNodeChildIndex index)
-    {
-        var indexInt = (int) index;
-
-        return indexInt < 4;
-    }
-
-    private static OctreeNodeChildIndex AboveIndex(OctreeNodeChildIndex index)
-    {
-        if (IsAbove(index))
-        {
-            return OctreeNodeChildIndex.Invalid;
-        }
-
-        return (OctreeNodeChildIndex) (((int) index) - 4);
-    }
-
-    //below = index >= 4
-    private static bool IsBelow(OctreeNodeChildIndex index)
-    {
-        var indexInt = (int) index;
-
-        return indexInt >= 4;
-    }
-
-    private static OctreeNodeChildIndex BelowIndex(OctreeNodeChildIndex index)
-    {
-        if (IsBelow(index))
-        {
-            return OctreeNodeChildIndex.Invalid;
-        }
-
-        return (OctreeNodeChildIndex) (((int) index) + 4);
-    }
-
-    //left = index % 2 == 0
-    private static bool IsLeft(OctreeNodeChildIndex index)
-    {
-        var indexInt = (int) index;
-
-        return indexInt%2 == 0;
-    }
-
-    private static OctreeNodeChildIndex LeftIndex(OctreeNodeChildIndex index)
-    {
-        if (IsLeft(index))
-        {
-            return OctreeNodeChildIndex.Invalid;
-        }
-
-        return (OctreeNodeChildIndex) (((int) index) - 1);
-    }
-
-    //right = index % 2 == 1
-    private static bool IsRight(OctreeNodeChildIndex index)
-    {
-        var indexInt = (int) index;
-
-        return indexInt%2 == 1;
-    }
-
-    private static OctreeNodeChildIndex RightIndex(OctreeNodeChildIndex index)
-    {
-        if (IsRight(index))
-        {
-            return OctreeNodeChildIndex.Invalid;
-        }
-
-        return (OctreeNodeChildIndex) (((int) index) + 1);
-    }
-
-    //forward = index % 4 < 2
-    private static bool IsForward(OctreeNodeChildIndex index)
-    {
-        var indexInt = (int) index;
-
-        return indexInt%4 < 2;
-    }
-
-    private static OctreeNodeChildIndex ForwardIndex(OctreeNodeChildIndex index)
-    {
-        if (IsForward(index))
-        {
-            return OctreeNodeChildIndex.Invalid;
-        }
-
-        return (OctreeNodeChildIndex) (((int) index) - 2);
-    }
-
-    //back = index % 4 >= 2
-    private static bool IsBack(OctreeNodeChildIndex index)
-    {
-        var indexInt = (int) index;
-
-        return indexInt%4 >= 2;
-    }
-
-    private static OctreeNodeChildIndex BackIndex(OctreeNodeChildIndex index)
-    {
-        if (IsBack(index))
-        {
-            return OctreeNodeChildIndex.Invalid;
-        }
-
-        return (OctreeNodeChildIndex) (((int) index) + 2);
-    }
-
-    public OctreeCoordinate[] GetNeighbourCoords(OctreeNodeNeighbourSide side)
-    {
-        return GetNeighbourCoords(_coords, side);
-    }
-
-    public static OctreeCoordinate[] GetNeighbourCoords(OctreeCoordinate[] coords, OctreeNodeNeighbourSide side)
-    {
-        OctreeCoordinate[] newCoords;
-
-        if (coords.Length > 0)
-        {
-            newCoords = new OctreeCoordinate[coords.Length];
-
-            OctreeCoordinate? lastCoords = null;
-
-            for (var i = coords.Length - 1; i >= 0; --i)
-            {
-                var currentCoords = coords[i];
+                var currentCoords = _coords[i];
                 if (lastCoords == null)
                 {
                     //final coords!
                     //update coords from the side
                     switch (side)
                     {
-                        case OctreeNodeNeighbourSide.Above:
+                        case OctreeNode.NeighbourSide.Above:
                             currentCoords.y += 1;
                             break;
-                        case OctreeNodeNeighbourSide.Below:
+                        case OctreeNode.NeighbourSide.Below:
                             currentCoords.y -= 1;
                             break;
-                        case OctreeNodeNeighbourSide.Left:
+                        case OctreeNode.NeighbourSide.Left:
                             currentCoords.x -= 1;
                             break;
-                        case OctreeNodeNeighbourSide.Right:
+                        case OctreeNode.NeighbourSide.Right:
                             currentCoords.x += 1;
                             break;
-                        case OctreeNodeNeighbourSide.Forward:
+                        case OctreeNode.NeighbourSide.Forward:
                             currentCoords.z += 1;
                             break;
-                        case OctreeNodeNeighbourSide.Back:
+                        case OctreeNode.NeighbourSide.Back:
                             currentCoords.z -= 1;
                             break;
                         default:
@@ -395,10 +187,193 @@ public class OctreeNode<T>
             newCoords = null;
         }
 
-        return newCoords;
+        if (newCoords == null)
+        {
+            return null;
+        }
+
+        return new OctreeNodeCoordinates(newCoords);
     }
 
-    private SideState GetSideState(OctreeNodeNeighbourSide side)
+    public object this[int i]
+    {
+        get { return _coords[i]; }
+    }
+}
+
+public class OctreeNode<T> : OctreeNode
+{
+
+    private readonly OctreeNodeCoordinates _nodeCoordinates;
+//    private readonly OctreeChildCoordinates[] _coords;
+    private readonly int _depth;
+    private readonly ChildIndex _indexInParent;
+    private readonly OctreeNode<T> _parent;
+    private readonly OctreeNode<T> _root;
+    private Bounds _bounds;
+    private int _childCount;
+    private OctreeNode<T>[] _children;
+    private T _item;
+
+    public OctreeNode(Bounds bounds) : this(bounds, null, ChildIndex.Invalid, 0)
+    {
+    }
+
+    public OctreeNode(Bounds bounds, OctreeNode<T> parent, ChildIndex indexInParent, int depth)
+    {
+        _bounds = bounds;
+        _parent = parent;
+        if (parent == null)
+        {
+            _root = this;
+            _nodeCoordinates = new OctreeNodeCoordinates();
+//            _coords = new OctreeChildCoordinates[0];
+        }
+        else
+        {
+            _root = _parent._root;
+            _nodeCoordinates = new OctreeNodeCoordinates(parent._nodeCoordinates, OctreeChildCoordinates.FromIndex(indexInParent));
+//            _coords = parent._coords.Concat(new[] {OctreeChildCoordinates.FromIndex(indexInParent)}).ToArray();
+        }
+        _indexInParent = indexInParent;
+        _item = default(T);
+        _depth = depth;
+    }
+
+    
+
+    public OctreeNode<T> GetChildAtCoords(ChildIndex[] coords)
+    {
+        var current = this;
+
+        foreach (var coord in coords)
+        {
+            current = current.GetChild(coord);
+            if (current == null)
+            {
+                break;
+            }
+        }
+
+        return current;
+    }
+
+    //above = index < 4
+    private static bool IsAbove(ChildIndex index)
+    {
+        var indexInt = (int) index;
+
+        return indexInt < 4;
+    }
+
+    private static ChildIndex AboveIndex(ChildIndex index)
+    {
+        if (IsAbove(index))
+        {
+            return ChildIndex.Invalid;
+        }
+
+        return (ChildIndex) (((int) index) - 4);
+    }
+
+    //below = index >= 4
+    private static bool IsBelow(ChildIndex index)
+    {
+        var indexInt = (int) index;
+
+        return indexInt >= 4;
+    }
+
+    private static ChildIndex BelowIndex(ChildIndex index)
+    {
+        if (IsBelow(index))
+        {
+            return ChildIndex.Invalid;
+        }
+
+        return (ChildIndex) (((int) index) + 4);
+    }
+
+    //left = index % 2 == 0
+    private static bool IsLeft(ChildIndex index)
+    {
+        var indexInt = (int) index;
+
+        return indexInt%2 == 0;
+    }
+
+    private static ChildIndex LeftIndex(ChildIndex index)
+    {
+        if (IsLeft(index))
+        {
+            return ChildIndex.Invalid;
+        }
+
+        return (ChildIndex) (((int) index) - 1);
+    }
+
+    //right = index % 2 == 1
+    private static bool IsRight(ChildIndex index)
+    {
+        var indexInt = (int) index;
+
+        return indexInt%2 == 1;
+    }
+
+    private static ChildIndex RightIndex(ChildIndex index)
+    {
+        if (IsRight(index))
+        {
+            return ChildIndex.Invalid;
+        }
+
+        return (ChildIndex) (((int) index) + 1);
+    }
+
+    //forward = index % 4 < 2
+    private static bool IsForward(ChildIndex index)
+    {
+        var indexInt = (int) index;
+
+        return indexInt%4 < 2;
+    }
+
+    private static ChildIndex ForwardIndex(ChildIndex index)
+    {
+        if (IsForward(index))
+        {
+            return ChildIndex.Invalid;
+        }
+
+        return (ChildIndex) (((int) index) - 2);
+    }
+
+    //back = index % 4 >= 2
+    private static bool IsBack(ChildIndex index)
+    {
+        var indexInt = (int) index;
+
+        return indexInt%4 >= 2;
+    }
+
+    private static ChildIndex BackIndex(ChildIndex index)
+    {
+        if (IsBack(index))
+        {
+            return ChildIndex.Invalid;
+        }
+
+        return (ChildIndex) (((int) index) + 2);
+    }
+
+//    public OctreeChildCoordinates[] GetNeighbourCoords(NeighbourSide side)
+//    {
+//        return GetNeighbourCoords(_coords, side);
+//    }
+
+    
+
+    private SideState GetSideState(NeighbourSide side)
     {
         return SideState.Empty;
 //
@@ -406,7 +381,7 @@ public class OctreeNode<T>
 //
 //        if (_coords.Length > 0)
 //        {
-//            var newCoords = new OctreeCoordinate[_coords.Length];
+//            var newCoords = new OctreeChildCoordinates[_coords.Length];
 //
 //            for (var i = _coords.Length - 1; i >= 0; --i)
 //            {
@@ -419,29 +394,29 @@ public class OctreeNode<T>
 ////
 ////            switch (side)
 ////            {
-////                case OctreeNodeNeighbourSide.Above:
+////                case NeighbourSide.Above:
 ////                    currentCoord.y -= 1;
 ////                    break;
-////                case OctreeNodeNeighbourSide.Below:
+////                case NeighbourSide.Below:
 ////                    currentCoord.y += 1;
 ////                    break;
-////                case OctreeNodeNeighbourSide.Left:
+////                case NeighbourSide.Left:
 ////                    currentCoord.x -= 1;
 ////                    break;
-////                case OctreeNodeNeighbourSide.Right:
+////                case NeighbourSide.Right:
 ////                    currentCoord.x += 1;
 ////                    break;
-////                case OctreeNodeNeighbourSide.Forward:
+////                case NeighbourSide.Forward:
 ////                    currentCoord.z += 1;
 ////                    break;
-////                case OctreeNodeNeighbourSide.Back:
+////                case NeighbourSide.Back:
 ////                    currentCoord.z -= 1;
 ////                    break;
 ////                default:
 ////                    throw new ArgumentOutOfRangeException(nameof(side), side, null);
 ////            }
 ////
-////            var parentOffset = new OctreeCoordinate(0, 0, 0);
+////            var parentOffset = new OctreeChildCoordinates(0, 0, 0);
 ////            if (currentCoord.x > 1)
 ////            {
 ////                //move the higher coord's x up
@@ -472,7 +447,7 @@ public class OctreeNode<T>
 //        }
     }
 
-    //    public OctreeNeighbour<T> GetNeighbour(OctreeNodeNeighbourSide side)
+    //    public OctreeNeighbour<T> GetNeighbour(NeighbourSide side)
     //    {
     //        OctreeNode<T> neighbour = null;
     //
@@ -482,7 +457,7 @@ public class OctreeNode<T>
     //
     //            switch (side)
     //            {
-    //                case OctreeNodeNeighbourSide.Above:
+    //                case NeighbourSide.Above:
     //                    if (IsAbove(_indexInParent))
     //                    {
     //                        //get from parent's neighbour
@@ -493,7 +468,7 @@ public class OctreeNode<T>
     //                        neighbour = _parent.GetChild(AboveIndex(_indexInParent));
     //                    }
     //                    break;
-    //                case OctreeNodeNeighbourSide.Below:
+    //                case NeighbourSide.Below:
     //                    if (IsBelow(_indexInParent))
     //                    {
     //                        //get from parent's neighbour
@@ -504,7 +479,7 @@ public class OctreeNode<T>
     //                        neighbour = _parent.GetChild(BelowIndex(_indexInParent));
     //                    }
     //                    break;
-    //                case OctreeNodeNeighbourSide.Left:
+    //                case NeighbourSide.Left:
     //                    if (IsLeft(_indexInParent))
     //                    {
     //                        //get from parent's neighbour
@@ -515,7 +490,7 @@ public class OctreeNode<T>
     //                        neighbour = _parent.GetChild(LeftIndex(_indexInParent));
     //                    }
     //                    break;
-    //                case OctreeNodeNeighbourSide.Right:
+    //                case NeighbourSide.Right:
     //                    if (IsRight(_indexInParent))
     //                    {
     //                        //get from parent's neighbour
@@ -526,7 +501,7 @@ public class OctreeNode<T>
     //                        neighbour = _parent.GetChild(RightIndex(_indexInParent));
     //                    }
     //                    break;
-    //                case OctreeNodeNeighbourSide.Forward:
+    //                case NeighbourSide.Forward:
     //                    if (IsForward(_indexInParent))
     //                    {
     //                        //get from parent's neighbour
@@ -537,7 +512,7 @@ public class OctreeNode<T>
     //                        neighbour = _parent.GetChild(ForwardIndex(_indexInParent));
     //                    }
     //                    break;
-    //                case OctreeNodeNeighbourSide.Back:
+    //                case NeighbourSide.Back:
     //                    if (IsBack(_indexInParent))
     //                    {
     //                        //get from parent's neighbour
@@ -575,14 +550,20 @@ public class OctreeNode<T>
         return _childCount;
     }
 
-    public OctreeNode<T> GetChild(OctreeNodeChildIndex index)
+    public OctreeNode<T> GetChild(ChildIndex index)
     {
-        if (index == OctreeNodeChildIndex.Invalid)
+        if (index == ChildIndex.Invalid)
         {
             return null;
         }
 
         return _children[(int) index];
+    }
+
+    private OctreeNode<T> SetChild(ChildIndex index, OctreeNode<T> child)
+    {
+        _children[(int) index] = child;
+        return child;
     }
 
     public OctreeNode<T> GetChild(int index)
@@ -610,36 +591,34 @@ public class OctreeNode<T>
         }
     }
 
-    public Bounds GetChildBounds(int i)
+    public Bounds GetChildBounds(ChildIndex childIndex)
     {
-        var childIndex = (OctreeNodeChildIndex) i;
-
         Vector3 childDirection;
 
         switch (childIndex)
         {
-            case OctreeNodeChildIndex.TopFwdLeft:
+            case ChildIndex.TopFwdLeft:
                 childDirection = new Vector3(-1, -1, 1);
                 break;
-            case OctreeNodeChildIndex.TopFwdRight:
+            case ChildIndex.TopFwdRight:
                 childDirection = new Vector3(1, -1, 1);
                 break;
-            case OctreeNodeChildIndex.TopBackLeft:
+            case ChildIndex.TopBackLeft:
                 childDirection = new Vector3(-1, -1, -1);
                 break;
-            case OctreeNodeChildIndex.TopBackRight:
+            case ChildIndex.TopBackRight:
                 childDirection = new Vector3(1, -1, -1);
                 break;
-            case OctreeNodeChildIndex.BotFwdLeft:
+            case ChildIndex.BotFwdLeft:
                 childDirection = new Vector3(-1, 1, 1);
                 break;
-            case OctreeNodeChildIndex.BotFwdRight:
+            case ChildIndex.BotFwdRight:
                 childDirection = new Vector3(1, 1, 1);
                 break;
-            case OctreeNodeChildIndex.BotBackLeft:
+            case ChildIndex.BotBackLeft:
                 childDirection = new Vector3(-1, 1, -1);
                 break;
-            case OctreeNodeChildIndex.BotBackRight:
+            case ChildIndex.BotBackRight:
                 childDirection = new Vector3(1, 1, -1);
                 break;
             default:
@@ -658,9 +637,9 @@ public class OctreeNode<T>
         return childBounds;
     }
 
-    public OctreeNode<T> AddChild(int index)
+    public OctreeNode<T> AddChild(ChildIndex index)
     {
-        if (index < 0 || index > 8)
+        if (!Enum.IsDefined(typeof(ChildIndex), index))
         {
             throw new ArgumentException("The child index should be between 0 and 8!", "index");
         }
@@ -670,17 +649,16 @@ public class OctreeNode<T>
             _children = new OctreeNode<T>[8];
         }
 
-        if (_children[index] != null)
+        if (GetChild(index) != null)
         {
             throw new ArgumentException("There is already a child at this index", "index");
         }
 
         _childCount++;
-        _children[index] = new OctreeNode<T>(GetChildBounds(index), this, (OctreeNodeChildIndex) index, _depth + 1);
-        return _children[index];
+        return SetChild(index, new OctreeNode<T>(GetChildBounds(index), this, index, _depth + 1));
     }
 
-    public void RemoveChild(OctreeNodeChildIndex index)
+    public void RemoveChild(ChildIndex index)
     {
         if (_children == null)
         {
@@ -713,13 +691,14 @@ public class OctreeNode<T>
 
         for (var i = 0; i < 8; i++)
         {
-            var childBounds = GetChildBounds(i);
+            var octreeNodeChildIndex = (ChildIndex) i;
+            var childBounds = GetChildBounds(octreeNodeChildIndex);
 
             //child intersects but is not completely contained by it
             if (childBounds.Intersects(bounds) &&
                 !(bounds.Contains(childBounds.min) && bounds.Contains(childBounds.max)))
             {
-                var child = GetChild(i) ?? AddChild(i);
+                var child = GetChild(octreeNodeChildIndex) ?? AddChild(octreeNodeChildIndex);
                 child.AddBounds(bounds, item - 1);
             }
         }
@@ -730,9 +709,9 @@ public class OctreeNode<T>
         return _bounds;
     }
 
-    public OctreeCoordinate[] GetCoords()
+    public OctreeNodeCoordinates GetCoords()
     {
-        return _coords;
+        return _nodeCoordinates;
     }
 
     private enum SideState

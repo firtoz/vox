@@ -6,7 +6,7 @@ using System.Security;
 using System.Text;
 using UnityEngine;
 
-namespace UnityTest
+namespace OctreeTest
 {
     public class XmlResultWriter
     {

@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace UnityTest
+namespace OctreeTest
 {
     [Serializable]
     public class PropertyResolver

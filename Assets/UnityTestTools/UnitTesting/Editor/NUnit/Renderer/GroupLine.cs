@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using Event = UnityEngine.Event;
 
-namespace UnityTest
+namespace OctreeTest
 {
     public class GroupLine : UnitTestRendererLine
     {

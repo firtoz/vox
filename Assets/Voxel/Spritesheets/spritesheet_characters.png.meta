@@ -1,0 +1,418 @@
+fileFormatVersion: 2
+guid: dbda52d8a895c9545a4b79ec3401f682
+timeCreated: 1436215333
+licenseType: Free
+TextureImporter:
+  fileIDToRecycleName:
+    21300000: alien_arm.png
+    21300002: alien_body.png
+    21300004: alien_head.png
+    21300006: alien_leg.png
+    21300008: boar_body.png
+    21300010: boar_head.png
+    21300012: boar_leg.png
+    21300014: boar_tail.png
+    21300016: female_arm.png
+    21300018: female_body.png
+    21300020: female_head.png
+    21300022: female_leg.png
+    21300024: fox_body.png
+    21300026: fox_ear.png
+    21300028: fox_leg.png
+    21300030: fox_tail.png
+    21300032: gnome_arm.png
+    21300034: gnome_body.png
+    21300036: gnome_head.png
+    21300038: gnome_leg.png
+    21300040: hedgehog_body.png
+    21300042: male_arm.png
+    21300044: male_body.png
+    21300046: male_head.png
+    21300048: male_leg.png
+    21300050: skeleton_arm.png
+    21300052: skeleton_body.png
+    21300054: skeleton_head.png
+    21300056: skeleton_leg.png
+    21300058: zombie_arm.png
+    21300060: zombie_body.png
+    21300062: zombie_head.png
+    21300064: zombie_leg.png
+  serializedVersion: 2
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 1
+    linearTexture: 0
+    correctGamma: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: .25
+    normalMapFilter: 0
+  isReadable: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 0
+  cubemapConvolution: 0
+  cubemapConvolutionSteps: 8
+  cubemapConvolutionExponent: 1.5
+  seamlessCubemap: 0
+  textureFormat: -1
+  maxTextureSize: 2048
+  textureSettings:
+    filterMode: -1
+    aniso: 16
+    mipBias: -1
+    wrapMode: 1
+  nPOTScale: 0
+  lightmap: 0
+  rGBM: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: .5, y: .5}
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spritePixelsToUnits: 100
+  alphaIsTransparency: 1
+  textureType: 8
+  buildTargetSettings: []
+  spriteSheet:
+    sprites:
+    - name: alien_arm.png
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 434
+        width: 16
+        height: 42
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: alien_body.png
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 237
+        width: 44
+        height: 47
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: alien_head.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 364
+        width: 92
+        height: 92
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: alien_leg.png
+      rect:
+        serializedVersion: 2
+        x: 140
+        y: 438
+        width: 28
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: boar_body.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 286
+        width: 86
+        height: 76
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: boar_head.png
+      rect:
+        serializedVersion: 2
+        x: 66
+        y: 23
+        width: 60
+        height: 79
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: boar_leg.png
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 11
+        width: 24
+        height: 23
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: boar_tail.png
+      rect:
+        serializedVersion: 2
+        x: 154
+        y: 3
+        width: 14
+        height: 31
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: female_arm.png
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 113
+        width: 28
+        height: 66
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: female_body.png
+      rect:
+        serializedVersion: 2
+        x: 126
+        y: 242
+        width: 44
+        height: 59
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: female_head.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 212
+        width: 78
+        height: 72
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: female_leg.png
+      rect:
+        serializedVersion: 2
+        x: 140
+        y: 380
+        width: 28
+        height: 56
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: fox_body.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 458
+        width: 116
+        height: 54
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: fox_ear.png
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 23
+        width: 12
+        height: 20
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: fox_leg.png
+      rect:
+        serializedVersion: 2
+        x: 42
+        y: 13
+        width: 16
+        height: 23
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: fox_tail.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 16
+        width: 40
+        height: 20
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: gnome_arm.png
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 390
+        width: 14
+        height: 42
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: gnome_body.png
+      rect:
+        serializedVersion: 2
+        x: 118
+        y: 476
+        width: 34
+        height: 36
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: gnome_head.png
+      rect:
+        serializedVersion: 2
+        x: 94
+        y: 375
+        width: 44
+        height: 81
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: gnome_leg.png
+      rect:
+        serializedVersion: 2
+        x: 154
+        y: 478
+        width: 24
+        height: 34
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: hedgehog_body.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 170
+        width: 72
+        height: 40
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: male_arm.png
+      rect:
+        serializedVersion: 2
+        x: 158
+        y: 45
+        width: 28
+        height: 66
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: male_body.png
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 303
+        width: 44
+        height: 59
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: male_head.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 104
+        width: 64
+        height: 64
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: male_leg.png
+      rect:
+        serializedVersion: 2
+        x: 134
+        y: 317
+        width: 28
+        height: 56
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: skeleton_arm.png
+      rect:
+        serializedVersion: 2
+        x: 164
+        y: 312
+        width: 20
+        height: 66
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: skeleton_body.png
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 175
+        width: 44
+        height: 60
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: skeleton_head.png
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 38
+        width: 64
+        height: 64
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: skeleton_leg.png
+      rect:
+        serializedVersion: 2
+        x: 162
+        y: 123
+        width: 24
+        height: 56
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: zombie_arm.png
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 36
+        width: 28
+        height: 66
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: zombie_body.png
+      rect:
+        serializedVersion: 2
+        x: 126
+        y: 181
+        width: 44
+        height: 59
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: zombie_head.png
+      rect:
+        serializedVersion: 2
+        x: 66
+        y: 104
+        width: 64
+        height: 64
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: zombie_leg.png
+      rect:
+        serializedVersion: 2
+        x: 134
+        y: 317
+        width: 28
+        height: 56
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+  spritePackingTag: 
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

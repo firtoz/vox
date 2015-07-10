@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityTest.IntegrationTestRunner
+namespace OctreeTest.IntegrationTestRunner
 {
     public interface ITestRunnerCallback
     {

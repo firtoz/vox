@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityTest
+namespace OctreeTest
 {
     public class StringComparer : ComparerBaseGeneric<string>
     {

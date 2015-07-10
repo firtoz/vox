@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEditor.Callbacks;
 
-namespace UnityTest
+namespace OctreeTest
 {
     [Serializable]
     public partial class UnitTestView : EditorWindow, IHasCustomMenu

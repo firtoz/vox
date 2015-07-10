@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using OctreeTest.IntegrationTestRunner;
 using UnityEditor;
 using UnityEngine;
-using UnityTest.IntegrationTestRunner;
 
-namespace UnityTest
+namespace OctreeTest
 {
     [Serializable]
     public class IntegrationTestsRunnerWindow : EditorWindow, IHasCustomMenu

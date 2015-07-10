@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 
-namespace UnityTest
+namespace OctreeTest
 {
     public class TestFilterSettings
     {

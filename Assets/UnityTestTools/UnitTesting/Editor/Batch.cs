@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using OctreeTest.UnitTestRunner;
 using UnityEditor;
 using UnityEngine;
-using UnityTest.UnitTestRunner;
 
-namespace UnityTest
+namespace OctreeTest
 {
     public static partial class Batch
     {

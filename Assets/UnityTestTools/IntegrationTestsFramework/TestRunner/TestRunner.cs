@@ -5,10 +5,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using OctreeTest.IntegrationTestRunner;
 using UnityEngine;
-using UnityTest.IntegrationTestRunner;
 
-namespace UnityTest
+namespace OctreeTest
 {
     [Serializable]
     public class TestRunner : MonoBehaviour

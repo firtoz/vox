@@ -7,7 +7,7 @@ using UnityEngine;
 using Event = UnityEngine.Event;
 using System.Text;
 
-namespace UnityTest
+namespace OctreeTest
 {
     public class TestLine : UnitTestRendererLine, IComparable<TestLine>
     {

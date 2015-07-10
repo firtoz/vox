@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.Callbacks;
 using UnityEngine;
-using UnityTest;
+using OctreeTest;
 using Object = UnityEngine.Object;
 
 public class AssertionStripper

@@ -9,7 +9,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace UnityTest
+namespace OctreeTest
 {
     [Serializable]
     public class NetworkResultsReceiver : EditorWindow

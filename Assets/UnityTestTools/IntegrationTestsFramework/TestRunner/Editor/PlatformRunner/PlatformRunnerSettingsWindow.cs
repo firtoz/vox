@@ -6,7 +6,7 @@ using System.Net;
 using UnityEditor;
 using UnityEngine;
 
-namespace UnityTest.IntegrationTests
+namespace OctreeTest.IntegrationTests
 {
     [Serializable]
     public class PlatformRunnerSettingsWindow : EditorWindow

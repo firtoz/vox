@@ -2,7 +2,7 @@
 using System;
 using System.IO;
 
-namespace UnityTest
+namespace OctreeTest
 {
 
     public class DTOFormatter {

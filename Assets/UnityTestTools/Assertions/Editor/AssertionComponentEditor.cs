@@ -5,7 +5,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace UnityTest
+namespace OctreeTest
 {
     [CustomEditor(typeof(AssertionComponent))]
     public class AssertionComponentEditor : Editor

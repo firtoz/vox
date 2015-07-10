@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using OctreeTest.IntegrationTestRunner;
 using UnityEngine;
-using UnityTest.IntegrationTestRunner;
 #if UTT_SOCKETS_SUPPORTED
 using System.Net;
 using System.Net.Sockets;
@@ -18,7 +18,7 @@ using System.Net.NetworkInformation;
 using UnityEditorInternal;
 #endif
 
-namespace UnityTest
+namespace OctreeTest
 {
     public class TestRunnerConfigurator
     {
