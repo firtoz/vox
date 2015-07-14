@@ -41,6 +41,13 @@ public struct OctreeChildCoordinates
         this.z = z;
     }
 
+    public OctreeChildCoordinates(OctreeChildCoordinates other)
+    {
+        x = other.x;
+        y = other.y;
+        z = other.z;
+    }
+
     public override string ToString()
     {
         return string.Format("[{0}, {1}, {2}]", x, y, z);

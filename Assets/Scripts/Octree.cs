@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class Octree<T>
@@ -33,22 +32,7 @@ public class Octree<T>
     */
     public IEnumerable<OctreeNode<T>> BreadthFirst()
     {
-        var queue = new Queue<OctreeNode<T>>();
-        queue.Enqueue(_root);
-
-        var discovered = new HashSet<OctreeNode<T>> { _root };
-
-        while (queue.Count > 0)
-        {
-            var node = queue.Dequeue();
-            yield return node;
-
-            foreach (var child in node.GetChildren().Where(child => !discovered.Contains(child)))
-            {
-                queue.Enqueue(child);
-                discovered.Add(child);
-            }
-        }
+        return _root.BreadthFirst();
     }
 
     // https://en.wikipedia.org/wiki/Depth-first_search#Pseudocode
@@ -65,19 +49,7 @@ public class Octree<T>
     */
     public IEnumerable<OctreeNode<T>> DepthFirst()
     {
-        var stack = new Stack<OctreeNode<T>>();
-        stack.Push(_root);
-
-        while (stack.Count > 0)
-        {
-            var node = stack.Pop();
-            yield return node;
-
-            foreach (var child in node.GetChildren())
-            {
-                stack.Push(child);
-            }
-        }
+        return _root.DepthFirst();
     }
 
     public void AddBounds(Bounds bounds, int i)

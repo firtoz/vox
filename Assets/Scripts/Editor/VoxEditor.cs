@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Configuration;
 using UnityEngine;
 using System.Linq;
 using UnityEditor;
@@ -17,6 +18,7 @@ public class VoxEditor : Editor {
         }
 
         var meshFilter = vox.GetComponent<MeshFilter>();
+
         if (!meshFilter) {
             if (GUILayout.Button("New Mesh")) {
                 Undo.RecordObject(vox.gameObject, "add new mesh");
@@ -26,6 +28,7 @@ public class VoxEditor : Editor {
                     triangles = new int[0]
                 };
 
+
                 Undo.RegisterCreatedObjectUndo(meshFilter.sharedMesh, "add new mesh");
 
                 EditorUtility.SetDirty(meshFilter);
@@ -33,23 +36,24 @@ public class VoxEditor : Editor {
             }
             return;
         }
+        var sharedMesh = meshFilter.sharedMesh;
 
-//        var currentNode = vox.octree.;
-//        int indent = EditorGUI.indentLevel;
-//        string foldoutString = "";
-//        if (currentNode != null) {
-//            if (!foldouts.ContainsKey(foldoutString)) {
-//                foldouts[foldoutString] = false;
-//            }
-//            
-//            foldouts[foldoutString] = EditorGUILayout.Foldout(foldouts[foldoutString], "Root Node");
-//
-//            if (foldouts[foldoutString]) {
-//                
-//            }
-//        }
+        //        var currentNode = vox.octree.;
+        //        int indent = EditorGUI.indentLevel;
+        //        string foldoutString = "";
+        //        if (currentNode != null) {
+        //            if (!foldouts.ContainsKey(foldoutString)) {
+        //                foldouts[foldoutString] = false;
+        //            }
+        //            
+        //            foldouts[foldoutString] = EditorGUILayout.Foldout(foldouts[foldoutString], "Root Node");
+        //
+        //            if (foldouts[foldoutString]) {
+        //                
+        //            }
+        //        }
 
-        if (!meshFilter.sharedMesh) {
+        if (!sharedMesh) {
             if (GUILayout.Button("New Mesh")) {
                 Undo.RecordObject(meshFilter, "add new mesh");
                 meshFilter.sharedMesh = new Mesh {
@@ -61,7 +65,57 @@ public class VoxEditor : Editor {
         {
             if (GUILayout.Button("Regenerate"))
             {
-                vox.AddBounds(new Bounds(Vector3.one * 5, new Vector3(5, 10, 20)));
+                vox.octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one*5));
+
+                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotBackLeft);
+                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotFwdLeft);
+                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotBackRight);
+                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
+
+                using (new MeshModification(sharedMesh, "Regenerate")) {
+                                    
+                    var vertices = new List<Vector3>();
+                    var normals = new List<Vector3>();
+
+                    foreach (var node in vox.octree.DepthFirst().Where(node => node.IsLeafNode()))
+                    {
+                        node.GetVertices(vertices, normals);
+                    }
+
+                    sharedMesh.MarkDynamic();
+
+                    var numSides = vertices.Count/4;
+
+                    var tris = new int[numSides*6];
+                    var uvs = new Vector2[vertices.Count];
+
+                    for (var i = 0; i < numSides; i++)
+                    {
+                        var v1 = i*4;
+                        var v2 = v1 + 1;
+                        var v3 = v1 + 2;
+                        var v4 = v1 + 3;
+
+                        tris[i*6] = v1;
+                        tris[i*6+1] = v2;
+                        tris[i*6+2] = v3;
+
+                        tris[i*6+3] = v1;
+                        tris[i*6+4] = v3;
+                        tris[i*6+5] = v4;
+
+                        uvs[i*4] = Vector2.zero;
+                        uvs[i*4+1] = Vector2.up;
+                        uvs[i*4+2] = Vector2.one;
+                        uvs[i*4+3] = Vector2.right;
+                    }
+
+                    sharedMesh.vertices = vertices.ToArray();
+                    sharedMesh.normals = normals.ToArray();
+                    sharedMesh.triangles = tris;
+                    sharedMesh.uv = uvs;
+                }
+
 
                 foreach (var node in vox.octree.DepthFirst())
                 {
