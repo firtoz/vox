@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
-using System.Configuration;
-using UnityEngine;
 using System.Linq;
 using UnityEditor;
-using Random = UnityEngine.Random;
+using UnityEngine;
 
 [CustomEditor(typeof (Vox))]
 public class VoxEditor : Editor {
-    private Dictionary<string, bool> foldouts = new Dictionary<string, bool>(); 
+    private Dictionary<string, bool> foldouts = new Dictionary<string, bool>();
 
     public override void OnInspectorGUI() {
         DrawDefaultInspector();
@@ -61,53 +59,53 @@ public class VoxEditor : Editor {
                 };
                 EditorUtility.SetDirty(meshFilter);
             }
-        } else
-        {
-            if (GUILayout.Button("Regenerate"))
-            {
-                vox.octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one*5));
+        }
+        else {
+            if (GUILayout.Button("Regenerate")) {
+                vox.octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one*7.5f));
 
-                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotBackLeft);
-                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotFwdLeft);
-                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotBackRight);
-                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
+                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one), 6);
+//                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one * 0.5f), 7);
+                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one * 0.2f), 8);
+
+//                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotBackLeft);
+//                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotFwdLeft);
+//                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotBackRight);
+//                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
 
                 using (new MeshModification(sharedMesh, "Regenerate")) {
-                                    
                     var vertices = new List<Vector3>();
                     var normals = new List<Vector3>();
 
-                    foreach (var node in vox.octree.DepthFirst().Where(node => node.IsLeafNode()))
-                    {
+                    foreach (var node in vox.octree.DepthFirst().Where(node => node.IsLeafNode())) {
                         node.GetVertices(vertices, normals);
                     }
 
-                    sharedMesh.MarkDynamic();
+                    sharedMesh.Clear();
 
                     var numSides = vertices.Count/4;
 
                     var tris = new int[numSides*6];
                     var uvs = new Vector2[vertices.Count];
 
-                    for (var i = 0; i < numSides; i++)
-                    {
+                    for (var i = 0; i < numSides; i++) {
                         var v1 = i*4;
                         var v2 = v1 + 1;
                         var v3 = v1 + 2;
                         var v4 = v1 + 3;
 
                         tris[i*6] = v1;
-                        tris[i*6+1] = v2;
-                        tris[i*6+2] = v3;
+                        tris[i*6 + 1] = v2;
+                        tris[i*6 + 2] = v3;
 
-                        tris[i*6+3] = v1;
-                        tris[i*6+4] = v3;
-                        tris[i*6+5] = v4;
+                        tris[i*6 + 3] = v1;
+                        tris[i*6 + 4] = v3;
+                        tris[i*6 + 5] = v4;
 
                         uvs[i*4] = Vector2.zero;
-                        uvs[i*4+1] = Vector2.up;
-                        uvs[i*4+2] = Vector2.one;
-                        uvs[i*4+3] = Vector2.right;
+                        uvs[i*4 + 1] = Vector2.up;
+                        uvs[i*4 + 2] = Vector2.one;
+                        uvs[i*4 + 3] = Vector2.right;
                     }
 
                     sharedMesh.vertices = vertices.ToArray();
@@ -117,9 +115,10 @@ public class VoxEditor : Editor {
                 }
 
 
-                foreach (var node in vox.octree.DepthFirst())
-                {
-                    if (!node.IsLeafNode()) continue;
+                foreach (var node in vox.octree.DepthFirst()) {
+                    if (!node.IsLeafNode()) {
+                        continue;
+                    }
 
 //                    var nodeBounds = node.GetBounds();
 //
@@ -129,7 +128,7 @@ public class VoxEditor : Editor {
 //                    cube.transform.localScale = nodeBounds.size;
 //
 //                    Undo.RegisterCreatedObjectUndo(cube, "Harp darp");
-                    
+
 //                    DrawBounds(nodeBounds, node.IsLeafNode() ? Color.red : Color.white);
 
                     //            var firstChildBounds = node.GetChildBounds(0);
@@ -149,13 +148,11 @@ public class VoxEditor : Editor {
         }
     }
 
-    private void DrawBounds(Bounds bounds)
-    {
+    private void DrawBounds(Bounds bounds) {
         DrawBounds(bounds, Color.white);
     }
 
-    private void DrawBounds(Bounds bounds, Color color)
-    {
+    private void DrawBounds(Bounds bounds, Color color) {
         var center = bounds.center;
         var extents = bounds.extents;
 
@@ -164,14 +161,14 @@ public class VoxEditor : Editor {
 //        return;
 
         var topBackLeft = center + new Vector3(-extents.x, extents.y, -extents.z);
-        var topBackRight = topBackLeft + Vector3.right * extents.x * 2;
-        var topFwdLeft = topBackLeft + Vector3.forward * extents.z * 2;
-        var topFwdRight = topBackRight + Vector3.forward * extents.z * 2;
+        var topBackRight = topBackLeft + Vector3.right*extents.x*2;
+        var topFwdLeft = topBackLeft + Vector3.forward*extents.z*2;
+        var topFwdRight = topBackRight + Vector3.forward*extents.z*2;
 
-        var botBackLeft = topBackLeft + Vector3.down * extents.y * 2;
-        var botBackRight = topBackRight + Vector3.down * extents.y * 2;
-        var botFwdLeft = topFwdLeft + Vector3.down * extents.y * 2;
-        var botFwdRight = topFwdRight + Vector3.down * extents.y * 2;
+        var botBackLeft = topBackLeft + Vector3.down*extents.y*2;
+        var botBackRight = topBackRight + Vector3.down*extents.y*2;
+        var botFwdLeft = topFwdLeft + Vector3.down*extents.y*2;
+        var botFwdRight = topFwdRight + Vector3.down*extents.y*2;
 
         Debug.DrawLine(topBackLeft, topBackRight, color);
         Debug.DrawLine(topBackRight, topFwdRight, color);
@@ -183,17 +180,18 @@ public class VoxEditor : Editor {
         Debug.DrawLine(topFwdRight, botFwdRight, color);
         Debug.DrawLine(topFwdLeft, botFwdLeft, color);
 
-        Debug.DrawLine(botBackLeft,  botBackRight, color);
+        Debug.DrawLine(botBackLeft, botBackRight, color);
         Debug.DrawLine(botBackRight, botFwdRight, color);
-        Debug.DrawLine(botFwdRight,  botFwdLeft, color);
-        Debug.DrawLine(botFwdLeft,   botBackLeft, color);
+        Debug.DrawLine(botFwdRight, botFwdLeft, color);
+        Debug.DrawLine(botFwdLeft, botBackLeft, color);
     }
 
-    public void OnSceneGUI()
-    {
+    public void OnSceneGUI() {
         var vox = target as Vox;
 
-        if (vox == null) return;
+        if (vox == null) {
+            return;
+        }
 
 //        DrawBounds(new Bounds(Vector3.zero, Vector3.one));
 
