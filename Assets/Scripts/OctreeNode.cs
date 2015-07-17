@@ -82,7 +82,6 @@ public class OctreeNode<T> : OctreeNode {
 //    private readonly OctreeChildCoordinates[] _coords;
     private readonly int _depth;
     private readonly ChildIndex _indexInParent;
-    private readonly T _item;
     private readonly OctreeNodeCoordinates _nodeCoordinates;
     private readonly OctreeNode<T> _parent;
     private readonly OctreeNode<T> _root;
@@ -90,6 +89,8 @@ public class OctreeNode<T> : OctreeNode {
     private int _childCount;
     private OctreeNode<T>[] _children;
     private bool _deleted;
+    private bool _hasItem;
+    private T _item;
     public OctreeNode(Bounds bounds) : this(bounds, null, ChildIndex.Invalid, 0) {}
 
     public OctreeNode(Bounds bounds, OctreeNode<T> parent, ChildIndex indexInParent, int depth) {
@@ -204,15 +205,15 @@ public class OctreeNode<T> : OctreeNode {
 //        return SideState.Empty;
     }
 
-    public void GetVertices(List<Vector3> vertices, List<Vector3> normals) {
+    public void GetVertices(List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs) {
         foreach (var side in Sides) {
-            GetVertices(vertices, normals, side, _bounds, _nodeCoordinates);
+            GetVertices(vertices, normals, uvs, side, _bounds, _nodeCoordinates);
         }
     }
 
-    private void GetVertices(ICollection<Vector3> vertices, ICollection<Vector3> normals, NeighbourSide side,
-        Bounds bounds, OctreeNodeCoordinates coords) {
+    private void GetVertices(ICollection<Vector3> vertices, ICollection<Vector3> normals, List<Vector2> uvs, NeighbourSide side, Bounds bounds, OctreeNodeCoordinates coords) {
         var sidestate = GetSideState(coords, side);
+
         switch (sidestate) {
             case SideState.Empty:
 
@@ -229,38 +230,72 @@ public class OctreeNode<T> : OctreeNode {
                         vertices.Add(new Vector3(max.x, max.y, min.z));
 
                         n = Vector3.up;
+                        //
+                        //                        uvs.Add(new Vector2(min.x, min.z));
+                        //                        uvs.Add(new Vector2(min.x, max.z));
+                        //                        uvs.Add(new Vector2(max.x, max.z));
+                        //                        uvs.Add(new Vector2(max.x, min.z));
+                        uvs.Add(Vector2.zero);
+                        uvs.Add(Vector2.up);
+                        uvs.Add(Vector2.one);
+                        uvs.Add(Vector2.right);
                         break;
                     case NeighbourSide.Below:
+                        vertices.Add(new Vector3(min.x, min.y, max.z));
                         vertices.Add(min);
                         vertices.Add(new Vector3(max.x, min.y, min.z));
                         vertices.Add(new Vector3(max.x, min.y, max.z));
-                        vertices.Add(new Vector3(min.x, min.y, max.z));
 
                         n = Vector3.down;
+                        //
+                        //                        uvs.Add(new Vector2(min.x, min.z));
+                        //                        uvs.Add(new Vector2(max.x, min.z));
+                        //                        uvs.Add(new Vector2(max.x, max.z));
+                        //                        uvs.Add(new Vector2(min.x, max.z));
+                        uvs.Add(Vector2.zero);
+                        uvs.Add(Vector2.up);
+                        uvs.Add(Vector2.one);
+                        uvs.Add(Vector2.right);
                         break;
                     case NeighbourSide.Right:
-                        vertices.Add(min);
                         vertices.Add(new Vector3(min.x, min.y, max.z));
                         vertices.Add(new Vector3(min.x, max.y, max.z));
                         vertices.Add(new Vector3(min.x, max.y, min.z));
+                        vertices.Add(min);
 
                         n = Vector3.left;
+
+                        uvs.Add(Vector2.zero);
+                        uvs.Add(Vector2.up);
+                        uvs.Add(Vector2.one);
+                        uvs.Add(Vector2.right);
                         break;
                     case NeighbourSide.Left:
+                        vertices.Add(new Vector3(max.x, min.y, min.z));
                         vertices.Add(new Vector3(max.x, max.y, min.z));
                         vertices.Add(max);
                         vertices.Add(new Vector3(max.x, min.y, max.z));
-                        vertices.Add(new Vector3(max.x, min.y, min.z));
+
 
                         n = Vector3.right;
+
+                        uvs.Add(Vector2.zero);
+                        uvs.Add(Vector2.up);
+                        uvs.Add(Vector2.one);
+                        uvs.Add(Vector2.right);
                         break;
                     case NeighbourSide.Back:
-                        vertices.Add(new Vector3(min.x, max.y, max.z));
-                        vertices.Add(new Vector3(min.x, min.y, max.z));
                         vertices.Add(new Vector3(max.x, min.y, max.z));
                         vertices.Add(max);
+                        vertices.Add(new Vector3(min.x, max.y, max.z));
+                        vertices.Add(new Vector3(min.x, min.y, max.z));
 
                         n = Vector3.forward;
+
+                        uvs.Add(Vector2.zero);
+                        uvs.Add(Vector2.up);
+                        uvs.Add(Vector2.one);
+                        uvs.Add(Vector2.right);
                         break;
                     case NeighbourSide.Forward:
                         vertices.Add(min);
@@ -269,10 +304,16 @@ public class OctreeNode<T> : OctreeNode {
                         vertices.Add(new Vector3(max.x, min.y, min.z));
 
                         n = Vector3.back;
+
+                        uvs.Add(Vector2.zero);
+                        uvs.Add(Vector2.up);
+                        uvs.Add(Vector2.one);
+                        uvs.Add(Vector2.right);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException("side", side, null);
                 }
+
 
                 normals.Add(n);
                 normals.Add(n);
@@ -280,7 +321,6 @@ public class OctreeNode<T> : OctreeNode {
                 normals.Add(n);
                 break;
             case SideState.Partial:
-                Debug.Log("Partial found :" + coords.ToArray());
                 OctreeChildCoordinates[] childCoords;
 
                 switch (side) {
@@ -307,8 +347,8 @@ public class OctreeNode<T> : OctreeNode {
                 }
 
                 foreach (var childCoord in childCoords) {
-                    GetVertices(vertices, normals, side,
-                        GetChildBounds(childCoord.ToIndex()),
+                    GetVertices(vertices, normals, uvs, side,
+                        GetChildBounds(bounds, childCoord.ToIndex()),
                         new OctreeNodeCoordinates(coords, childCoord));
                 }
                 break;
@@ -401,6 +441,47 @@ public class OctreeNode<T> : OctreeNode {
         return childBounds;
     }
 
+    public Bounds GetChildBounds(Bounds originalBounds, ChildIndex childIndex) {
+        AssertNotDeleted();
+        Vector3 childDirection;
+
+        switch (childIndex) {
+            case ChildIndex.TopFwdLeft:
+                childDirection = new Vector3(-1, -1, 1);
+                break;
+            case ChildIndex.TopFwdRight:
+                childDirection = new Vector3(1, -1, 1);
+                break;
+            case ChildIndex.TopBackLeft:
+                childDirection = new Vector3(-1, -1, -1);
+                break;
+            case ChildIndex.TopBackRight:
+                childDirection = new Vector3(1, -1, -1);
+                break;
+            case ChildIndex.BotFwdLeft:
+                childDirection = new Vector3(-1, 1, 1);
+                break;
+            case ChildIndex.BotFwdRight:
+                childDirection = new Vector3(1, 1, 1);
+                break;
+            case ChildIndex.BotBackLeft:
+                childDirection = new Vector3(-1, 1, -1);
+                break;
+            case ChildIndex.BotBackRight:
+                childDirection = new Vector3(1, 1, -1);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+//        _bounds.size
+        var childSize = originalBounds.extents;
+
+        var childBounds = new Bounds(originalBounds.center - Vector3.Scale(childSize, childDirection*0.5f), childSize);
+
+        return childBounds;
+    }
+
     public OctreeNode<T> AddChild(ChildIndex index) {
         AssertNotDeleted();
         if (!Enum.IsDefined(typeof (ChildIndex), index) || index == ChildIndex.Invalid) {
@@ -453,9 +534,10 @@ public class OctreeNode<T> : OctreeNode {
         return _deleted;
     }
 
-    public void AddBounds(Bounds bounds, int item) {
+    public void AddBounds(Bounds bounds, T item, int remainingDepth) {
         AssertNotDeleted();
-        if (item <= 0) {
+        if (remainingDepth <= 0) {
+            SetItem(item);
             return;
         }
 
@@ -463,19 +545,67 @@ public class OctreeNode<T> : OctreeNode {
             var octreeNodeChildIndex = (ChildIndex) i;
             var childBounds = GetChildBounds(octreeNodeChildIndex);
 
-            //child intersects but is not completely contained by it
             if (childBounds.Intersects(bounds)) {
-//                if (bounds.Contains(childBounds.min) && bounds.Contains(childBounds.max)) {
-//                    if (GetChild(octreeNodeChildIndex) == null) {
-//                        AddChild(octreeNodeChildIndex);
-//                    }
-//                }
-//                else {
-                var child = GetChild(octreeNodeChildIndex) ?? AddChild(octreeNodeChildIndex);
-                child.AddBounds(bounds, item - 1);
-//                }
+                if (bounds.Contains(childBounds.min) && bounds.Contains(childBounds.max)) {
+                    //child intersects and is completely contained by it
+
+                    var child = GetChild(octreeNodeChildIndex);
+                    if (child != null) {
+                        RemoveChild(octreeNodeChildIndex);
+                        child = AddChild(octreeNodeChildIndex);
+                    }
+                    else {
+                        if (HasItem()) {
+                            for (var j = 0; j < 8; j++) {
+                                AddChild((ChildIndex) j).SetItem(_item);
+                            }
+                            RemoveItem();
+
+                            child = GetChild(octreeNodeChildIndex);
+                        }
+                        else {
+                            child = AddChild(octreeNodeChildIndex);
+                        }
+                    }
+
+                    child.SetItem(item);
+                }
+                else {
+                    //child intersects but is not completely contained by it
+
+                    var child = GetChild(octreeNodeChildIndex);
+
+                    if (child == null) {
+                        if (HasItem()) {
+                            for (var j = 0; j < 8; j++) {
+                                AddChild((ChildIndex) j).SetItem(_item);
+                            }
+                            RemoveItem();
+
+                            child = GetChild(octreeNodeChildIndex);
+                        }
+                        else {
+                            child = AddChild(octreeNodeChildIndex);
+                        }
+                    }
+                    child.AddBounds(bounds, item, remainingDepth - 1);
+                }
             }
         }
+    }
+
+    public void SetItem(T item) {
+        _item = item;
+        _hasItem = true;
+    }
+
+    public bool HasItem() {
+        return _hasItem;
+    }
+
+    public void RemoveItem() {
+        _item = default(T);
+        _hasItem = false;
     }
 
     public Bounds GetBounds() {

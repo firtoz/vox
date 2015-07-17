@@ -52,8 +52,8 @@ public class Octree<T>
         return _root.DepthFirst();
     }
 
-    public void AddBounds(Bounds bounds, int i)
+    public void AddBounds(Bounds bounds, T item, int i)
     {
-        _root.AddBounds(bounds, i);
+        _root.AddBounds(bounds, item, i);
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 
 [CustomEditor(typeof (Vox))]
 public class VoxEditor : Editor {
-    private Dictionary<string, bool> foldouts = new Dictionary<string, bool>();
+//    private Dictionary<string, bool> foldouts = new Dictionary<string, bool>();
 
     public override void OnInspectorGUI() {
         DrawDefaultInspector();
@@ -64,9 +64,18 @@ public class VoxEditor : Editor {
             if (GUILayout.Button("Regenerate")) {
                 vox.octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one*7.5f));
 
-                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one), 6);
-//                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one * 0.5f), 7);
-                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one * 0.2f), 8);
+//                vox.octree.GetRoot().AddChild(new OctreeChildCoordinates(0, 1, 1).ToIndex());
+//                vox.octree.GetRoot().AddChild(new OctreeChildCoordinates(1, 1, 1).ToIndex())
+//                    .AddChild(new OctreeChildCoordinates(0, 1, 1).ToIndex())
+//                    .AddChild(new OctreeChildCoordinates(0, 1, 1).ToIndex());
+
+                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one), 5, 6);
+                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one * 0.5f), 6, 7);
+                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one * 0.7f), 7, 8);
+
+                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
+                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft)
+                    .SetItem(4);
 
 //                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotBackLeft);
 //                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotFwdLeft);
@@ -76,9 +85,10 @@ public class VoxEditor : Editor {
                 using (new MeshModification(sharedMesh, "Regenerate")) {
                     var vertices = new List<Vector3>();
                     var normals = new List<Vector3>();
+                    var uvs = new List<Vector2>();
 
-                    foreach (var node in vox.octree.DepthFirst().Where(node => node.IsLeafNode())) {
-                        node.GetVertices(vertices, normals);
+                    foreach (var node in vox.octree.BreadthFirst().Where(node => node.IsLeafNode() && node.HasItem())) {
+                        node.GetVertices(vertices, normals, uvs);
                     }
 
                     sharedMesh.Clear();
@@ -86,7 +96,7 @@ public class VoxEditor : Editor {
                     var numSides = vertices.Count/4;
 
                     var tris = new int[numSides*6];
-                    var uvs = new Vector2[vertices.Count];
+//                    var uvs = new Vector2[vertices.Count];
 
                     for (var i = 0; i < numSides; i++) {
                         var v1 = i*4;
@@ -101,17 +111,12 @@ public class VoxEditor : Editor {
                         tris[i*6 + 3] = v1;
                         tris[i*6 + 4] = v3;
                         tris[i*6 + 5] = v4;
-
-                        uvs[i*4] = Vector2.zero;
-                        uvs[i*4 + 1] = Vector2.up;
-                        uvs[i*4 + 2] = Vector2.one;
-                        uvs[i*4 + 3] = Vector2.right;
                     }
 
                     sharedMesh.vertices = vertices.ToArray();
                     sharedMesh.normals = normals.ToArray();
                     sharedMesh.triangles = tris;
-                    sharedMesh.uv = uvs;
+                    sharedMesh.uv = uvs.ToArray();
                 }
 
 

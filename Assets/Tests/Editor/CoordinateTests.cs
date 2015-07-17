@@ -147,9 +147,6 @@ namespace OctreeTest
 
             Assert.NotNull(leftOfGrandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Right));
 
-            var a = grandChildCoords;
-            var b = leftOfGrandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Right);
-
             Assert.AreNotEqual(leftOfGrandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Right),
                 leftOfGrandChildCoords);
 

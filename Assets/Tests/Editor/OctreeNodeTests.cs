@@ -38,7 +38,6 @@ namespace OctreeTest
 
             Assert.Throws<ArgumentException>(() =>
             {
-                var invalidIndex = 9;
                 root.AddChild(OctreeNode.ChildIndex.Invalid);
             });
 

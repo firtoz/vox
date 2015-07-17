@@ -18,6 +18,21 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates>
         }
     }
 
+    public override string ToString() {
+        var s = "[ ";
+        for (var i = 0; i < _length; i++) {
+            var coord = this[i];
+
+            if (i > 0) {
+                s += ", ";
+            }
+
+            s += coord;
+        }
+
+        return s + " ]";
+    }
+
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();

@@ -18,23 +18,23 @@ public class Vox : MonoBehaviour {
 	
 	}
 
-    public void AddBounds(Bounds bounds)
-    {
-        var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cube.transform.position = bounds.center;
-        cube.transform.localScale = bounds.size;
-
-#if UNITY_EDITOR
-        Undo.RegisterCreatedObjectUndo(cube, "Add Bounds");
-        Undo.SetTransformParent(cube.transform, transform, "Add Bounds");
-#else
-        cube.transform.parent = transform;
-#endif
-
-        octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one * 100));
-
-        octree.AddBounds(bounds, 8);
-    }
+//    public void AddBounds(Bounds bounds)
+//    {
+//        var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+//        cube.transform.position = bounds.center;
+//        cube.transform.localScale = bounds.size;
+//
+//#if UNITY_EDITOR
+//        Undo.RegisterCreatedObjectUndo(cube, "Add Bounds");
+//        Undo.SetTransformParent(cube.transform, transform, "Add Bounds");
+//#else
+//        cube.transform.parent = transform;
+//#endif
+//
+//        octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one * 100));
+//
+//        octree.AddBounds(bounds, 8);
+//    }
 
     public void OnDrawGizmosSelected() {
         if (octree != null) {
@@ -46,13 +46,13 @@ public class Vox : MonoBehaviour {
                     color = Color.red;
                 }
                 else {
-                    continue;
+//                    continue;
                     color = Color.white;
                 }
                 var bounds = node.GetBounds();
 
-                var min = bounds.min;
-                var max = bounds.max;
+                var min = transform.TransformPoint(bounds.min);
+                var max = transform.TransformPoint(bounds.max);
 
                 Gizmos.color = color;
 
