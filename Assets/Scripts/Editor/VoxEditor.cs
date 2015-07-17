@@ -5,7 +5,10 @@ using UnityEngine;
 
 [CustomEditor(typeof (Vox))]
 public class VoxEditor : Editor {
-//    private Dictionary<string, bool> foldouts = new Dictionary<string, bool>();
+    private Vector3[] normals;
+    private int[] triangles;
+    private Vector2[] uv;
+    private Vector3[] vertices;
 
     public override void OnInspectorGUI() {
         DrawDefaultInspector();
@@ -61,94 +64,50 @@ public class VoxEditor : Editor {
             }
         }
         else {
+            if (GUILayout.Button("Modify")) {
+                var topFwdLeft = vox.octree.GetRoot().GetChild(OctreeNode.ChildIndex.TopFwdLeft);
+
+                topFwdLeft.SubDivide();
+
+                topFwdLeft.RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
+            }
+            if (GUILayout.Button("Apply")) {
+                using (new MeshModification(sharedMesh, "Modify")) {
+                    sharedMesh.Clear();
+
+                    sharedMesh.vertices = vertices;
+                    sharedMesh.normals = normals;
+                    sharedMesh.triangles = triangles;
+                    sharedMesh.uv = uv;
+                }
+            }
+            if (GUILayout.Button("GetVertices")) {
+                var verts = new List<Vector3>();
+                var norms = new List<Vector3>();
+                var uvs = new List<Vector2>();
+                var indices = new List<int>();
+
+                foreach (var node in vox.octree.BreadthFirst().Where(node => node.IsLeafNode() && node.HasItem()))
+                {
+                    node.GetVertices(verts, indices, norms, uvs);
+                }
+
+                vertices = verts.ToArray();
+                normals = norms.ToArray();
+                uv = uvs.ToArray();
+                triangles = indices.ToArray();
+            }
             if (GUILayout.Button("Regenerate")) {
                 vox.octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one*7.5f));
 
-//                vox.octree.GetRoot().AddChild(new OctreeChildCoordinates(0, 1, 1).ToIndex());
-//                vox.octree.GetRoot().AddChild(new OctreeChildCoordinates(1, 1, 1).ToIndex())
-//                    .AddChild(new OctreeChildCoordinates(0, 1, 1).ToIndex())
-//                    .AddChild(new OctreeChildCoordinates(0, 1, 1).ToIndex());
-
-                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one), 5, 6);
-                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one * 0.5f), 6, 7);
-                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one * 0.7f), 7, 8);
+                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one), 5, 8);
+                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one*0.5f), 6, 8);
+                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one*0.7f), 7, 8);
 
                 vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
-                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft)
-                    .SetItem(4);
+                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
 
-//                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotBackLeft);
-//                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotFwdLeft);
-//                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.BotBackRight);
-//                vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
-
-                using (new MeshModification(sharedMesh, "Regenerate")) {
-                    var vertices = new List<Vector3>();
-                    var normals = new List<Vector3>();
-                    var uvs = new List<Vector2>();
-
-                    foreach (var node in vox.octree.BreadthFirst().Where(node => node.IsLeafNode() && node.HasItem())) {
-                        node.GetVertices(vertices, normals, uvs);
-                    }
-
-                    sharedMesh.Clear();
-
-                    var numSides = vertices.Count/4;
-
-                    var tris = new int[numSides*6];
-//                    var uvs = new Vector2[vertices.Count];
-
-                    for (var i = 0; i < numSides; i++) {
-                        var v1 = i*4;
-                        var v2 = v1 + 1;
-                        var v3 = v1 + 2;
-                        var v4 = v1 + 3;
-
-                        tris[i*6] = v1;
-                        tris[i*6 + 1] = v2;
-                        tris[i*6 + 2] = v3;
-
-                        tris[i*6 + 3] = v1;
-                        tris[i*6 + 4] = v3;
-                        tris[i*6 + 5] = v4;
-                    }
-
-                    sharedMesh.vertices = vertices.ToArray();
-                    sharedMesh.normals = normals.ToArray();
-                    sharedMesh.triangles = tris;
-                    sharedMesh.uv = uvs.ToArray();
-                }
-
-
-                foreach (var node in vox.octree.DepthFirst()) {
-                    if (!node.IsLeafNode()) {
-                        continue;
-                    }
-
-//                    var nodeBounds = node.GetBounds();
-//
-//                    var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-//
-//                    cube.transform.position = nodeBounds.center;
-//                    cube.transform.localScale = nodeBounds.size;
-//
-//                    Undo.RegisterCreatedObjectUndo(cube, "Harp darp");
-
-//                    DrawBounds(nodeBounds, node.IsLeafNode() ? Color.red : Color.white);
-
-                    //            var firstChildBounds = node.GetChildBounds(0);
-                    //
-                    //            DrawBounds(node.GetChildBounds(0), Color.red);
-                    //            DrawBounds(node.GetChildBounds(1), Color.green);
-                    //            DrawBounds(node.GetChildBounds(2), Color.blue);
-                    //            DrawBounds(node.GetChildBounds(3), Color.yellow);
-                }
-                //                using (new MeshModification(meshFilter.sharedMesh, "Regenerate")) {
-                //                    
-                ////                    var vertices = new Vector3[vox.width * vox.height * vox.depth * 24];
-                //
-                //                    
-                //                }
+                topFwdLeft.SetItem(4);
             }
         }
     }
@@ -194,9 +153,7 @@ public class VoxEditor : Editor {
     public void OnSceneGUI() {
         var vox = target as Vox;
 
-        if (vox == null) {
-            return;
-        }
+        if (vox == null) {}
 
 //        DrawBounds(new Bounds(Vector3.zero, Vector3.one));
 

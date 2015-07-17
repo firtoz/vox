@@ -205,14 +205,16 @@ public class OctreeNode<T> : OctreeNode {
 //        return SideState.Empty;
     }
 
-    public void GetVertices(List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs) {
+    public void GetVertices(List<Vector3> vertices, List<int> indices, List<Vector3> normals, List<Vector2> uvs) {
         foreach (var side in Sides) {
-            GetVertices(vertices, normals, uvs, side, _bounds, _nodeCoordinates);
+            GetVertices(vertices, indices, normals, uvs, side, _bounds, _nodeCoordinates);
         }
     }
 
-    private void GetVertices(ICollection<Vector3> vertices, ICollection<Vector3> normals, List<Vector2> uvs, NeighbourSide side, Bounds bounds, OctreeNodeCoordinates coords) {
+    private void GetVertices(ICollection<Vector3> vertices, List<int> indices, ICollection<Vector3> normals,
+        List<Vector2> uvs, NeighbourSide side, Bounds bounds, OctreeNodeCoordinates coords) {
         var sidestate = GetSideState(coords, side);
+
 
         switch (sidestate) {
             case SideState.Empty:
@@ -222,6 +224,16 @@ public class OctreeNode<T> : OctreeNode {
 
                 Vector3 n;
 
+                var vertexStartIndex = vertices.Count;
+
+                indices.Add(vertexStartIndex);
+                indices.Add(vertexStartIndex + 1);
+                indices.Add(vertexStartIndex + 2);
+
+                indices.Add(vertexStartIndex);
+                indices.Add(vertexStartIndex + 2);
+                indices.Add(vertexStartIndex + 3);
+
                 switch (side) {
                     case NeighbourSide.Above:
                         vertices.Add(new Vector3(min.x, max.y, min.z));
@@ -230,15 +242,11 @@ public class OctreeNode<T> : OctreeNode {
                         vertices.Add(new Vector3(max.x, max.y, min.z));
 
                         n = Vector3.up;
-                        //
-                        //                        uvs.Add(new Vector2(min.x, min.z));
-                        //                        uvs.Add(new Vector2(min.x, max.z));
-                        //                        uvs.Add(new Vector2(max.x, max.z));
-                        //                        uvs.Add(new Vector2(max.x, min.z));
-                        uvs.Add(Vector2.zero);
-                        uvs.Add(Vector2.up);
-                        uvs.Add(Vector2.one);
-                        uvs.Add(Vector2.right);
+
+                        uvs.Add(new Vector2(min.x, min.z));
+                        uvs.Add(new Vector2(min.x, max.z));
+                        uvs.Add(new Vector2(max.x, max.z));
+                        uvs.Add(new Vector2(max.x, min.z));
                         break;
                     case NeighbourSide.Below:
                         vertices.Add(new Vector3(min.x, min.y, max.z));
@@ -247,15 +255,11 @@ public class OctreeNode<T> : OctreeNode {
                         vertices.Add(new Vector3(max.x, min.y, max.z));
 
                         n = Vector3.down;
-                        //
-                        //                        uvs.Add(new Vector2(min.x, min.z));
-                        //                        uvs.Add(new Vector2(max.x, min.z));
-                        //                        uvs.Add(new Vector2(max.x, max.z));
-                        //                        uvs.Add(new Vector2(min.x, max.z));
-                        uvs.Add(Vector2.zero);
-                        uvs.Add(Vector2.up);
-                        uvs.Add(Vector2.one);
-                        uvs.Add(Vector2.right);
+
+                        uvs.Add(new Vector2(min.x, max.z));
+                        uvs.Add(new Vector2(min.x, min.z));
+                        uvs.Add(new Vector2(max.x, min.z));
+                        uvs.Add(new Vector2(max.x, max.z));
                         break;
                     case NeighbourSide.Right:
                         vertices.Add(new Vector3(min.x, min.y, max.z));
@@ -265,10 +269,10 @@ public class OctreeNode<T> : OctreeNode {
 
                         n = Vector3.left;
 
-                        uvs.Add(Vector2.zero);
-                        uvs.Add(Vector2.up);
-                        uvs.Add(Vector2.one);
-                        uvs.Add(Vector2.right);
+                        uvs.Add(new Vector2(max.z, min.y));
+                        uvs.Add(new Vector2(max.z, max.y));
+                        uvs.Add(new Vector2(min.z, max.y));
+                        uvs.Add(new Vector2(min.z, min.y));
                         break;
                     case NeighbourSide.Left:
                         vertices.Add(new Vector3(max.x, min.y, min.z));
@@ -279,10 +283,10 @@ public class OctreeNode<T> : OctreeNode {
 
                         n = Vector3.right;
 
-                        uvs.Add(Vector2.zero);
-                        uvs.Add(Vector2.up);
-                        uvs.Add(Vector2.one);
-                        uvs.Add(Vector2.right);
+                        uvs.Add(new Vector2(min.z, min.y));
+                        uvs.Add(new Vector2(min.z, max.y));
+                        uvs.Add(new Vector2(max.z, max.y));
+                        uvs.Add(new Vector2(max.z, min.y));
                         break;
                     case NeighbourSide.Back:
                         vertices.Add(new Vector3(max.x, min.y, max.z));
@@ -292,10 +296,10 @@ public class OctreeNode<T> : OctreeNode {
 
                         n = Vector3.forward;
 
-                        uvs.Add(Vector2.zero);
-                        uvs.Add(Vector2.up);
-                        uvs.Add(Vector2.one);
-                        uvs.Add(Vector2.right);
+                        uvs.Add(new Vector2(max.x, min.y));
+                        uvs.Add(new Vector2(max.x, max.y));
+                        uvs.Add(new Vector2(min.x, max.y));
+                        uvs.Add(new Vector2(min.x, min.y));
                         break;
                     case NeighbourSide.Forward:
                         vertices.Add(min);
@@ -305,10 +309,10 @@ public class OctreeNode<T> : OctreeNode {
 
                         n = Vector3.back;
 
-                        uvs.Add(Vector2.zero);
-                        uvs.Add(Vector2.up);
-                        uvs.Add(Vector2.one);
-                        uvs.Add(Vector2.right);
+                        uvs.Add(new Vector2(min.x, min.y));
+                        uvs.Add(new Vector2(min.x, max.y));
+                        uvs.Add(new Vector2(max.x, max.y));
+                        uvs.Add(new Vector2(max.x, min.y));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException("side", side, null);
@@ -347,7 +351,7 @@ public class OctreeNode<T> : OctreeNode {
                 }
 
                 foreach (var childCoord in childCoords) {
-                    GetVertices(vertices, normals, uvs, side,
+                    GetVertices(vertices, indices, normals, uvs, side,
                         GetChildBounds(bounds, childCoord.ToIndex()),
                         new OctreeNodeCoordinates(coords, childCoord));
                 }
@@ -682,6 +686,20 @@ public class OctreeNode<T> : OctreeNode {
 
     public ChildIndex GetIndexInParent() {
         return _indexInParent;
+    }
+
+    public void SubDivide() {
+        AssertNotDeleted();
+
+        if (!IsLeafNode()) {
+            return;
+        }
+
+        for (var i = 0; i < 8; i++) {
+            AddChild((ChildIndex) i).SetItem(_item);
+        }
+
+        RemoveItem();
     }
 
     private enum SideState {
