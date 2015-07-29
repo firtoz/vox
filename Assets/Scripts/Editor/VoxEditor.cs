@@ -5,10 +5,10 @@ using UnityEngine;
 
 [CustomEditor(typeof (Vox))]
 public class VoxEditor : Editor {
-    private Vector3[] normals;
-    private int[] triangles;
-    private Vector2[] uv;
-    private Vector3[] vertices;
+//    private Vector3[] normals;
+//    private int[] triangles;
+//    private Vector2[] uv;
+//    private Vector3[] vertices;
 
     public override void OnInspectorGUI() {
         DrawDefaultInspector();
@@ -67,36 +67,35 @@ public class VoxEditor : Editor {
             if (GUILayout.Button("Modify")) {
                 var topFwdLeft = vox.octree.GetRoot().GetChild(OctreeNode.ChildIndex.TopFwdLeft);
 
+                topFwdLeft.SetItem(4);
                 topFwdLeft.SubDivide();
 
                 topFwdLeft.RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
+
+                vox.octree.ProcessDrawQueue();
             }
             if (GUILayout.Button("Apply")) {
                 using (new MeshModification(sharedMesh, "Modify")) {
-                    sharedMesh.Clear();
 
-                    sharedMesh.vertices = vertices;
-                    sharedMesh.normals = normals;
-                    sharedMesh.triangles = triangles;
-                    sharedMesh.uv = uv;
+                    vox.octree.ApplyToMesh(sharedMesh);
                 }
             }
-            if (GUILayout.Button("GetVertices")) {
-                var verts = new List<Vector3>();
-                var norms = new List<Vector3>();
-                var uvs = new List<Vector2>();
-                var indices = new List<int>();
-
-                foreach (var node in vox.octree.BreadthFirst().Where(node => node.IsLeafNode() && node.HasItem()))
-                {
-                    node.GetVertices(verts, indices, norms, uvs);
-                }
-
-                vertices = verts.ToArray();
-                normals = norms.ToArray();
-                uv = uvs.ToArray();
-                triangles = indices.ToArray();
-            }
+//            if (GUILayout.Button("CreateFaces")) {
+////                var verts = new List<Vector3>();
+////                var norms = new List<Vector3>();
+////                var uvs = new List<Vector2>();
+////                var indices = new List<int>();
+////
+////                foreach (var node in vox.octree.BreadthFirst().Where(node => node.IsLeafNode() && node.HasItem()))
+////                {
+////                    node.CreateFaces(verts, indices, norms, uvs);
+////                }
+//
+////                vertices = verts.ToArray();
+////                normals = norms.ToArray();
+////                uv = uvs.ToArray();
+////                triangles = indices.ToArray();
+//            }
             if (GUILayout.Button("Regenerate")) {
                 vox.octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one*7.5f));
 
@@ -104,10 +103,12 @@ public class VoxEditor : Editor {
                 vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one*0.5f), 6, 8);
                 vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one*0.7f), 7, 8);
 
-                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
-                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
+//                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
+//                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
+//                topFwdLeft.SetItem(4);
 
-                topFwdLeft.SetItem(4);
+//                topFwdLeft.SubDivide();
+                vox.octree.ProcessDrawQueue();
             }
         }
     }
