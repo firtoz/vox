@@ -36,43 +36,43 @@ public class Vox : MonoBehaviour {
 //        octree.AddBounds(bounds, 8);
 //    }
 
-//    public void OnDrawGizmosSelected() {
-//        if (octree != null) {
-//            foreach (var node in octree.DepthFirst()) {
-//                Color color;
-//
-//                if (node.IsLeafNode()) {
-//
-//                    color = Color.red;
-//                }
-//                else {
-////                    continue;
-//                    color = Color.white;
-//                }
-//                var bounds = node.GetBounds();
-//
-//                var min = transform.TransformPoint(bounds.min);
-//                var max = transform.TransformPoint(bounds.max);
-//
-//                Gizmos.color = color;
-//
-//                Gizmos.DrawLine(min, new Vector3(min.x, min.y, max.z));
-//                Gizmos.DrawLine(min, new Vector3(min.x, max.y, min.z));
-//                Gizmos.DrawLine(min, new Vector3(max.x, min.y, min.z));
-//
-//                Gizmos.DrawLine(new Vector3(max.x, min.y, min.z), new Vector3(max.x, min.y, max.z));
-//
-//                Gizmos.DrawLine(new Vector3(max.x, min.y, max.z), new Vector3(min.x, min.y, max.z));
-//                Gizmos.DrawLine(new Vector3(max.x, max.y, min.z), new Vector3(min.x, max.y, min.z));
-//                Gizmos.DrawLine(new Vector3(max.x, max.y, min.z), new Vector3(max.x, min.y, min.z));
-//
-//                Gizmos.DrawLine(max, new Vector3(max.x, max.y, min.z));
-//                Gizmos.DrawLine(max, new Vector3(max.x, min.y, max.z));
-//                Gizmos.DrawLine(max, new Vector3(min.x, max.y, max.z));
-//
-//                Gizmos.DrawLine(new Vector3(min.x, min.y, max.z), new Vector3(min.x, max.y, max.z));
-//                Gizmos.DrawLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z));
-//            }
-//        }
-//    }
+    public void OnDrawGizmosSelected() {
+        if (octree != null) {
+            foreach (var node in octree.DepthFirst()) {
+                Color color;
+
+                if (node.IsLeafNode()) {
+
+                    color = Color.red;
+                }
+                else {
+//                    continue;
+                    color = Color.white;
+                }
+                var bounds = node.GetBounds();
+
+                var min = transform.TransformPoint(bounds.min);
+                var max = transform.TransformPoint(bounds.max);
+
+                Gizmos.color = color;
+
+                Gizmos.DrawLine(min, new Vector3(min.x, min.y, max.z));
+                Gizmos.DrawLine(min, new Vector3(min.x, max.y, min.z));
+                Gizmos.DrawLine(min, new Vector3(max.x, min.y, min.z));
+
+                Gizmos.DrawLine(new Vector3(max.x, min.y, min.z), new Vector3(max.x, min.y, max.z));
+
+                Gizmos.DrawLine(new Vector3(max.x, min.y, max.z), new Vector3(min.x, min.y, max.z));
+                Gizmos.DrawLine(new Vector3(max.x, max.y, min.z), new Vector3(min.x, max.y, min.z));
+                Gizmos.DrawLine(new Vector3(max.x, max.y, min.z), new Vector3(max.x, min.y, min.z));
+
+                Gizmos.DrawLine(max, new Vector3(max.x, max.y, min.z));
+                Gizmos.DrawLine(max, new Vector3(max.x, min.y, max.z));
+                Gizmos.DrawLine(max, new Vector3(min.x, max.y, max.z));
+
+                Gizmos.DrawLine(new Vector3(min.x, min.y, max.z), new Vector3(min.x, max.y, max.z));
+                Gizmos.DrawLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z));
+            }
+        }
+    }
 }

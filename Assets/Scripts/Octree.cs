@@ -310,4 +310,347 @@ if(rems.length>0) {
         sharedMesh.triangles = _indices.ToArray();
         sharedMesh.uv = _uvs.ToArray();
     }
+
+    class RayIntersection {
+        private byte _a;
+        private Ray _ray;
+
+        public RayIntersection(Octree<T> octree, Ray r) {
+            _ray = r;
+            _a = 0;
+
+            var rd = r.direction;
+            var ro = r.origin;
+
+            var rootBounds = octree.GetRoot().GetBounds();
+            var rootBoundsSize = rootBounds.size;
+
+            if (rd.x < 0.0f) {
+                ro.x = rootBoundsSize.x - ro.x;
+                rd.x = -rd.x;
+                _a |= 4;
+            }
+
+            if (rd.y < 0.0f) {
+                ro.y = rootBoundsSize.y - ro.y;
+                rd.y = -rd.y;
+                _a |= 2;
+            }
+
+            if (rd.z < 0.0f) {
+                ro.z = rootBoundsSize.z - ro.z;
+                rd.z = -rd.z;
+                _a |= 1;
+            }
+
+            var ocMin = rootBounds.min;
+            var ocMax = rootBounds.max;
+
+            float tx0, tx1, ty0, ty1, tz0, tz1;
+
+            if (!Mathf.Approximately(rd.x, 0.0f)) {
+                tx0 = (ocMin.x - ro.x)/rd.x;
+                tx1 = (ocMax.x - ro.x)/rd.x;
+            } else {
+                tx0 = 99999.9f;
+                tx1 = 99999.9f;
+            }
+
+            if (!Mathf.Approximately(rd.y, 0.0f)) {
+                ty0 = (ocMin.y - ro.y)/rd.y;
+                ty1 = (ocMin.y - ro.y)/rd.y;
+            }
+            else
+            {
+                ty0 = 99999.9f;
+                ty1 = 99999.9f;
+            }
+
+            if (!Mathf.Approximately(rd.z, 0.0f)) {
+                tz0 = (ocMin.z - ro.z)/rd.z;
+                tz1 = (ocMin.z - ro.z)/rd.z;
+            }
+            else
+            {
+                tz0 = 99999.9f;
+                tz1 = 99999.9f;
+            }
+
+            if (Mathf.Max(tx0, ty0, tz0) < Mathf.Min(tx1, ty1, tz1))
+            {
+                proc_subtree(tx0, ty0, tz0, tx1, ty1, tz1, octree.GetRoot());
+            }
+        }
+        enum EntryPlane
+        {
+            XY,
+            XZ,
+            YZ
+        };
+
+        private EntryPlane GetEntryPlane(float tx0, float ty0, float tz0)
+        {
+
+            if (tx0 > ty0)
+            {
+                if (tx0 > tz0)
+                {
+                    //x greatest
+                    return EntryPlane.YZ;
+                }
+            }
+            else if (ty0 > tz0)
+            {
+                //y greatest
+                return EntryPlane.XZ;
+            }
+
+            //z greatest
+
+            return EntryPlane.XY;
+        }
+
+
+
+        int first_node(float tx0, float ty0, float tz0, float txm, float tym, float tzm)
+        {
+            EntryPlane entryPlane = GetEntryPlane(tx0, ty0, tz0);
+
+            int firstNode = 0;
+
+            switch (entryPlane)
+            {
+                case EntryPlane.XY:
+                    if (tzm < tz0)
+                    {
+                        firstNode |= 1;
+                    }
+                    if (tym < tz0)
+                    {
+                        firstNode |= 2;
+                    }
+                    break;
+                case EntryPlane.XZ:
+                    if (txm < tz0)
+                    {
+                        firstNode |= 1;
+                    }
+                    if (tzm < ty0)
+                    {
+                        firstNode |= 4;
+                    }
+                    break;
+                case EntryPlane.YZ:
+                    if (tym < tx0)
+                    {
+                        firstNode |= 2;
+                    }
+                    if (tzm < tx0)
+                    {
+                        firstNode |= 4;
+                    }
+                    break;
+            }
+
+            return firstNode;
+        }
+
+        int new_node(double x, int xi, double y, int yi, double z, int zi)
+        {
+            if (x < y)
+            {
+                if (x < z)
+                {
+                    return xi;
+                }
+            }
+            else if (y < z)
+            {
+                return yi;
+            }
+
+            return zi;
+        }
+
+        private void proc_subtree(float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, OctreeNode<T> node) {
+            float txm, tym, tzm;
+
+            int currNode;
+
+            if (tx1 < 0.0 || ty1 < 0.0 || tz1 < 0.0) {
+                return;
+            }
+
+            if (node.IsLeafNode() && node.HasItem()) {
+                ProcessTerminal(node, tx0, ty0, tz0);
+                return;
+            }
+
+            txm = 0.5f*(tx0 + tx1);
+            tym = 0.5f*(ty0 + ty1);
+            tzm = 0.5f*(tz0 + tz1);
+
+            
+        }
+
+        private void ProcessTerminal(OctreeNode<T> node, float tx0, float ty0, float tz0) {
+            float entryDistance = Mathf.Max(tx0, ty0, tz0);
+
+            Debug.DrawLine(_ray.origin, _ray.GetPoint(entryDistance));
+        }
+    }
+
+
+    /*
+    unsigned char a;
+
+    void ray_parameter(octree *oct, ray r) {
+        a = 0;
+
+        if(r.dx < 0.0) {
+            r.ox = oct->sizeX - r.ox;
+            r.dx = -r.dx;
+            a |= 4;
+        }
+
+        if(r.dy < 0.0) {
+            r.oy = oc->sizeY - r.oy;
+            r.dy = -r.dy;
+            a |= 2;
+        }
+
+        if(r.dz < 0.0) {
+            r.oz = oct->sizeZ - r.oz;
+            r.dz = -r.dz;
+            a |= 1;
+        }
+
+        tx0 = (oct->xmin - r.ox)/r.dx;
+        tx1 = (oct->xmax - r.ox)/r.dx;
+        
+        ty0 = (oct->ymin - r.oy)/r.dy;
+        ty1 = (oct->ymax - r.oy)/r.dy;
+        
+        tz0 = (oct->zmin - r.oz)/r.dz;
+        tz1 = (oct->zmax - r.oz)/r.dz;
+
+        if(Max(tz0, ty0, tz0) < Min(tx1, ty1, tz1)) {
+            proc_subtree(tz0, ty0, tz0, tx1, ty1, z1, oct->root);
+        }
+    }
+    
+    float Max(a, b, c) {
+        if(a > b) {
+            if(a > c) {
+                //a > b and c 
+                return a;
+            }
+            //a > b but not > c
+            //so c is greater
+        } else if(b > c) {
+            // b > a and c
+            return b;
+        }
+
+        return c;
+    }
+
+    float Min(a, b, c) {
+        if(a < b) {
+            if(a < c) {
+                //a < b and c 
+                return a;
+            }
+            //a < b but not < c
+            //so c is greater
+        } else if(b < c) {
+            // b < a and c
+            return b;
+        }
+
+        return c;
+    }
+    */
+
+    /*
+    void proc_subtree ( real tx0, real ty0, real tz0,
+                        real tx1, real ty1, real tz1,
+                        node *n ) {
+        real txm, tym, tzm;
+
+        int currNode;
+
+        if(tx1 < 0.0 || ty1 < 0.0 || tz1 < 0.0) {
+            return;
+        }
+
+        if(n->type == TERMINAL) {
+            proc_terminal(n);
+            return;
+        }
+
+        txm = 0.5 * (tx0 + tx1);
+        tym = 0.5 * (ty0 + ty1);
+        tzm = 0.5 * (tz0 + tz1);
+
+        currNode = first_node(tx0, ty0, tz0, txm, tym, tzm);
+
+        while( currNode < 8 ) {
+            switch(currNode) {
+                //0= none
+                //1 = only z
+                //2 = only y
+                //3 = 2 + 1 = y and z
+                //4 = only x
+                //5 = 4 + 1 = x and z
+                //6 = 4 + 2 = x and y
+                //7 = 4 + 2 + 1 = x and y and z
+
+                //x sets 4, y set 2, z sets 1
+                //except if the bit is already set, then it can't set it again so 8
+                case 0: 
+                    //0= none
+                    proc_subtree(tx0, ty0, tz0, txm, tym, tzm, n->son[a]);
+                    currNode = new_node(txm, 4, tym, 2, tzm, 1);
+                    break;
+                case 1:
+                    //1 = only z
+                    proc_subtree(tx0, ty0, tzm, txm, tym, tz1, n->son[1^a]);
+                    currNode = new_node(txm, 5, tym, 3, tz1, 8);
+                    break;
+                case 2:
+                    //2 = only y
+                    proc_subtree(tx0, tym, tz0, txm, ty1, tzm, n->son[2^a]);
+                    currNode = new_node(txm, 6, ty1, 8, tzm, 3);
+                    break;
+                case 3:
+                    //3 = 2 + 1 = y and z
+                    proc_subtree(tx0, tym, tzm, txm, ty1, tz1, n->son[3^a]);
+                    currNode = new_node(txm, 7, ty1, 8, tz1, 8);
+                    break;
+                case 4:
+                    //4 = only x
+                    proc_subtree(txm, ty0, tz0, tx1, tym, tzm, n->son[4^a]);
+                    currNode = new_node(tx1, 8, tym, 6, tzm, 5);
+                    break;
+                case 5:
+                    //5 = 4 + 1 = x and z
+                    proc_subtree(txm, ty0, tzm, tx1, tym, tz1, n->son[5^a]);
+                    currNode = new_node(tx1, 8, tym, 7, tz1, 8);
+                    break;
+                case 6:
+                    //6 = 4 + 2 = x and y
+                    proc_subtree(txm, tym, tz0, tx1, ty1, tzM, n->son[6^a]);
+                    currNode = new_node(tx1, 8, ty1, 8, tzm, 7);
+                    break;
+                case 7:
+                    //7 = 4 + 2 + 1 = x and y and z
+                    proc_subtree(txm, tym, tzm, tx1, ty1, tz1, n->son[7^a]);
+                    currNode = 8;
+                    break;
+            }
+        } ;
+    }
+
+    */
 }
