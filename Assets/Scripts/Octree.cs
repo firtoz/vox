@@ -330,7 +330,6 @@ if(rems.length>0) {
 //            Debug.DrawLine(transform.TransformPoint(ro), transform.TransformPoint(ro) + transform.TransformDirection(rd) * 10, Color.yellow);
 
             var rootBounds = octree.GetRoot().GetBounds();
-            var rootBoundsSize = rootBounds.size;
 
             var rox = ro.x;
             var roy = ro.y;
@@ -566,14 +565,6 @@ if(rems.length>0) {
             {
                 var childIndex = (OctreeNode.ChildIndex)(currNode ^ _a);
 
-                if (currNode < 8)
-                {
-//                    Debug.Log(currNode ^ _a);
-//                    var bounds = node.GetChildBounds(childIndex);
-//                    DrawBounds(bounds);
-//                    return;
-                }
-
                 switch (currNode) {
                     //0= none
                     //1 = only z
@@ -657,12 +648,12 @@ if(rems.length>0) {
 
         private void ProcessTerminal(OctreeNode<T> node, float tx0, float ty0, float tz0) {
             float entryDistance = Mathf.Max(tx0, ty0, tz0);
-//            Debug.DrawLine(_ray.origin, _ray.direction * 100.0f);
 
-            Debug.DrawLine(_ray.GetPoint(entryDistance) - Vector3.up,
-                _ray.GetPoint(entryDistance) + Vector3.up, Color.green, 0, false);
-            Debug.DrawLine(_ray.GetPoint(entryDistance) - Vector3.left,
-                _ray.GetPoint(entryDistance) + Vector3.left, Color.green, 0, false);
+            float size = 0.1f;
+            Debug.DrawLine(_ray.GetPoint(entryDistance) - Vector3.up * size,
+                _ray.GetPoint(entryDistance) + Vector3.up * size, Color.green, 0, false);
+            Debug.DrawLine(_ray.GetPoint(entryDistance) - Vector3.left * size,
+                _ray.GetPoint(entryDistance) + Vector3.left * size, Color.green, 0, false);
 
             var bounds = node.GetBounds();
             DrawBounds(bounds, Color.red);

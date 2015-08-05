@@ -447,11 +447,12 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     public Bounds GetChildBounds(ChildIndex childIndex) {
+        AssertNotDeleted();
+
         return GetChildBounds(_bounds, childIndex);
     }
 
-    public Bounds GetChildBounds(Bounds originalBounds, ChildIndex childIndex) {
-        AssertNotDeleted();
+    public static Bounds GetChildBounds(Bounds originalBounds, ChildIndex childIndex) {
         Vector3 childDirection;
 
         switch (childIndex) {
@@ -483,7 +484,7 @@ public class OctreeNode<T> : OctreeNode {
                 throw new ArgumentOutOfRangeException();
         }
 
-        var childSize = _bounds.extents;
+        var childSize = originalBounds.extents;
 
         var childBounds = new Bounds(originalBounds.center - Vector3.Scale(childSize, childDirection * 0.5f), childSize);
 
