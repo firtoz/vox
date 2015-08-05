@@ -177,11 +177,9 @@ if(rems.length>0) {
 }
     */
 
-    
 
     public void NodeRemoved(OctreeNode<T> octreeNode) {
-        if (_nodeFaces.ContainsKey(octreeNode))
-        {
+        if (_nodeFaces.ContainsKey(octreeNode)) {
             RemoveNodeInternal(octreeNode);
         }
 
@@ -264,7 +262,7 @@ if(rems.length>0) {
 
                 _allFaces[firstRemIndex] = currentFace;
 
-                var vertexIndex = firstRemIndex*4;
+                var vertexIndex = firstRemIndex * 4;
 
                 for (var j = 0; j < 4; j++) {
                     _vertices[vertexIndex + j] = currentFace.vertices[j];
@@ -293,13 +291,13 @@ if(rems.length>0) {
     private void PopFace(int index) {
         _allFaces.RemoveAt(index);
 
-        var vertexIndex = index*4;
+        var vertexIndex = index * 4;
 
         _vertices.RemoveRange(vertexIndex, 4);
         _uvs.RemoveRange(vertexIndex, 4);
         _normals.RemoveRange(vertexIndex, 4);
 
-        _indices.RemoveRange(index*6, 6);
+        _indices.RemoveRange(index * 6, 6);
     }
 
     public void ApplyToMesh(Mesh sharedMesh) {
@@ -311,96 +309,176 @@ if(rems.length>0) {
         sharedMesh.uv = _uvs.ToArray();
     }
 
-    class RayIntersection {
-        private byte _a;
-        private Ray _ray;
+    public void Intersect(Transform transform, Ray ray) {
+        // ReSharper disable once ObjectCreationAsStatement
+        new RayIntersection(transform, this, ray);
+    }
 
-        public RayIntersection(Octree<T> octree, Ray r) {
+    private class RayIntersection {
+        private readonly byte _a;
+        private Ray _ray;
+        private readonly Transform _transform;
+
+        public RayIntersection(Transform transform, Octree<T> octree, Ray r) {
+            _transform = transform;
             _ray = r;
             _a = 0;
 
-            var rd = r.direction;
-            var ro = r.origin;
+            var ro = transform.InverseTransformPoint(r.origin);
+            var rd = transform.InverseTransformDirection(r.direction);
+
+//            Debug.DrawLine(transform.TransformPoint(ro), transform.TransformPoint(ro) + transform.TransformDirection(rd) * 10, Color.yellow);
 
             var rootBounds = octree.GetRoot().GetBounds();
             var rootBoundsSize = rootBounds.size;
 
-            if (rd.x < 0.0f) {
-                ro.x = rootBoundsSize.x - ro.x;
-                rd.x = -rd.x;
-                _a |= 4;
-            }
+            var rox = ro.x;
+            var roy = ro.y;
+            var roz = ro.z;
 
-            if (rd.y < 0.0f) {
-                ro.y = rootBoundsSize.y - ro.y;
-                rd.y = -rd.y;
-                _a |= 2;
-            }
-
-            if (rd.z < 0.0f) {
-                ro.z = rootBoundsSize.z - ro.z;
-                rd.z = -rd.z;
-                _a |= 1;
-            }
+            var rdx = rd.x;
+            var rdy = rd.y;
+            var rdz = rd.z;
 
             var ocMin = rootBounds.min;
             var ocMax = rootBounds.max;
 
+            var rootCenter = rootBounds.center;
+            if (rdx < 0.0f) {
+                rox = rootCenter.x - rox;
+                rdx = -rdx;
+                _a |= 1;
+            }
+
+            if (rdy < 0.0f) {
+                roy = rootCenter.y - roy;
+                rdy = -rdy;
+                _a |= 2;
+            }
+
+            if (rdz < 0.0f) {
+                roz = rootCenter.z - roz;
+                rdz = -rdz;
+                _a |= 4;
+            }
+
+//            Debug.DrawLine(transform.TransformPoint(ro), transform.TransformPoint(ro) + transform.TransformDirection(rd) * 10, Color.red);
+
+
+            float xMin = Mathf.Min(ocMin.x, ocMax.x);
+            float yMin = Mathf.Min(ocMin.y, ocMax.y);
+            float zMin = Mathf.Min(ocMin.z, ocMax.z);
+
+            float xMax = Mathf.Max(ocMin.x, ocMax.x);
+            float yMax = Mathf.Max(ocMin.y, ocMax.y);
+            float zMax = Mathf.Max(ocMin.z, ocMax.z);
+
+            Debug.DrawLine(ocMin, ocMax, Color.blue);
+
             float tx0, tx1, ty0, ty1, tz0, tz1;
 
-            if (!Mathf.Approximately(rd.x, 0.0f)) {
-                tx0 = (ocMin.x - ro.x)/rd.x;
-                tx1 = (ocMax.x - ro.x)/rd.x;
+            if (!Mathf.Approximately(rdx, 0.0f)) {
+                tx0 = (xMin - rox) / rdx;
+                tx1 = (xMax - rox) / rdx;
             } else {
                 tx0 = 99999.9f;
                 tx1 = 99999.9f;
             }
 
-            if (!Mathf.Approximately(rd.y, 0.0f)) {
-                ty0 = (ocMin.y - ro.y)/rd.y;
-                ty1 = (ocMin.y - ro.y)/rd.y;
-            }
-            else
-            {
+            if (!Mathf.Approximately(rdy, 0.0f)) {
+                ty0 = (yMin - roy) / rdy;
+                ty1 = (yMax - roy) / rdy;
+            } else {
                 ty0 = 99999.9f;
                 ty1 = 99999.9f;
             }
 
-            if (!Mathf.Approximately(rd.z, 0.0f)) {
-                tz0 = (ocMin.z - ro.z)/rd.z;
-                tz1 = (ocMin.z - ro.z)/rd.z;
-            }
-            else
-            {
+            if (!Mathf.Approximately(rdz, 0.0f)) {
+                tz0 = (zMin - roz) / rdz;
+                tz1 = (zMax - roz) / rdz;
+            } else {
                 tz0 = 99999.9f;
                 tz1 = 99999.9f;
             }
 
+//            if ((_a & 4) != 0) {
+//                tx0 *= -1.0f;
+//                tx1 *= -1.0f;
+//            }
+//
+//            if ((_a & 2) != 0) {
+//                ty0 *= -1.0f;
+//                ty1 *= -1.0f;
+//            }
+//
+//            if ((_a & 1) != 0) {
+//                tz0 *= -1.0f;
+//                tz1 *= -1.0f;
+//            }
+
+            var max0 = Mathf.Max(tx0, ty0, tz0);
+            var min1 = Mathf.Min(tx1, ty1, tz1);
+
+//            if (Mathf.Approximately(max0, tx0) && (_a & 4) != 0) {
+//                max0 = -max0;
+//            } else if (Mathf.Approximately(max0, ty0) && (_a & 2) != 0) {
+//                max0 = -max0;
+//            } else if (Mathf.Approximately(max0, tz0) && (_a & 1) != 0) {
+//                max0 = -max0;
+//            }
+//
+//            if (Mathf.Approximately(min1, tx1) && (_a & 4) != 0) {
+//                min1 = -min1;
+//            } else if (Mathf.Approximately(min1, ty1) && (_a & 2) != 0) {
+//                min1 = -min1;
+//            } else if (Mathf.Approximately(min1, tz1) && (_a & 1) != 0) {
+//                min1 = -min1;
+//            }
+
+//            Debug.DrawLine(_ray.origin, _ray.GetPoint(max0));
+            var a = max0;//Mathf.Max(tx0, ty0, tz0);
+            var b = min1;//Mathf.Min(tx1, ty1, tz1);
+
+//            _ray = new Ray(transform.TransformPoint(new Vector3(rox, roy, roz)), transform.TransformDirection(new Vector3(rdx, rdy, rdz)));
+
+
+            //            rox2 = rootBoundsSize.x - rox;
+            //            rox = rootBoundsSize.x-rox
+            //            rdx *= -1;
+
+            //            tx0 = (xMin - rox) / rdx;
+            //            tx1 = (xMax - rox) / rdx;
+
+            if (a < b) {
+//                Debug.DrawLine(_ray.GetPoint(a) + Vector3.up, _ray.GetPoint(a) - Vector3.up, Color.red, 0, false);
+//                Debug.DrawLine(_ray.GetPoint(a) + Vector3.right, _ray.GetPoint(a) - Vector3.right, Color.red, 0, false);
+//
+//                Debug.DrawLine(_ray.GetPoint(b) + Vector3.up, _ray.GetPoint(b) - Vector3.up, Color.red, 0, false);
+//                Debug.DrawLine(_ray.GetPoint(b) + Vector3.right, _ray.GetPoint(b) - Vector3.right, Color.red, 0, false);
+            }
+
+
             if (Mathf.Max(tx0, ty0, tz0) < Mathf.Min(tx1, ty1, tz1))
             {
+                Debug.DrawLine(_ray.origin, _ray.GetPoint(Mathf.Max(tx0, ty0, tz0)), Color.red, 0, false);
+//                Debug.DrawLine(_ray.GetPoint(Mathf.Max(tx0, ty0, tz0)), _ray.GetPoint(Mathf.Min(tx1, ty1, tz1)), Color.green, 0, false);
                 proc_subtree(tx0, ty0, tz0, tx1, ty1, tz1, octree.GetRoot());
             }
         }
-        enum EntryPlane
-        {
+
+        private enum EntryPlane {
             XY,
             XZ,
             YZ
         };
 
-        private EntryPlane GetEntryPlane(float tx0, float ty0, float tz0)
-        {
-
-            if (tx0 > ty0)
-            {
-                if (tx0 > tz0)
-                {
+        private EntryPlane GetEntryPlane(float tx0, float ty0, float tz0) {
+            if (tx0 > ty0) {
+                if (tx0 > tz0) {
                     //x greatest
                     return EntryPlane.YZ;
                 }
-            }
-            else if (ty0 > tz0)
-            {
+            } else if (ty0 > tz0) {
                 //y greatest
                 return EntryPlane.XZ;
             }
@@ -411,42 +489,33 @@ if(rems.length>0) {
         }
 
 
-
-        int first_node(float tx0, float ty0, float tz0, float txm, float tym, float tzm)
-        {
+        private int first_node(float tx0, float ty0, float tz0, float txm, float tym, float tzm) {
             EntryPlane entryPlane = GetEntryPlane(tx0, ty0, tz0);
 
             int firstNode = 0;
 
-            switch (entryPlane)
-            {
+            switch (entryPlane) {
                 case EntryPlane.XY:
-                    if (tzm < tz0)
-                    {
+                    if (txm < tz0) {
                         firstNode |= 1;
                     }
-                    if (tym < tz0)
-                    {
+                    if (tym < tz0) {
                         firstNode |= 2;
                     }
                     break;
                 case EntryPlane.XZ:
-                    if (txm < tz0)
-                    {
+                    if (txm < ty0) {
                         firstNode |= 1;
                     }
-                    if (tzm < ty0)
-                    {
+                    if (tzm < ty0) {
                         firstNode |= 4;
                     }
                     break;
                 case EntryPlane.YZ:
-                    if (tym < tx0)
-                    {
+                    if (tym < tx0) {
                         firstNode |= 2;
                     }
-                    if (tzm < tx0)
-                    {
+                    if (tzm < tx0) {
                         firstNode |= 4;
                     }
                     break;
@@ -455,145 +524,156 @@ if(rems.length>0) {
             return firstNode;
         }
 
-        int new_node(double x, int xi, double y, int yi, double z, int zi)
-        {
-            if (x < y)
-            {
-                if (x < z)
-                {
+        private int new_node(double x, int xi, double y, int yi, double z, int zi) {
+            if (x < y) {
+                if (x < z) {
                     return xi;
                 }
-            }
-            else if (y < z)
-            {
+            } else if (y < z) {
                 return yi;
             }
 
             return zi;
         }
 
-        private void proc_subtree(float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, OctreeNode<T> node) {
-            float txm, tym, tzm;
+        private void DrawLocalLine(Vector3 a, Vector3 b)
+        {
+            Debug.DrawLine(_transform.TransformPoint(a), _transform.TransformPoint(b), Color.white, 0, false);
+        }
 
-            int currNode;
+        private void proc_subtree(float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, OctreeNode<T> node) {
+            if (node == null) {
+                return;
+            }
+
+            if (node.IsLeafNode() && node.HasItem())
+            {
+                ProcessTerminal(node, tx0, ty0, tz0);
+                return;
+            }
 
             if (tx1 < 0.0 || ty1 < 0.0 || tz1 < 0.0) {
                 return;
             }
 
-            if (node.IsLeafNode() && node.HasItem()) {
-                ProcessTerminal(node, tx0, ty0, tz0);
-                return;
+            var txm = 0.5f * (tx0 + tx1);
+            var tym = 0.5f * (ty0 + ty1);
+            var tzm = 0.5f * (tz0 + tz1);
+
+            var currNode = first_node(tx0, ty0, tz0, txm, tym, tzm);
+
+            while (currNode < 8)
+            {
+                var childIndex = (OctreeNode.ChildIndex)(currNode ^ _a);
+
+                if (currNode < 8)
+                {
+//                    Debug.Log(currNode ^ _a);
+//                    var bounds = node.GetChildBounds(childIndex);
+//                    DrawBounds(bounds);
+//                    return;
+                }
+
+                switch (currNode) {
+                    //0= none
+                    //1 = only z
+                    //2 = only y
+                    //3 = 2 + 1 = y and z
+                    //4 = only x
+                    //5 = 4 + 1 = x and z
+                    //6 = 4 + 2 = x and y
+                    //7 = 4 + 2 + 1 = x and y and z
+                    //x sets 4, y set 2, z sets 1
+                    //except if the bit is already set, then it can't set it again so 8
+                    case 0:
+                        //0= none
+                        proc_subtree(tx0, ty0, tz0, txm, tym, tzm, node.GetChild(childIndex));
+                        currNode = new_node(txm, 1, tym, 2, tzm, 4);
+                        break;
+                    case 1:
+                        //1 = only x
+                        proc_subtree(txm, ty0, tz0, tx1, tym, tzm, node.GetChild(childIndex));
+                        currNode = new_node(tx1, 8, tym, 3, tzm, 5);
+                        break;
+                    case 2:
+                        //2 = only y
+                        proc_subtree(tx0, tym, tz0, txm, ty1, tzm, node.GetChild(childIndex));
+                        currNode = new_node(txm, 3, ty1, 8, tzm, 6);
+                        break;
+                    case 3:
+                        //3 = 2 + 1 = y and z
+                        proc_subtree(txm, tym, tz0, tx1, ty1, tzm, node.GetChild(childIndex));
+                        currNode = new_node(tx1, 8, ty1, 8, tzm, 7);
+                        break;
+                    case 4:
+                        //4 = only x
+                        proc_subtree(tx0, ty0, tzm, txm, tym, tz1, node.GetChild(childIndex));
+                        currNode = new_node(txm, 5, tym, 6, tz1, 8);
+                        break;
+                    case 5:
+                        //5 = 4 + 1 = x and z
+                        proc_subtree(txm, ty0, tzm, tx1, tym, tz1, node.GetChild(childIndex));
+                        currNode = new_node(tx1, 8, tym, 7, tz1, 8);
+                        break;
+                    case 6:
+                        //6 = 4 + 2 = x and y
+                        proc_subtree(tx0, tym, tzm, txm, ty1, tz1, node.GetChild(childIndex));
+                        currNode = new_node(txm, 7, ty1, 8, tz1, 8);
+                        break;
+                    case 7:
+                        //7 = 4 + 2 + 1 = x and y and z
+                        proc_subtree(txm, tym, tzm, tx1, ty1, tz1, node.GetChild(childIndex));
+                        currNode = 8;
+                        break;
+                }
             }
+        }
 
-            txm = 0.5f*(tx0 + tx1);
-            tym = 0.5f*(ty0 + ty1);
-            tzm = 0.5f*(tz0 + tz1);
+        private void DrawBounds(Bounds bounds) {
+            DrawBounds(bounds, Color.white);
+        }
 
-            
+        private void DrawBounds(Bounds bounds, Color color) {
+            var min = bounds.min;
+            var max = bounds.max;
+
+            DrawLocalLine(min, new Vector3(min.x, min.y, max.z));
+            DrawLocalLine(min, new Vector3(min.x, max.y, min.z));
+            DrawLocalLine(min, new Vector3(max.x, min.y, min.z));
+
+            DrawLocalLine(new Vector3(max.x, min.y, min.z), new Vector3(max.x, min.y, max.z));
+
+            DrawLocalLine(new Vector3(max.x, min.y, max.z), new Vector3(min.x, min.y, max.z));
+            DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(min.x, max.y, min.z));
+            DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(max.x, min.y, min.z));
+
+            DrawLocalLine(max, new Vector3(max.x, max.y, min.z));
+            DrawLocalLine(max, new Vector3(max.x, min.y, max.z));
+            DrawLocalLine(max, new Vector3(min.x, max.y, max.z));
+
+            DrawLocalLine(new Vector3(min.x, min.y, max.z), new Vector3(min.x, max.y, max.z));
+            DrawLocalLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z));
         }
 
         private void ProcessTerminal(OctreeNode<T> node, float tx0, float ty0, float tz0) {
             float entryDistance = Mathf.Max(tx0, ty0, tz0);
+//            Debug.DrawLine(_ray.origin, _ray.direction * 100.0f);
 
-            Debug.DrawLine(_ray.origin, _ray.GetPoint(entryDistance));
+            Debug.DrawLine(_ray.GetPoint(entryDistance) - Vector3.up,
+                _ray.GetPoint(entryDistance) + Vector3.up, Color.green, 0, false);
+            Debug.DrawLine(_ray.GetPoint(entryDistance) - Vector3.left,
+                _ray.GetPoint(entryDistance) + Vector3.left, Color.green, 0, false);
+
+            var bounds = node.GetBounds();
+            DrawBounds(bounds, Color.red);
         }
     }
 
-
-    /*
-    unsigned char a;
-
-    void ray_parameter(octree *oct, ray r) {
-        a = 0;
-
-        if(r.dx < 0.0) {
-            r.ox = oct->sizeX - r.ox;
-            r.dx = -r.dx;
-            a |= 4;
-        }
-
-        if(r.dy < 0.0) {
-            r.oy = oc->sizeY - r.oy;
-            r.dy = -r.dy;
-            a |= 2;
-        }
-
-        if(r.dz < 0.0) {
-            r.oz = oct->sizeZ - r.oz;
-            r.dz = -r.dz;
-            a |= 1;
-        }
-
-        tx0 = (oct->xmin - r.ox)/r.dx;
-        tx1 = (oct->xmax - r.ox)/r.dx;
-        
-        ty0 = (oct->ymin - r.oy)/r.dy;
-        ty1 = (oct->ymax - r.oy)/r.dy;
-        
-        tz0 = (oct->zmin - r.oz)/r.dz;
-        tz1 = (oct->zmax - r.oz)/r.dz;
-
-        if(Max(tz0, ty0, tz0) < Min(tx1, ty1, tz1)) {
-            proc_subtree(tz0, ty0, tz0, tx1, ty1, z1, oct->root);
-        }
-    }
-    
-    float Max(a, b, c) {
-        if(a > b) {
-            if(a > c) {
-                //a > b and c 
-                return a;
-            }
-            //a > b but not > c
-            //so c is greater
-        } else if(b > c) {
-            // b > a and c
-            return b;
-        }
-
-        return c;
-    }
-
-    float Min(a, b, c) {
-        if(a < b) {
-            if(a < c) {
-                //a < b and c 
-                return a;
-            }
-            //a < b but not < c
-            //so c is greater
-        } else if(b < c) {
-            // b < a and c
-            return b;
-        }
-
-        return c;
-    }
-    */
 
     /*
     void proc_subtree ( real tx0, real ty0, real tz0,
                         real tx1, real ty1, real tz1,
                         node *n ) {
-        real txm, tym, tzm;
-
-        int currNode;
-
-        if(tx1 < 0.0 || ty1 < 0.0 || tz1 < 0.0) {
-            return;
-        }
-
-        if(n->type == TERMINAL) {
-            proc_terminal(n);
-            return;
-        }
-
-        txm = 0.5 * (tx0 + tx1);
-        tym = 0.5 * (ty0 + ty1);
-        tzm = 0.5 * (tz0 + tz1);
-
-        currNode = first_node(tx0, ty0, tz0, txm, tym, tzm);
 
         while( currNode < 8 ) {
             switch(currNode) {

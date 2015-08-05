@@ -103,9 +103,9 @@ public class VoxEditor : Editor {
                 vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one*0.5f), 6, 8);
                 vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one*0.7f), 7, 8);
 
-//                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
-//                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
-//                topFwdLeft.SetItem(4);
+                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
+                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
+                topFwdLeft.SetItem(4);
 
 //                topFwdLeft.SubDivide();
                 vox.octree.ProcessDrawQueue();

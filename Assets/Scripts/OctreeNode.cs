@@ -7,14 +7,18 @@ using UnityEngine;
 public abstract class OctreeNode {
     public enum ChildIndex {
         Invalid = -1,
-        TopFwdLeft = 0,
-        TopFwdRight = 1,
-        TopBackLeft = 2,
-        TopBackRight = 3,
-        BotFwdLeft = 4,
-        BotFwdRight = 5,
-        BotBackLeft = 6,
-        BotBackRight = 7
+
+        BotFwdRight = 0,
+        BotFwdLeft = 1,
+
+        TopFwdRight = 2,
+        TopFwdLeft = 3,
+
+        BotBackRight = 4,
+        BotBackLeft = 5,
+
+        TopBackRight = 6,
+        TopBackLeft = 7,
     }
 
     public enum NeighbourSide {
@@ -112,10 +116,8 @@ public class OctreeNode<T> : OctreeNode {
     private T _item;
     private Octree<T> _tree;
 
-    public OctreeNode(Bounds bounds, Octree<T> tree )
-        : this(bounds, null, ChildIndex.Invalid, 0, tree) {
-        
-    }
+    public OctreeNode(Bounds bounds, Octree<T> tree)
+        : this(bounds, null, ChildIndex.Invalid, 0, tree) {}
 
     public OctreeNode(Bounds bounds, OctreeNode<T> parent, ChildIndex indexInParent, int depth, Octree<T> tree) {
         _deleted = false;
@@ -125,8 +127,7 @@ public class OctreeNode<T> : OctreeNode {
             _root = this;
             _nodeCoordinates = new OctreeNodeCoordinates();
 //            _coords = new OctreeChildCoordinates[0];
-        }
-        else {
+        } else {
             _root = _parent._root;
             _nodeCoordinates = new OctreeNodeCoordinates(parent._nodeCoordinates,
                 OctreeChildCoordinates.FromIndex(indexInParent));
@@ -171,21 +172,18 @@ public class OctreeNode<T> : OctreeNode {
     public OctreeNode<T> GetDeepestSolidNeighbour(NeighbourSide side) {
         var neighbourCoords = _nodeCoordinates.GetNeighbourCoords(side);
 
-        if (neighbourCoords == null)
-        {
+        if (neighbourCoords == null) {
             return null;
         }
 
         var currentNode = _root;
 
-        foreach (var coord in neighbourCoords)
-        {
+        foreach (var coord in neighbourCoords) {
             if (currentNode == null) {
                 return null;
             }
 
-            if (currentNode.IsDeleted())
-            {
+            if (currentNode.IsDeleted()) {
                 return null;
             }
 
@@ -198,18 +196,15 @@ public class OctreeNode<T> : OctreeNode {
 
         //last currentNode is the actual node at the neighbour coordinates
 
-        if (currentNode == null)
-        {
+        if (currentNode == null) {
             return null;
         }
 
-        if (currentNode.IsDeleted())
-        {
+        if (currentNode.IsDeleted()) {
             return null;
         }
 
-        if (currentNode.IsLeafNode())
-        {
+        if (currentNode.IsLeafNode()) {
             return currentNode;
         }
 
@@ -269,7 +264,8 @@ public class OctreeNode<T> : OctreeNode {
         return faces;
     }
 
-    private void CreateFaces(ICollection<OctreeRenderFace<T>> faces, NeighbourSide side, Bounds bounds, OctreeNodeCoordinates coords) {
+    private void CreateFaces(ICollection<OctreeRenderFace<T>> faces, NeighbourSide side, Bounds bounds,
+                             OctreeNodeCoordinates coords) {
         var sidestate = GetSideState(coords, side);
 
         switch (sidestate) {
@@ -451,44 +447,7 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     public Bounds GetChildBounds(ChildIndex childIndex) {
-        AssertNotDeleted();
-        Vector3 childDirection;
-
-        switch (childIndex) {
-            case ChildIndex.TopFwdLeft:
-                childDirection = new Vector3(-1, -1, 1);
-                break;
-            case ChildIndex.TopFwdRight:
-                childDirection = new Vector3(1, -1, 1);
-                break;
-            case ChildIndex.TopBackLeft:
-                childDirection = new Vector3(-1, -1, -1);
-                break;
-            case ChildIndex.TopBackRight:
-                childDirection = new Vector3(1, -1, -1);
-                break;
-            case ChildIndex.BotFwdLeft:
-                childDirection = new Vector3(-1, 1, 1);
-                break;
-            case ChildIndex.BotFwdRight:
-                childDirection = new Vector3(1, 1, 1);
-                break;
-            case ChildIndex.BotBackLeft:
-                childDirection = new Vector3(-1, 1, -1);
-                break;
-            case ChildIndex.BotBackRight:
-                childDirection = new Vector3(1, 1, -1);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-
-//        _bounds.size
-        var childSize = _bounds.extents;
-
-        var childBounds = new Bounds(_bounds.center - Vector3.Scale(childSize, childDirection*0.5f), childSize);
-
-        return childBounds;
+        return GetChildBounds(_bounds, childIndex);
     }
 
     public Bounds GetChildBounds(Bounds originalBounds, ChildIndex childIndex) {
@@ -524,10 +483,9 @@ public class OctreeNode<T> : OctreeNode {
                 throw new ArgumentOutOfRangeException();
         }
 
-//        _bounds.size
-        var childSize = originalBounds.extents;
+        var childSize = _bounds.extents;
 
-        var childBounds = new Bounds(originalBounds.center - Vector3.Scale(childSize, childDirection*0.5f), childSize);
+        var childBounds = new Bounds(originalBounds.center - Vector3.Scale(childSize, childDirection * 0.5f), childSize);
 
         return childBounds;
     }
@@ -560,8 +518,7 @@ public class OctreeNode<T> : OctreeNode {
 
         if (_children[indexInt] != null) {
             _childCount--;
-        }
-        else {
+        } else {
             throw new ArgumentException("The child at that index is already removed!", "index");
         }
 
@@ -575,10 +532,8 @@ public class OctreeNode<T> : OctreeNode {
 
     private void SetDeleted() {
         //calling toarray here to force enumeration to flag deleted
-        foreach (var octreeNode in BreadthFirst().ToArray())
-        {
-            if (octreeNode._hasItem)
-            {
+        foreach (var octreeNode in BreadthFirst().ToArray()) {
+            if (octreeNode._hasItem) {
                 octreeNode.RemoveItem();
             }
             octreeNode._deleted = true;
@@ -608,8 +563,7 @@ public class OctreeNode<T> : OctreeNode {
                     if (child != null) {
                         RemoveChild(octreeNodeChildIndex);
                         child = AddChild(octreeNodeChildIndex);
-                    }
-                    else {
+                    } else {
                         if (HasItem()) {
                             for (var j = 0; j < 8; j++) {
                                 AddChild((ChildIndex) j).SetItem(_item);
@@ -617,15 +571,13 @@ public class OctreeNode<T> : OctreeNode {
                             RemoveItem();
 
                             child = GetChild(octreeNodeChildIndex);
-                        }
-                        else {
+                        } else {
                             child = AddChild(octreeNodeChildIndex);
                         }
                     }
 
                     child.SetItem(item);
-                }
-                else {
+                } else {
                     //child intersects but is not completely contained by it
 
                     var child = GetChild(octreeNodeChildIndex);
@@ -638,8 +590,7 @@ public class OctreeNode<T> : OctreeNode {
                             RemoveItem();
 
                             child = GetChild(octreeNodeChildIndex);
-                        }
-                        else {
+                        } else {
                             child = AddChild(octreeNodeChildIndex);
                         }
                     }
@@ -651,10 +602,9 @@ public class OctreeNode<T> : OctreeNode {
 
     public void SetItem(T item) {
         if (!IsLeafNode()) {
-            for (var i = 0; i < 8; i++)
-            {
+            for (var i = 0; i < 8; i++) {
                 if (GetChild((ChildIndex) i) != null) {
-                   RemoveChild((ChildIndex)i);
+                    RemoveChild((ChildIndex) i);
                 }
             }
         }
@@ -671,8 +621,7 @@ public class OctreeNode<T> : OctreeNode {
         return _hasItem;
     }
 
-    public void RemoveItem()
-    {
+    public void RemoveItem() {
         _item = default(T);
         if (_hasItem) {
             _hasItem = false;
