@@ -372,8 +372,6 @@ if(rems.length>0) {
             float yMax = Mathf.Max(ocMin.y, ocMax.y);
             float zMax = Mathf.Max(ocMin.z, ocMax.z);
 
-            Debug.DrawLine(ocMin, ocMax, Color.blue);
-
             float tx0, tx1, ty0, ty1, tz0, tz1;
 
             if (!Mathf.Approximately(rdx, 0.0f)) {
@@ -459,7 +457,7 @@ if(rems.length>0) {
 
             if (Mathf.Max(tx0, ty0, tz0) < Mathf.Min(tx1, ty1, tz1))
             {
-                Debug.DrawLine(_ray.origin, _ray.GetPoint(Mathf.Max(tx0, ty0, tz0)), Color.red, 0, false);
+//                Debug.DrawLine(_ray.origin, _ray.GetPoint(Mathf.Max(tx0, ty0, tz0)), Color.red, 0, false);
 //                Debug.DrawLine(_ray.GetPoint(Mathf.Max(tx0, ty0, tz0)), _ray.GetPoint(Mathf.Min(tx1, ty1, tz1)), Color.green, 0, false);
                 proc_subtree(tx0, ty0, tz0, tx1, ty1, tz1, octree.GetRoot());
             }
@@ -535,9 +533,9 @@ if(rems.length>0) {
             return zi;
         }
 
-        private void DrawLocalLine(Vector3 a, Vector3 b)
+        private void DrawLocalLine(Vector3 a, Vector3 b, Color color)
         {
-            Debug.DrawLine(_transform.TransformPoint(a), _transform.TransformPoint(b), Color.white, 0, false);
+            Debug.DrawLine(_transform.TransformPoint(a), _transform.TransformPoint(b), color, 0, false);
         }
 
         private void proc_subtree(float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, OctreeNode<T> node) {
@@ -628,28 +626,30 @@ if(rems.length>0) {
             var min = bounds.min;
             var max = bounds.max;
 
-            DrawLocalLine(min, new Vector3(min.x, min.y, max.z));
-            DrawLocalLine(min, new Vector3(min.x, max.y, min.z));
-            DrawLocalLine(min, new Vector3(max.x, min.y, min.z));
+            DrawLocalLine(min, new Vector3(min.x, min.y, max.z), color);
+            DrawLocalLine(min, new Vector3(min.x, max.y, min.z), color);
+            DrawLocalLine(min, new Vector3(max.x, min.y, min.z), color);
 
-            DrawLocalLine(new Vector3(max.x, min.y, min.z), new Vector3(max.x, min.y, max.z));
+            DrawLocalLine(new Vector3(max.x, min.y, min.z), new Vector3(max.x, min.y, max.z), color);
 
-            DrawLocalLine(new Vector3(max.x, min.y, max.z), new Vector3(min.x, min.y, max.z));
-            DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(min.x, max.y, min.z));
-            DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(max.x, min.y, min.z));
+            DrawLocalLine(new Vector3(max.x, min.y, max.z), new Vector3(min.x, min.y, max.z), color);
+            DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(min.x, max.y, min.z), color);
+            DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(max.x, min.y, min.z), color);
 
-            DrawLocalLine(max, new Vector3(max.x, max.y, min.z));
-            DrawLocalLine(max, new Vector3(max.x, min.y, max.z));
-            DrawLocalLine(max, new Vector3(min.x, max.y, max.z));
+            DrawLocalLine(max, new Vector3(max.x, max.y, min.z), color);
+            DrawLocalLine(max, new Vector3(max.x, min.y, max.z), color);
+            DrawLocalLine(max, new Vector3(min.x, max.y, max.z), color);
 
-            DrawLocalLine(new Vector3(min.x, min.y, max.z), new Vector3(min.x, max.y, max.z));
-            DrawLocalLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z));
+            DrawLocalLine(new Vector3(min.x, min.y, max.z), new Vector3(min.x, max.y, max.z), color);
+            DrawLocalLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z), color);
         }
 
         private void ProcessTerminal(OctreeNode<T> node, float tx0, float ty0, float tz0) {
             float entryDistance = Mathf.Max(tx0, ty0, tz0);
 
             float size = 0.1f;
+            Debug.DrawLine(_ray.origin, _ray.GetPoint(entryDistance), Color.white, 0, false);
+
             Debug.DrawLine(_ray.GetPoint(entryDistance) - Vector3.up * size,
                 _ray.GetPoint(entryDistance) + Vector3.up * size, Color.green, 0, false);
             Debug.DrawLine(_ray.GetPoint(entryDistance) - Vector3.left * size,

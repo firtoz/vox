@@ -65,8 +65,10 @@ public class Vox : MonoBehaviour {
         Gizmos.DrawLine(transform.TransformPoint(a), transform.TransformPoint(b));
     }
 
+    public bool showGizmos = false;
+
     public void OnDrawGizmosSelected() {
-        if (octree != null) {
+        if (octree != null && showGizmos) {
             foreach (var node in octree.DepthFirst()) {
                 Color color;
 

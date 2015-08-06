@@ -257,6 +257,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   size: 100
+  showGizmos: 0
 --- !u!23 &916304649
 MeshRenderer:
   m_ObjectHideFlags: 0
