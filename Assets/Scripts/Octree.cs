@@ -327,8 +327,6 @@ if(rems.length>0) {
             var ro = transform.InverseTransformPoint(r.origin);
             var rd = transform.InverseTransformDirection(r.direction);
 
-//            Debug.DrawLine(transform.TransformPoint(ro), transform.TransformPoint(ro) + transform.TransformDirection(rd) * 10, Color.yellow);
-
             var rootBounds = octree.GetRoot().GetBounds();
 
             var rox = ro.x;
@@ -361,104 +359,33 @@ if(rems.length>0) {
                 _a |= 4;
             }
 
-//            Debug.DrawLine(transform.TransformPoint(ro), transform.TransformPoint(ro) + transform.TransformDirection(rd) * 10, Color.red);
-
-
-            float xMin = Mathf.Min(ocMin.x, ocMax.x);
-            float yMin = Mathf.Min(ocMin.y, ocMax.y);
-            float zMin = Mathf.Min(ocMin.z, ocMax.z);
-
-            float xMax = Mathf.Max(ocMin.x, ocMax.x);
-            float yMax = Mathf.Max(ocMin.y, ocMax.y);
-            float zMax = Mathf.Max(ocMin.z, ocMax.z);
-
             float tx0, tx1, ty0, ty1, tz0, tz1;
 
             if (!Mathf.Approximately(rdx, 0.0f)) {
-                tx0 = (xMin - rox) / rdx;
-                tx1 = (xMax - rox) / rdx;
+                tx0 = (ocMin.x - rox) / rdx;
+                tx1 = (ocMax.x - rox) / rdx;
             } else {
                 tx0 = 99999.9f;
                 tx1 = 99999.9f;
             }
 
             if (!Mathf.Approximately(rdy, 0.0f)) {
-                ty0 = (yMin - roy) / rdy;
-                ty1 = (yMax - roy) / rdy;
+                ty0 = (ocMin.y - roy) / rdy;
+                ty1 = (ocMax.y - roy) / rdy;
             } else {
                 ty0 = 99999.9f;
                 ty1 = 99999.9f;
             }
 
             if (!Mathf.Approximately(rdz, 0.0f)) {
-                tz0 = (zMin - roz) / rdz;
-                tz1 = (zMax - roz) / rdz;
+                tz0 = (ocMin.z - roz) / rdz;
+                tz1 = (ocMax.z - roz) / rdz;
             } else {
                 tz0 = 99999.9f;
                 tz1 = 99999.9f;
             }
 
-//            if ((_a & 4) != 0) {
-//                tx0 *= -1.0f;
-//                tx1 *= -1.0f;
-//            }
-//
-//            if ((_a & 2) != 0) {
-//                ty0 *= -1.0f;
-//                ty1 *= -1.0f;
-//            }
-//
-//            if ((_a & 1) != 0) {
-//                tz0 *= -1.0f;
-//                tz1 *= -1.0f;
-//            }
-
-            var max0 = Mathf.Max(tx0, ty0, tz0);
-            var min1 = Mathf.Min(tx1, ty1, tz1);
-
-//            if (Mathf.Approximately(max0, tx0) && (_a & 4) != 0) {
-//                max0 = -max0;
-//            } else if (Mathf.Approximately(max0, ty0) && (_a & 2) != 0) {
-//                max0 = -max0;
-//            } else if (Mathf.Approximately(max0, tz0) && (_a & 1) != 0) {
-//                max0 = -max0;
-//            }
-//
-//            if (Mathf.Approximately(min1, tx1) && (_a & 4) != 0) {
-//                min1 = -min1;
-//            } else if (Mathf.Approximately(min1, ty1) && (_a & 2) != 0) {
-//                min1 = -min1;
-//            } else if (Mathf.Approximately(min1, tz1) && (_a & 1) != 0) {
-//                min1 = -min1;
-//            }
-
-//            Debug.DrawLine(_ray.origin, _ray.GetPoint(max0));
-            var a = max0;//Mathf.Max(tx0, ty0, tz0);
-            var b = min1;//Mathf.Min(tx1, ty1, tz1);
-
-//            _ray = new Ray(transform.TransformPoint(new Vector3(rox, roy, roz)), transform.TransformDirection(new Vector3(rdx, rdy, rdz)));
-
-
-            //            rox2 = rootBoundsSize.x - rox;
-            //            rox = rootBoundsSize.x-rox
-            //            rdx *= -1;
-
-            //            tx0 = (xMin - rox) / rdx;
-            //            tx1 = (xMax - rox) / rdx;
-
-            if (a < b) {
-//                Debug.DrawLine(_ray.GetPoint(a) + Vector3.up, _ray.GetPoint(a) - Vector3.up, Color.red, 0, false);
-//                Debug.DrawLine(_ray.GetPoint(a) + Vector3.right, _ray.GetPoint(a) - Vector3.right, Color.red, 0, false);
-//
-//                Debug.DrawLine(_ray.GetPoint(b) + Vector3.up, _ray.GetPoint(b) - Vector3.up, Color.red, 0, false);
-//                Debug.DrawLine(_ray.GetPoint(b) + Vector3.right, _ray.GetPoint(b) - Vector3.right, Color.red, 0, false);
-            }
-
-
-            if (Mathf.Max(tx0, ty0, tz0) < Mathf.Min(tx1, ty1, tz1))
-            {
-//                Debug.DrawLine(_ray.origin, _ray.GetPoint(Mathf.Max(tx0, ty0, tz0)), Color.red, 0, false);
-//                Debug.DrawLine(_ray.GetPoint(Mathf.Max(tx0, ty0, tz0)), _ray.GetPoint(Mathf.Min(tx1, ty1, tz1)), Color.green, 0, false);
+            if (Mathf.Max(tx0, ty0, tz0) < Mathf.Min(tx1, ty1, tz1)) {
                 proc_subtree(tx0, ty0, tz0, tx1, ty1, tz1, octree.GetRoot());
             }
         }
@@ -533,8 +460,7 @@ if(rems.length>0) {
             return zi;
         }
 
-        private void DrawLocalLine(Vector3 a, Vector3 b, Color color)
-        {
+        private void DrawLocalLine(Vector3 a, Vector3 b, Color color) {
             Debug.DrawLine(_transform.TransformPoint(a), _transform.TransformPoint(b), color, 0, false);
         }
 
@@ -543,8 +469,7 @@ if(rems.length>0) {
                 return;
             }
 
-            if (node.IsLeafNode() && node.HasItem())
-            {
+            if (node.IsLeafNode() && node.HasItem()) {
                 ProcessTerminal(node, tx0, ty0, tz0);
                 return;
             }
@@ -559,9 +484,8 @@ if(rems.length>0) {
 
             var currNode = first_node(tx0, ty0, tz0, txm, tym, tzm);
 
-            while (currNode < 8)
-            {
-                var childIndex = (OctreeNode.ChildIndex)(currNode ^ _a);
+            while (currNode < 8) {
+                var childIndex = (OctreeNode.ChildIndex) (currNode ^ _a);
 
                 switch (currNode) {
                     //0= none
@@ -644,16 +568,50 @@ if(rems.length>0) {
             DrawLocalLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z), color);
         }
 
+        private Vector3 GetNormal(EntryPlane entryPlane) {
+            Vector3 normal;
+            switch (entryPlane) {
+                case EntryPlane.XY:
+                    if ((_a & 4) == 0) {
+                        normal = Vector3.back;
+                    } else {
+                        normal = Vector3.forward;
+                    }
+
+                    break;
+                case EntryPlane.XZ:
+                    if ((_a & 2) == 0) {
+                        normal = Vector3.down;
+                    } else {
+                        normal = Vector3.up;
+                    }
+                    break;
+                case EntryPlane.YZ:
+                    if ((_a & 1) == 0) {
+                        normal = Vector3.left;
+                    } else {
+                        normal = Vector3.right;
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("entryPlane", entryPlane, null);
+            }
+
+            return normal;
+        }
+
         private void ProcessTerminal(OctreeNode<T> node, float tx0, float ty0, float tz0) {
             float entryDistance = Mathf.Max(tx0, ty0, tz0);
 
-            float size = 0.1f;
+            EntryPlane entryPlane = GetEntryPlane(tx0, ty0, tz0);
+
+            Vector3 normal = GetNormal(entryPlane);
+
+            float size = 1f;
             Debug.DrawLine(_ray.origin, _ray.GetPoint(entryDistance), Color.white, 0, false);
 
-            Debug.DrawLine(_ray.GetPoint(entryDistance) - Vector3.up * size,
-                _ray.GetPoint(entryDistance) + Vector3.up * size, Color.green, 0, false);
-            Debug.DrawLine(_ray.GetPoint(entryDistance) - Vector3.left * size,
-                _ray.GetPoint(entryDistance) + Vector3.left * size, Color.green, 0, false);
+            Debug.DrawLine(_ray.GetPoint(entryDistance),
+                _ray.GetPoint(entryDistance) + _transform.TransformDirection(normal) * size, Color.green, 0, false);
 
             var bounds = node.GetBounds();
             DrawBounds(bounds, Color.red);
