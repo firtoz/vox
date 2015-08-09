@@ -31,9 +31,9 @@ public class Vox : MonoBehaviour {
 //        topFwdLeft.RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
 
         //                topFwdLeft.SubDivide();
-        octree.ProcessDrawQueue();
+        octree.Render(gameObject);
 
-        octree.ApplyToMesh(GetComponent<MeshFilter>().sharedMesh);
+//        octree.ApplyToMesh(GetComponent<MeshFilter>().sharedMesh);
     }
 	
 	// Update is called once per frame

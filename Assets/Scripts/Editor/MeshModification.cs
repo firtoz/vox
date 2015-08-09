@@ -4,23 +4,23 @@ using UnityEngine;
 
 public class MeshModification : IDisposable
 {
-    private readonly MeshCache instance;
+    private readonly MeshCache _instance;
 
     public MeshModification(Mesh mesh, string undoMessage)
     {
-        instance = ScriptableObject.CreateInstance<MeshCache>();
-        instance.hideFlags = HideFlags.HideAndDontSave;
-        instance.mesh = mesh;
+        _instance = ScriptableObject.CreateInstance<MeshCache>();
+        _instance.hideFlags = HideFlags.HideAndDontSave;
+        _instance.mesh = mesh;
 
-        Undo.RegisterCreatedObjectUndo(instance, undoMessage);
+        Undo.RegisterCreatedObjectUndo(_instance, undoMessage);
 
-        Undo.RegisterCompleteObjectUndo(instance, undoMessage);
+        Undo.RegisterCompleteObjectUndo(_instance, undoMessage);
     }
 
     public void Dispose()
     {
-        EditorUtility.SetDirty(instance);
+        EditorUtility.SetDirty(_instance);
 
-        Undo.DestroyObjectImmediate(instance);
+        Undo.DestroyObjectImmediate(_instance);
     }
 }

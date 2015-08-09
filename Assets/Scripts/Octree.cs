@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 public class Octree<T> {
     private readonly List<OctreeRenderFace<T>> _allFaces = new List<OctreeRenderFace<T>>();
@@ -91,7 +93,7 @@ public class Octree<T> {
         //        }
     }
 
-    public void ProcessDrawQueue() {
+    private void ProcessDrawQueue() {
         foreach (var octreeNode in drawQueue) {
             if (_nodeFaces.ContainsKey(octreeNode)) {
                 RemoveNodeInternal(octreeNode);
@@ -300,28 +302,91 @@ if(rems.length>0) {
         _indices.RemoveRange(index * 6, 6);
     }
 
-    public void ApplyToMesh(Mesh sharedMesh) {
-        sharedMesh.Clear();
+    private const int MAX_VERTICES_FOR_MESH = 65000-4*100;
+    private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
+    private const int MAX_INDICES_FOR_MESH = MAX_FACES_FOR_MESH * 6;
 
-        sharedMesh.vertices = _vertices.ToArray();
-        sharedMesh.normals = _normals.ToArray();
-        sharedMesh.triangles = _indices.ToArray();
-        sharedMesh.uv = _uvs.ToArray();
+
+//    private void ApplyToMesh(Mesh sharedMesh, int startIndex, int endIndex) {
+//        sharedMesh.Clear();
+//
+//        sharedMesh.MarkDynamic();
+//
+//        var verticesSlice = _vertices.GetRange(startIndex, endIndex);
+//        var indicesSlice = _indices.GetRange(startIndex/4)
+//
+//        /*
+//            _indices.Add(vertexIndex);
+//            _indices.Add(vertexIndex + 1);
+//            _indices.Add(vertexIndex + 2);
+//
+//            _indices.Add(vertexIndex);
+//            _indices.Add(vertexIndex + 2);
+//            _indices.Add(vertexIndex + 3);    
+//        */
+//            //        var numVertices = _vertices.Count;
+//
+//        //        Debug.Log(numVertices);
+//
+//        if (numVertices < 65535) {
+//            sharedMesh.vertices = _vertices.ToArray();
+//            sharedMesh.normals = _normals.ToArray();
+//            sharedMesh.triangles = _indices.ToArray();
+//            sharedMesh.uv = _uvs.ToArray();
+//        } else {
+//            var numMeshes = numVertices / 65535;
+//            sharedMesh.subMeshCount = numMeshes;
+//
+//            for (var i = 0; i < numMeshes; ++i) {
+//                var start = i * 65535;
+//                var end = Mathf.Min(start + 65535, numVertices) - start;
+//                sharedMesh.SetIndices(_indices.GetRange(start, end).ToArray(), MeshTopology.Triangles, i);
+//            }
+//        }
+//    }
+
+    public bool Intersect(Transform transform, Ray ray) {
+        return new RayIntersection(transform, this, ray, false).results.Count > 0;
     }
 
-    public void Intersect(Transform transform, Ray ray) {
+    public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result) {
         // ReSharper disable once ObjectCreationAsStatement
-        new RayIntersection(transform, this, ray);
+        var results = new RayIntersection(transform, this, ray, false).results;
+        if (results.Count > 0) {
+            result = results[0];
+            return true;
+        } else {
+            result = new RayIntersectionResult();
+            return false;
+        }
+    }
+
+    public struct RayIntersectionResult {
+        public readonly OctreeNode<T> node;
+        public readonly float entryDistance;
+        public readonly Vector3 position;
+        public readonly Vector3 normal;
+
+        public RayIntersectionResult(OctreeNode<T> node, float entryDistance, Vector3 position, Vector3 normal) {
+            this.node = node;
+            this.entryDistance = entryDistance;
+            this.position = position;
+            this.normal = normal;
+        }
     }
 
     private class RayIntersection {
         private readonly byte _a;
         private Ray _ray;
+        private readonly bool _intersectMultiple;
         private readonly Transform _transform;
 
-        public RayIntersection(Transform transform, Octree<T> octree, Ray r) {
+        public readonly List<RayIntersectionResult> results = new List<RayIntersectionResult>();
+
+        public RayIntersection(Transform transform, Octree<T> octree, Ray r, bool intersectMultiple) {
             _transform = transform;
             _ray = r;
+            _intersectMultiple = intersectMultiple;
             _a = 0;
 
             var ro = transform.InverseTransformPoint(r.origin);
@@ -386,7 +451,7 @@ if(rems.length>0) {
             }
 
             if (Mathf.Max(tx0, ty0, tz0) < Mathf.Min(tx1, ty1, tz1)) {
-                proc_subtree(tx0, ty0, tz0, tx1, ty1, tz1, octree.GetRoot());
+                ProcSubtree(tx0, ty0, tz0, tx1, ty1, tz1, octree.GetRoot());
             }
         }
 
@@ -413,10 +478,10 @@ if(rems.length>0) {
         }
 
 
-        private int first_node(float tx0, float ty0, float tz0, float txm, float tym, float tzm) {
-            EntryPlane entryPlane = GetEntryPlane(tx0, ty0, tz0);
+        private int FirstNode(float tx0, float ty0, float tz0, float txm, float tym, float tzm) {
+            var entryPlane = GetEntryPlane(tx0, ty0, tz0);
 
-            int firstNode = 0;
+            var firstNode = 0;
 
             switch (entryPlane) {
                 case EntryPlane.XY:
@@ -448,7 +513,7 @@ if(rems.length>0) {
             return firstNode;
         }
 
-        private int new_node(double x, int xi, double y, int yi, double z, int zi) {
+        private static int NewNode(double x, int xi, double y, int yi, double z, int zi) {
             if (x < y) {
                 if (x < z) {
                     return xi;
@@ -464,10 +529,17 @@ if(rems.length>0) {
             Debug.DrawLine(_transform.TransformPoint(a), _transform.TransformPoint(b), color, 0, false);
         }
 
-        private void proc_subtree(float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, OctreeNode<T> node) {
+        private void ProcSubtree(float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, OctreeNode<T> node) {
+            if (!_intersectMultiple && results.Count > 0) {
+                return;
+            }
+
             if (node == null) {
                 return;
             }
+
+            var bounds = node.GetBounds();
+            DrawBounds(bounds, Color.white);
 
             if (node.IsLeafNode() && node.HasItem()) {
                 ProcessTerminal(node, tx0, ty0, tz0);
@@ -482,10 +554,13 @@ if(rems.length>0) {
             var tym = 0.5f * (ty0 + ty1);
             var tzm = 0.5f * (tz0 + tz1);
 
-            var currNode = first_node(tx0, ty0, tz0, txm, tym, tzm);
+            var currNode = FirstNode(tx0, ty0, tz0, txm, tym, tzm);
 
             while (currNode < 8) {
                 var childIndex = (OctreeNode.ChildIndex) (currNode ^ _a);
+                if (!_intersectMultiple && results.Count > 0) {
+                    return;
+                }
 
                 switch (currNode) {
                     //0= none
@@ -500,42 +575,42 @@ if(rems.length>0) {
                     //except if the bit is already set, then it can't set it again so 8
                     case 0:
                         //0= none
-                        proc_subtree(tx0, ty0, tz0, txm, tym, tzm, node.GetChild(childIndex));
-                        currNode = new_node(txm, 1, tym, 2, tzm, 4);
+                        ProcSubtree(tx0, ty0, tz0, txm, tym, tzm, node.GetChild(childIndex));
+                        currNode = NewNode(txm, 1, tym, 2, tzm, 4);
                         break;
                     case 1:
                         //1 = only x
-                        proc_subtree(txm, ty0, tz0, tx1, tym, tzm, node.GetChild(childIndex));
-                        currNode = new_node(tx1, 8, tym, 3, tzm, 5);
+                        ProcSubtree(txm, ty0, tz0, tx1, tym, tzm, node.GetChild(childIndex));
+                        currNode = NewNode(tx1, 8, tym, 3, tzm, 5);
                         break;
                     case 2:
                         //2 = only y
-                        proc_subtree(tx0, tym, tz0, txm, ty1, tzm, node.GetChild(childIndex));
-                        currNode = new_node(txm, 3, ty1, 8, tzm, 6);
+                        ProcSubtree(tx0, tym, tz0, txm, ty1, tzm, node.GetChild(childIndex));
+                        currNode = NewNode(txm, 3, ty1, 8, tzm, 6);
                         break;
                     case 3:
                         //3 = 2 + 1 = y and z
-                        proc_subtree(txm, tym, tz0, tx1, ty1, tzm, node.GetChild(childIndex));
-                        currNode = new_node(tx1, 8, ty1, 8, tzm, 7);
+                        ProcSubtree(txm, tym, tz0, tx1, ty1, tzm, node.GetChild(childIndex));
+                        currNode = NewNode(tx1, 8, ty1, 8, tzm, 7);
                         break;
                     case 4:
                         //4 = only x
-                        proc_subtree(tx0, ty0, tzm, txm, tym, tz1, node.GetChild(childIndex));
-                        currNode = new_node(txm, 5, tym, 6, tz1, 8);
+                        ProcSubtree(tx0, ty0, tzm, txm, tym, tz1, node.GetChild(childIndex));
+                        currNode = NewNode(txm, 5, tym, 6, tz1, 8);
                         break;
                     case 5:
                         //5 = 4 + 1 = x and z
-                        proc_subtree(txm, ty0, tzm, tx1, tym, tz1, node.GetChild(childIndex));
-                        currNode = new_node(tx1, 8, tym, 7, tz1, 8);
+                        ProcSubtree(txm, ty0, tzm, tx1, tym, tz1, node.GetChild(childIndex));
+                        currNode = NewNode(tx1, 8, tym, 7, tz1, 8);
                         break;
                     case 6:
                         //6 = 4 + 2 = x and y
-                        proc_subtree(tx0, tym, tzm, txm, ty1, tz1, node.GetChild(childIndex));
-                        currNode = new_node(txm, 7, ty1, 8, tz1, 8);
+                        ProcSubtree(tx0, tym, tzm, txm, ty1, tz1, node.GetChild(childIndex));
+                        currNode = NewNode(txm, 7, ty1, 8, tz1, 8);
                         break;
                     case 7:
                         //7 = 4 + 2 + 1 = x and y and z
-                        proc_subtree(txm, tym, tzm, tx1, ty1, tz1, node.GetChild(childIndex));
+                        ProcSubtree(txm, tym, tzm, tx1, ty1, tz1, node.GetChild(childIndex));
                         currNode = 8;
                         break;
                 }
@@ -601,13 +676,13 @@ if(rems.length>0) {
         }
 
         private void ProcessTerminal(OctreeNode<T> node, float tx0, float ty0, float tz0) {
-            float entryDistance = Mathf.Max(tx0, ty0, tz0);
+            var entryDistance = Mathf.Max(tx0, ty0, tz0);
 
-            EntryPlane entryPlane = GetEntryPlane(tx0, ty0, tz0);
+            var entryPlane = GetEntryPlane(tx0, ty0, tz0);
 
-            Vector3 normal = GetNormal(entryPlane);
+            var normal = GetNormal(entryPlane);
 
-            float size = 1f;
+            var size = 1f;
             Debug.DrawLine(_ray.origin, _ray.GetPoint(entryDistance), Color.white, 0, false);
 
             Debug.DrawLine(_ray.GetPoint(entryDistance),
@@ -615,6 +690,8 @@ if(rems.length>0) {
 
             var bounds = node.GetBounds();
             DrawBounds(bounds, Color.red);
+
+            results.Add(new RayIntersectionResult(node, entryDistance, _ray.GetPoint(entryDistance), normal));
         }
     }
 
@@ -682,4 +759,64 @@ if(rems.length>0) {
     }
 
     */
+
+    private GameObject _renderObject;
+    private readonly List<Mesh> _meshes = new List<Mesh>();
+    private readonly List<GameObject> _meshObjects = new List<GameObject>();
+
+    public void Render(GameObject gameObject) {
+        ProcessDrawQueue();
+
+        if (true || _renderObject != gameObject) {
+            for (var i = 0; i < _meshes.Count; i++) {
+                var mesh = _meshes[i];
+                var meshObject = _meshObjects[i];
+                if (Application.isPlaying) {
+                    Object.Destroy(mesh);
+                    Object.Destroy(meshObject);
+                } else {
+                    Object.DestroyImmediate(mesh);
+                    Object.DestroyImmediate(meshObject);
+                }
+            }
+
+            _meshes.Clear();
+            _meshObjects.Clear();
+
+            //recreate meshes
+            _renderObject = gameObject;
+
+            var verticesCount = _vertices.Count;
+            var numMeshes = (verticesCount / MAX_VERTICES_FOR_MESH) + 1;
+
+            for (var i = 0; i < numMeshes; ++i) {
+                var newMesh = new Mesh();
+
+                var vertexStart = i * MAX_VERTICES_FOR_MESH;
+                var vertexCount = Mathf.Min(vertexStart + MAX_VERTICES_FOR_MESH, verticesCount) - vertexStart;
+
+                var vertexArray = _vertices.GetRange(vertexStart, vertexCount).ToArray();
+
+                newMesh.vertices = vertexArray;
+                newMesh.normals = _normals.GetRange(vertexStart, vertexCount).ToArray();
+                newMesh.uv = _uvs.GetRange(vertexStart, vertexCount).ToArray();
+
+
+                var indexStart = i * MAX_INDICES_FOR_MESH;
+                var indexCount = vertexCount * 3 / 2;
+
+                newMesh.triangles = _indices.GetRange(indexStart, indexCount).Select(index => index - vertexStart).ToArray();
+
+                var meshObject = new GameObject("mesh " + i, typeof (MeshFilter), typeof(MeshRenderer));
+                meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
+                meshObject.GetComponent<MeshRenderer>().sharedMaterial =
+                    gameObject.GetComponent<MeshRenderer>().sharedMaterial;
+
+                _meshes.Add(newMesh);
+                _meshObjects.Add(meshObject);
+
+                meshObject.transform.parent = gameObject.transform;
+            }
+        } else {}
+    }
 }

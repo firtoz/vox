@@ -4,68 +4,68 @@ using UnityEngine;
 [Serializable]
 public class MeshCache : ScriptableObject, ISerializationCallbackReceiver {
     [SerializeField]
-    private int[] triangles;
+    private int[] _triangles;
 
     [SerializeField]
-    private Vector3[] vertices;
+    private Vector3[] _vertices;
 
     [SerializeField]
-    private Vector2[] uv;
+    private Vector2[] _uv;
 
     [SerializeField]
-    private Vector2[] uv2;
+    private Vector2[] _uv2;
 
     [SerializeField]
-    private Vector2[] uv3;
+    private Vector2[] _uv3;
 
     [SerializeField]
-    private Vector2[] uv4;
+    private Vector2[] _uv4;
 
     [SerializeField]
-    private Vector3[] normals;
+    private Vector3[] _normals;
 
     [SerializeField]
-    private Vector4[] tangents;
+    private Vector4[] _tangents;
 
     [SerializeField]
-    private Bounds bounds;
+    private Bounds _bounds;
 
     [SerializeField]
-    private Matrix4x4[] bindposes;
+    private Matrix4x4[] _bindposes;
 
     [SerializeField]
-    private BoneWeight[] boneweights;
+    private BoneWeight[] _boneweights;
 
     [SerializeField]
-    private Color32[] colors32;
+    private Color32[] _colors32;
 
     public Mesh mesh;
 
     [SerializeField]
-    private SubMeshCache[] subMeshes;
+    private SubMeshCache[] _subMeshes;
 
     public void OnBeforeSerialize() {
         if (!mesh) {
             return;
         }
 
-        uv = mesh.uv;
-        uv2 = mesh.uv2;
-        uv3 = mesh.uv3;
-        uv4 = mesh.uv4;
+        _uv = mesh.uv;
+        _uv2 = mesh.uv2;
+        _uv3 = mesh.uv3;
+        _uv4 = mesh.uv4;
 
-        vertices = mesh.vertices;
-        triangles = mesh.triangles;
-        normals = mesh.normals;
-        tangents = mesh.tangents;
-        bounds = mesh.bounds;
-        bindposes = mesh.bindposes;
-        boneweights = mesh.boneWeights;
-        colors32 = mesh.colors32;
+        _vertices = mesh.vertices;
+        _triangles = mesh.triangles;
+        _normals = mesh.normals;
+        _tangents = mesh.tangents;
+        _bounds = mesh.bounds;
+        _bindposes = mesh.bindposes;
+        _boneweights = mesh.boneWeights;
+        _colors32 = mesh.colors32;
 
-        subMeshes = new SubMeshCache[mesh.subMeshCount];
+        _subMeshes = new SubMeshCache[mesh.subMeshCount];
         for (var i = 0; i < mesh.subMeshCount; i++) {
-            subMeshes[i] = new SubMeshCache {indices = mesh.GetIndices(i), topology = mesh.GetTopology(i)};
+            _subMeshes[i] = new SubMeshCache {indices = mesh.GetIndices(i), topology = mesh.GetTopology(i)};
         }
     }
 
@@ -77,23 +77,23 @@ public class MeshCache : ScriptableObject, ISerializationCallbackReceiver {
 
         mesh.Clear();
 
-        mesh.vertices = vertices;
-        mesh.uv = uv;
-        mesh.uv2 = uv2;
-        mesh.uv3 = uv3;
-        mesh.uv4 = uv4;
-        mesh.normals = normals;
-        mesh.tangents = tangents;
-        mesh.bounds = bounds;
-        mesh.bindposes = bindposes;
-        mesh.boneWeights = boneweights;
-        mesh.colors32 = colors32;
-        mesh.triangles = triangles;
+        mesh.vertices = _vertices;
+        mesh.uv = _uv;
+        mesh.uv2 = _uv2;
+        mesh.uv3 = _uv3;
+        mesh.uv4 = _uv4;
+        mesh.normals = _normals;
+        mesh.tangents = _tangents;
+        mesh.bounds = _bounds;
+        mesh.bindposes = _bindposes;
+        mesh.boneWeights = _boneweights;
+        mesh.colors32 = _colors32;
+        mesh.triangles = _triangles;
 
-        mesh.subMeshCount = subMeshes.Length;
+        mesh.subMeshCount = _subMeshes.Length;
 
-        for (var i = 0; i < subMeshes.Length; i++) {
-            mesh.SetIndices(subMeshes[i].indices, subMeshes[i].topology, i);
+        for (var i = 0; i < _subMeshes.Length; i++) {
+            mesh.SetIndices(_subMeshes[i].indices, _subMeshes[i].topology, i);
         }
     }
 }
