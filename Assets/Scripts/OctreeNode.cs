@@ -603,18 +603,26 @@ public class OctreeNode<T> : OctreeNode {
 
     public void SetItem(T item) {
         if (!IsLeafNode()) {
-            for (var i = 0; i < 8; i++) {
-                if (GetChild((ChildIndex) i) != null) {
-                    RemoveChild((ChildIndex) i);
-                }
-            }
+            //if it's not a leaf node, we need to remove all children
+
+            RemoveAllChildren();
         }
 
         _item = item;
 
-        if (!_hasItem) {
-            _hasItem = true;
-            _tree.NodeAdded(this);
+        if (_hasItem) {
+            return;
+        }
+
+        _hasItem = true;
+        _tree.NodeAdded(this);
+    }
+
+    private void RemoveAllChildren() {
+        for (var i = 0; i < 8; i++) {
+            if (GetChild((ChildIndex) i) != null) {
+                RemoveChild((ChildIndex) i);
+            }
         }
     }
 
