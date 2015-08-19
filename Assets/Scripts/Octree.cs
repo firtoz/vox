@@ -177,6 +177,8 @@ if(rems.length>0) {
 
         foreach (var neighbourSide in OctreeNode.AllSides) {
             var neighbour = octreeNode.GetDeepestSolidNeighbour(neighbourSide);
+
+            Debug.Log("neighbour for side " + neighbourSide + ":"+neighbour);
             if (neighbour == null || !neighbour.HasItem()) {
                 continue;
             }

@@ -128,7 +128,8 @@ public class OctreeNode<T> : OctreeNode {
             _root = this;
             _nodeCoordinates = new OctreeNodeCoordinates();
 //            _coords = new OctreeChildCoordinates[0];
-        } else {
+        }
+        else {
             _root = _parent._root;
             _nodeCoordinates = new OctreeNodeCoordinates(parent._nodeCoordinates,
                 OctreeChildCoordinates.FromIndex(indexInParent));
@@ -229,7 +230,7 @@ public class OctreeNode<T> : OctreeNode {
                 return SideState.Empty;
             }
             if (currentNode.IsLeafNode()) {
-                return SideState.Full;
+                return currentNode.HasItem() ? SideState.Full : SideState.Empty;
             }
 
             currentNode = currentNode.GetChild(coord.ToIndex());
@@ -242,7 +243,7 @@ public class OctreeNode<T> : OctreeNode {
         }
 
         if (currentNode.IsLeafNode()) {
-            return SideState.Full;
+            return currentNode.HasItem() ? SideState.Full : SideState.Empty;
         }
 
         //not null and not leaf, so it must be partial
@@ -266,7 +267,7 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     private void CreateFaces(ICollection<OctreeRenderFace<T>> faces, NeighbourSide side, Bounds bounds,
-                             OctreeNodeCoordinates coords) {
+        OctreeNodeCoordinates coords) {
         var sidestate = GetSideState(coords, side);
 
         switch (sidestate) {
@@ -523,7 +524,7 @@ public class OctreeNode<T> : OctreeNode {
         return SetChild(index, new OctreeNode<T>(GetChildBounds(index), this, index, _depth + 1, _tree));
     }
 
-    public void RemoveChild(ChildIndex index) {
+    public void RemoveChild(ChildIndex index, bool cleanup = false) {
         AssertNotDeleted();
         if (_children == null) {
             throw new ArgumentException("The child at that index is already removed!", "index");
@@ -533,15 +534,22 @@ public class OctreeNode<T> : OctreeNode {
 
         if (_children[indexInt] != null) {
             _childCount--;
-        } else {
+        }
+        else {
             throw new ArgumentException("The child at that index is already removed!", "index");
         }
 
         _children[indexInt].SetDeleted();
         _children[indexInt] = null;
 
-        if (_childCount == 0) {
-            _children = null;
+        if (_childCount != 0) {
+            return;
+        }
+
+        _children = null;
+
+        if (cleanup && _parent != null) {
+            _parent.RemoveChild(_indexInParent, true);
         }
     }
 
@@ -578,7 +586,8 @@ public class OctreeNode<T> : OctreeNode {
                     if (child != null) {
                         RemoveChild(octreeNodeChildIndex);
                         child = AddChild(octreeNodeChildIndex);
-                    } else {
+                    }
+                    else {
                         if (HasItem()) {
                             for (var j = 0; j < 8; j++) {
                                 AddChild((ChildIndex) j).SetItem(_item);
@@ -586,13 +595,15 @@ public class OctreeNode<T> : OctreeNode {
                             RemoveItem();
 
                             child = GetChild(octreeNodeChildIndex);
-                        } else {
+                        }
+                        else {
                             child = AddChild(octreeNodeChildIndex);
                         }
                     }
 
                     child.SetItem(item);
-                } else {
+                }
+                else {
                     //child intersects but is not completely contained by it
 
                     var child = GetChild(octreeNodeChildIndex);
@@ -605,7 +616,8 @@ public class OctreeNode<T> : OctreeNode {
                             RemoveItem();
 
                             child = GetChild(octreeNodeChildIndex);
-                        } else {
+                        }
+                        else {
                             child = AddChild(octreeNodeChildIndex);
                         }
                     }
@@ -761,11 +773,13 @@ public class OctreeNode<T> : OctreeNode {
             var child = node.GetChild(index);
             if (child != null) {
                 node = child;
-            } else {
+            }
+            else {
                 if (node.HasItem()) {
                     node.SubDivide();
                     node = node.GetChild(index);
-                } else {
+                }
+                else {
                     node = node.AddChild(index);
                 }
             }
@@ -776,5 +790,32 @@ public class OctreeNode<T> : OctreeNode {
 
     public OctreeNode<T> GetParent() {
         return _parent;
+    }
+
+    public void RemoveRecursive(OctreeNodeCoordinates coordinates, bool cleanup = false) {
+        if (coordinates.Length == 0) {
+            return;
+        }
+
+        var node = this;
+
+        foreach (var coordinate in coordinates) {
+            var index = coordinate.ToIndex();
+
+            var child = node.GetChild(index);
+            if (child != null) {
+                node = child;
+            }
+            else {
+                if (node.HasItem()) {
+                    node.SubDivide();
+                    node = node.AddChild(index);
+                }
+
+                return;
+            }
+        }
+
+        node.GetParent().RemoveChild(node.GetIndexInParent(), cleanup);
     }
 }
