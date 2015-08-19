@@ -27,7 +27,8 @@ public abstract class OctreeNode {
         Left = 2,
         Right = 3,
         Forward = 4,
-        Back = 5
+        Back = 5,
+        Invalid = -1
     }
 
     public static readonly NeighbourSide[] AllSides = {
@@ -452,6 +453,19 @@ public class OctreeNode<T> : OctreeNode {
         return GetChildBounds(_bounds, childIndex);
     }
 
+    //recursive, can be phantom bounds!
+    public Bounds GetChildBounds(OctreeNodeCoordinates coordinates) {
+        AssertNotDeleted();
+
+        var result = GetBounds();
+
+        foreach (var coordinate in coordinates) {
+            result = GetChildBounds(result, coordinate.ToIndex());
+        }
+
+        return result;
+    }
+
     public static Bounds GetChildBounds(Bounds originalBounds, ChildIndex childIndex) {
         Vector3 childDirection;
 
@@ -733,5 +747,34 @@ public class OctreeNode<T> : OctreeNode {
         Empty,
         Partial,
         Full
+    }
+
+    public bool IsSolid() {
+        return IsLeafNode() && HasItem();
+    }
+
+    public OctreeNode<T> AddRecursive(OctreeNodeCoordinates coordinates) {
+        var node = this;
+        foreach (var coordinate in coordinates) {
+            var index = coordinate.ToIndex();
+
+            var child = node.GetChild(index);
+            if (child != null) {
+                node = child;
+            } else {
+                if (node.HasItem()) {
+                    node.SubDivide();
+                    node = node.GetChild(index);
+                } else {
+                    node = node.AddChild(index);
+                }
+            }
+        }
+
+        return node;
+    }
+
+    public OctreeNode<T> GetParent() {
+        return _parent;
     }
 }

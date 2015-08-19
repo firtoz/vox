@@ -45,6 +45,17 @@ public class Octree<T> {
             _drawQueue.Add(octreeNode);
         }
 
+        foreach (var neighbourSide in OctreeNode.AllSides) {
+            var neighbour = octreeNode.GetDeepestSolidNeighbour(neighbourSide);
+            if (neighbour == null || !neighbour.HasItem()) {
+                continue;
+            }
+
+            if (!_drawQueue.Contains(neighbour)) {
+                _drawQueue.Add(neighbour);
+            }
+        }
+
         //        if (_nodeFaces.ContainsKey(octreeNode)) {
         //            throw new ArgumentException("The node is already rendered!", "octreeNode");
         //        }
@@ -222,7 +233,7 @@ if(rems.length>0) {
             var removalIndex = 0;
             var currentFaceToReplace = facesToRemove[removalIndex];
             var currentFaceIndex = currentFaceToReplace.faceIndexInTree;
-            
+
             foreach (var face in facesToRemove) {
                 _allFaces[face.faceIndexInTree] = null;
             }
@@ -333,20 +344,20 @@ if(rems.length>0) {
 //        }
 //    }
 
-    public bool Intersect(Transform transform, Ray ray) {
-        return new RayIntersection<T>(transform, this, ray, false).results.Count > 0;
+    public bool Intersect(Transform transform, Ray ray, int? wantedDepth = null) {
+        return new RayIntersection<T>(transform, this, ray, false, wantedDepth).results.Count > 0;
     }
 
-    public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult<T> result) {
+    public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult<T> result, int? wantedDepth = null) {
         // ReSharper disable once ObjectCreationAsStatement
-        var results = new RayIntersection<T>(transform, this, ray, false).results;
+        var results = new RayIntersection<T>(transform, this, ray, false, wantedDepth).results;
 
         if (results.Count > 0) {
             result = results[0];
             return true;
         }
 
-        result = new RayIntersectionResult<T>();
+        result = new RayIntersectionResult<T>(false);
         return false;
     }
 
@@ -359,15 +370,25 @@ if(rems.length>0) {
         ProcessDrawQueue();
 
         if (true || _renderObject != gameObject) {
-            for (var i = 0; i < _meshes.Count; i++) {
-                var mesh = _meshes[i];
-                var meshObject = _meshObjects[i];
+//            for (var i = 0; i < _meshes.Count; i++) {
+//                var mesh = _meshes[i];
+//                var meshObject = _meshObjects[i];
+//                if (Application.isPlaying) {
+//                    Object.Destroy(mesh);
+//                    Object.Destroy(meshObject);
+//                } else {
+//                    Object.DestroyImmediate(mesh);
+//                    Object.DestroyImmediate(meshObject);
+//                }
+//            }
+
+            var numChildren = gameObject.transform.childCount;
+
+            for (var i = numChildren - 1; i >= 0; i--) {
                 if (Application.isPlaying) {
-                    Object.Destroy(mesh);
-                    Object.Destroy(meshObject);
+                    Object.Destroy(gameObject.transform.GetChild(i).gameObject);
                 } else {
-                    Object.DestroyImmediate(mesh);
-                    Object.DestroyImmediate(meshObject);
+                    Object.DestroyImmediate(gameObject.transform.GetChild(i).gameObject);
                 }
             }
 
@@ -407,7 +428,7 @@ if(rems.length>0) {
                 _meshes.Add(newMesh);
                 _meshObjects.Add(meshObject);
 
-                meshObject.transform.parent = gameObject.transform;
+                meshObject.transform.SetParent(gameObject.transform, false);
             }
         } else {}
     }

@@ -1,4 +1,6 @@
-﻿#if UNITY_EDITOR
+﻿
+using System.Linq;
+#if UNITY_EDITOR
 using UnityEditor;
 #endif
 using UnityEngine;
@@ -8,10 +10,8 @@ public class Vox : MonoBehaviour {
 
     public Octree<int> octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one * 100));
 
-	// Use this for initialization
-	void Start () {
-	    
-	}
+    // Use this for initialization
+    private void Start() {}
 
     public void OnEnable() {
         octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one * 7.5f));
@@ -35,11 +35,38 @@ public class Vox : MonoBehaviour {
 
 //        octree.ApplyToMesh(GetComponent<MeshFilter>().sharedMesh);
     }
-	
-	// Update is called once per frame
-	void Update () {
-	    if (octree != null) {
-            octree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition));
+
+    public bool useDepth = true;
+    public int wantedDepth = 5;
+
+    // Update is called once per frame
+    private void Update() {
+        if (octree == null) {
+            return;
+        }
+
+        RayIntersectionResult<int> result;
+
+        if (useDepth) {
+            octree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out result, wantedDepth);
+        } else {
+            octree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out result);
+        }
+
+        if (result.hit) {
+            if (Input.GetMouseButtonDown(0)) {
+                var final = octree.GetRoot().AddRecursive(result.coordinates);
+                final.GetParent().RemoveChild(result.coordinates.Last().ToIndex());
+                octree.Render(gameObject);
+            }
+            if (Input.GetMouseButtonDown(1)) {
+                var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
+                if (neighbourCoords != null) {
+                    var final = octree.GetRoot().AddRecursive(neighbourCoords);
+                    final.SetItem(5);
+                    octree.Render(gameObject);
+                }
+            }
         }
     }
 
@@ -73,10 +100,8 @@ public class Vox : MonoBehaviour {
                 Color color;
 
                 if (node.IsLeafNode()) {
-
                     color = Color.red;
-                }
-                else {
+                } else {
 //                    continue;
                     color = Color.white;
                 }

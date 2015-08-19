@@ -52,15 +52,15 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates>
         _length = _coords.Length;
     }
 
-    public OctreeNodeCoordinates(OctreeNodeCoordinates parentCoordinates, OctreeChildCoordinates octreeChildCoordinates)
+    public OctreeNodeCoordinates(OctreeNodeCoordinates parentCoordinates, params OctreeChildCoordinates[] furtherChildren)
     {
-        _coords = parentCoordinates._coords.Concat(new[] {octreeChildCoordinates}).ToArray();
+        _coords = parentCoordinates._coords.Concat(furtherChildren).ToArray();
         _length = _coords.Length;
     }
 
-    public OctreeNodeCoordinates(OctreeChildCoordinates[] coords)
+    public OctreeNodeCoordinates(IEnumerable<OctreeChildCoordinates> coords)
     {
-        _coords = coords;
+        _coords = coords.ToArray();
         _length = _coords.Length;
     }
 
