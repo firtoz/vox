@@ -200,7 +200,7 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates>
         return new OctreeNodeCoordinates(newCoords);
     }
 
-    public object this[int i]
+    public OctreeChildCoordinates this[int i]
     {
         get { return _coords[i]; }
     }

@@ -627,7 +627,9 @@ public class OctreeNode<T> : OctreeNode {
         }
     }
 
-    public void SetItem(T item) {
+    public void SetItem(T item, bool cleanup = false) {
+        AssertNotDeleted();
+
         if (!IsLeafNode()) {
             //if it's not a leaf node, we need to remove all children
 
@@ -636,12 +638,24 @@ public class OctreeNode<T> : OctreeNode {
 
         _item = item;
 
-        if (_hasItem) {
-            return;
+        if (!_hasItem) {
+            _hasItem = true;
+            _tree.NodeAdded(this);
         }
 
-        _hasItem = true;
-        _tree.NodeAdded(this);
+        if (cleanup && _parent._childCount == 8) {
+            for (int i = 0; i < 8; i++) {
+                if (i == (int) _indexInParent) {
+                    continue;
+                }
+                var sibling = _parent.GetChild((ChildIndex) i);
+                if (!Equals(sibling.GetItem(), item)) {
+                    return;
+                }
+            }
+
+            _parent.SetItem(item, true);
+        }
     }
 
     private void RemoveAllChildren() {
@@ -658,11 +672,13 @@ public class OctreeNode<T> : OctreeNode {
 
     public void RemoveItem() {
         _item = default(T);
-        if (_hasItem) {
-            _hasItem = false;
-
-            _tree.NodeRemoved(this);
+        if (!_hasItem) {
+            return;
         }
+
+        _hasItem = false;
+
+        _tree.NodeRemoved(this);
     }
 
     public Bounds GetBounds() {
@@ -767,6 +783,7 @@ public class OctreeNode<T> : OctreeNode {
 
     public OctreeNode<T> AddRecursive(OctreeNodeCoordinates coordinates) {
         var node = this;
+
         foreach (var coordinate in coordinates) {
             var index = coordinate.ToIndex();
 
@@ -805,15 +822,16 @@ public class OctreeNode<T> : OctreeNode {
             var child = node.GetChild(index);
             if (child != null) {
                 node = child;
+                continue;
             }
-            else {
-                if (node.HasItem()) {
-                    node.SubDivide();
-                    node = node.AddChild(index);
-                }
 
+            if (!node.HasItem()) {
+                //it doesn't have an item! but the child is null!? then it has a child somewhere else, so nothing to remove!
                 return;
             }
+
+            node.SubDivide();
+            node = node.GetChild(index);
         }
 
         node.GetParent().RemoveChild(node.GetIndexInParent(), cleanup);

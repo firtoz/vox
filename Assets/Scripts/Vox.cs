@@ -65,7 +65,8 @@ public class Vox : MonoBehaviour {
                 var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
                 if (neighbourCoords != null) {
                     var final = octree.GetRoot().AddRecursive(neighbourCoords);
-                    final.SetItem(5);
+                    final.SetItem(4, true);
+
                     octree.Render(gameObject);
                 }
             }
