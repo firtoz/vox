@@ -54,14 +54,7 @@ public class Vox : MonoBehaviour {
         }
 
         if (result.hit) {
-            if (Input.GetMouseButtonDown(2)) {
-                Debug.Log(result.coordinates + " : " + result.neighbourSide);
-            }
             if (Input.GetMouseButtonDown(0)) {
-                octree.GetRoot().RemoveRecursive(result.coordinates, true);
-                octree.Render(gameObject);
-            }
-            if (Input.GetMouseButtonDown(1)) {
                 var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
                 if (neighbourCoords != null) {
                     var final = octree.GetRoot().AddRecursive(neighbourCoords);
@@ -69,6 +62,15 @@ public class Vox : MonoBehaviour {
 
                     octree.Render(gameObject);
                 }
+            }
+            if (Input.GetMouseButtonDown(1))
+            {
+                octree.GetRoot().RemoveRecursive(result.coordinates, true);
+                octree.Render(gameObject);
+            }
+            if (Input.GetMouseButtonDown(2))
+            {
+                Debug.Log(result.coordinates + " : " + result.neighbourSide);
             }
         }
     }

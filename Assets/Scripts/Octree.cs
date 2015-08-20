@@ -39,21 +39,20 @@ public class Octree<T> {
     }
 
     private readonly HashSet<OctreeNode<T>> _drawQueue = new HashSet<OctreeNode<T>>();
+    private readonly SortedList<int, OctreeRenderFace<T>> _removalQueue = new SortedList<int, OctreeRenderFace<T>>();
 
     public void NodeAdded(OctreeNode<T> octreeNode) {
         if (!_drawQueue.Contains(octreeNode)) {
             _drawQueue.Add(octreeNode);
         }
 
-        foreach (var neighbourSide in OctreeNode.AllSides) {
-            var neighbour = octreeNode.GetDeepestSolidNeighbour(neighbourSide);
-            if (neighbour == null || !neighbour.HasItem()) {
-                continue;
-            }
-
-            if (!_drawQueue.Contains(neighbour)) {
-                _drawQueue.Add(neighbour);
-            }
+        foreach (var neighbour in OctreeNode.AllSides
+            .Select(neighbourSide => octreeNode
+                .GetAllSolidNeighbours(neighbourSide))
+            .SelectMany(neighbours => neighbours
+                .Where(neighbour => neighbour != null && neighbour.HasItem())
+                .Where(neighbour => !_drawQueue.Contains(neighbour)))) {
+            _drawQueue.Add(neighbour);
         }
 
         //        if (_nodeFaces.ContainsKey(octreeNode)) {
@@ -87,35 +86,127 @@ public class Octree<T> {
         }
 
         _drawQueue.Clear();
+
+        ProcessRemovalQueue();
+    }
+
+    private void ProcessRemovalQueue() {
+        if (!_removalQueue.Any()) {
+            return;
+        }
+
+        var removalIndex = 0;
+
+        var removedIndices = _removalQueue.ToArray();
+
+        var currentFaceToReplace = removedIndices[removalIndex].Value;
+        var currentFaceIndex = currentFaceToReplace.faceIndexInTree;
+
+        var i = _allFaces.Count - 1;
+
+        //iterate backwards to fill up any blanks
+        for (; i >= 0; --i) {
+            //iterate only until the first face index
+            if (i < currentFaceIndex) {
+                break;
+            }
+
+            var currentFace = _allFaces[i];
+
+            PopFaces(i, 1);
+
+            //this face is already removed
+            if (currentFace == null) {
+                continue;
+            }
+
+            //replace the current face with the last non-null face
+
+            _allFaces[currentFaceIndex] = currentFace;
+
+            var vertexIndex = currentFaceIndex * 4;
+
+            for (var j = 0; j < 4; j++) {
+                _vertices[vertexIndex + j] = currentFace.vertices[j];
+                _uvs[vertexIndex + j] = currentFace.uvs[j];
+                _normals[vertexIndex + j] = currentFace.normal;
+            }
+
+            //indices don't change, right?
+
+            currentFace.faceIndexInTree = currentFaceIndex;
+
+            //this face is replaced, try to replace the next one
+
+            removalIndex++;
+
+            if (removalIndex == removedIndices.Length) {
+                break;
+            }
+
+            currentFaceToReplace = removedIndices[removalIndex].Value;
+            currentFaceIndex = currentFaceToReplace.faceIndexInTree;
+        }
+
+        _removalQueue.Clear();
+
+//        removalIndex = i + 1;
+//        var facesToRemove = (_allFaces.Count - 1) - removalIndex;
+//
+//        if (facesToRemove > 0) {
+//            PopFaces(removalIndex, facesToRemove);
+//        }
     }
 
     private void AddNodeInternal(OctreeNode<T> octreeNode) {
         var faces = octreeNode.CreateFaces();
 
-        var vertexIndex = _vertices.Count;
-
         foreach (var face in faces) {
-            face.faceIndexInTree = _allFaces.Count;
+            if (_removalQueue.Any()) {
+                var lastKey = _removalQueue.Keys.Last();
 
-            _allFaces.Add(face);
+                var faceToRemove = _removalQueue[lastKey];
 
-            _vertices.AddRange(face.vertices);
-            _uvs.AddRange(face.uvs);
+                var faceIndex = faceToRemove.faceIndexInTree;
+                face.faceIndexInTree = faceIndex;
 
-            _normals.Add(face.normal);
-            _normals.Add(face.normal);
-            _normals.Add(face.normal);
-            _normals.Add(face.normal);
+                _allFaces[faceIndex] = face;
 
-            _indices.Add(vertexIndex);
-            _indices.Add(vertexIndex + 1);
-            _indices.Add(vertexIndex + 2);
+                var vertexOffset = faceIndex * 4;
 
-            _indices.Add(vertexIndex);
-            _indices.Add(vertexIndex + 2);
-            _indices.Add(vertexIndex + 3);
+                //indices don't change!
 
-            vertexIndex += 4;
+                for (var i = 0; i < 4; i++) {
+                    var currentVertexIndex = vertexOffset + i;
+                    _vertices[currentVertexIndex] = face.vertices[i];
+                    _uvs[currentVertexIndex] = face.uvs[i];
+                    _normals[currentVertexIndex] = face.normal;
+                }
+
+                _removalQueue.Remove(lastKey);
+            } else {
+                face.faceIndexInTree = _allFaces.Count;
+
+                var vertexIndex = _vertices.Count;
+
+                _allFaces.Add(face);
+
+                _vertices.AddRange(face.vertices);
+                _uvs.AddRange(face.uvs);
+
+                _normals.Add(face.normal);
+                _normals.Add(face.normal);
+                _normals.Add(face.normal);
+                _normals.Add(face.normal);
+
+                _indices.Add(vertexIndex);
+                _indices.Add(vertexIndex + 1);
+                _indices.Add(vertexIndex + 2);
+
+                _indices.Add(vertexIndex);
+                _indices.Add(vertexIndex + 2);
+                _indices.Add(vertexIndex + 3);
+            }
         }
 
         _nodeFaces[octreeNode] = faces;
@@ -175,56 +266,16 @@ if(rems.length>0) {
             _drawQueue.Remove(octreeNode);
         }
 
-        foreach (var neighbourSide in OctreeNode.AllSides) {
-            var neighbour = octreeNode.GetDeepestSolidNeighbour(neighbourSide);
-
-            Debug.Log("neighbour for side " + neighbourSide + ":"+neighbour);
-            if (neighbour == null || !neighbour.HasItem()) {
-                continue;
-            }
-
-            if (!_drawQueue.Contains(neighbour)) {
-                _drawQueue.Add(neighbour);
-            }
+        foreach (
+            var neighbour in
+                OctreeNode.AllSides.Select(neighbourSide => octreeNode.GetAllSolidNeighbours(neighbourSide))
+                    .SelectMany(
+                        neighbours =>
+                            neighbours
+                                .Where(neighbour => neighbour != null && neighbour.HasItem())
+                                .Where(neighbour => !_drawQueue.Contains(neighbour)))) {
+            _drawQueue.Add(neighbour);
         }
-//            AddNodeInternal(neighbour);
-//
-////            var newFaces = neighbour.CreateFaces(OctreeNode.GetOpposite(neighbourSide));
-////
-////            var startIndex = _vertices.Count;
-////
-////            foreach (var face in newFaces)
-////            {
-////                face.faceIndexInTree = _allFaces.Count;
-////
-////                _allFaces.Add(face);
-////
-////                _vertices.AddRange(face.vertices);
-////                _uvs.AddRange(face.uvs);
-////
-////                _indices.Add(startIndex);
-////                _indices.Add(startIndex + 1);
-////                _indices.Add(startIndex + 2);
-////
-////                _indices.Add(startIndex);
-////                _indices.Add(startIndex + 2);
-////                _indices.Add(startIndex + 3);
-////
-////                _normals.Add(face.normal);
-////                _normals.Add(face.normal);
-////                _normals.Add(face.normal);
-////                _normals.Add(face.normal);
-////
-////                startIndex += 4;
-////            }
-////
-//////            if (_nodeFaces.ContainsKey(neighbour)) {
-////            _nodeFaces[neighbour].AddRange(newFaces);
-////            }
-////            else {
-////                _nodeFaces[neighbour] = newFaces;
-////            }
-//        }
     }
 
     // TODO optimize further!
@@ -232,55 +283,10 @@ if(rems.length>0) {
     private void RemoveNodeInternal(OctreeNode<T> octreeNode) {
         var facesToRemove = _nodeFaces[octreeNode];
         if (facesToRemove.Count > 0) {
-            var removalIndex = 0;
-            var currentFaceToReplace = facesToRemove[removalIndex];
-            var currentFaceIndex = currentFaceToReplace.faceIndexInTree;
-
             foreach (var face in facesToRemove) {
                 _allFaces[face.faceIndexInTree] = null;
-            }
 
-            //iterate backwards to fill up any blanks
-            for (var i = _allFaces.Count - 1; i >= 0; --i) {
-                //iterate only until the first face index
-                if (i < currentFaceIndex) {
-                    break;
-                }
-
-                var currentFace = _allFaces[i];
-                PopFace(i);
-
-                //this face is already removed
-                if (currentFace == null) {
-                    continue;
-                }
-
-                //replace the current face with the last non-null face
-
-                _allFaces[currentFaceIndex] = currentFace;
-
-                var vertexIndex = currentFaceIndex * 4;
-
-                for (var j = 0; j < 4; j++) {
-                    _vertices[vertexIndex + j] = currentFace.vertices[j];
-                    _uvs[vertexIndex + j] = currentFace.uvs[j];
-                    _normals[vertexIndex + j] = currentFace.normal;
-                }
-
-                //indices don't change, right?
-
-                currentFace.faceIndexInTree = currentFaceIndex;
-
-                //this face is replaced, try to replace the next one
-
-                removalIndex++;
-
-                if (removalIndex == facesToRemove.Count) {
-                    break;
-                }
-
-                currentFaceToReplace = facesToRemove[removalIndex];
-                currentFaceIndex = currentFaceToReplace.faceIndexInTree;
+                _removalQueue.Add(face.faceIndexInTree, face);
             }
         }
 
@@ -291,16 +297,17 @@ if(rems.length>0) {
     /// Removes a face from the _allFaces list.
     /// </summary>
     /// <param name="index">The face index</param>
-    private void PopFace(int index) {
-        _allFaces.RemoveAt(index);
+    /// <param name="count">Number of faces to remove</param>
+    private void PopFaces(int index, int count) {
+        _allFaces.RemoveRange(index, count);
 
         var vertexIndex = index * 4;
 
-        _vertices.RemoveRange(vertexIndex, 4);
-        _uvs.RemoveRange(vertexIndex, 4);
-        _normals.RemoveRange(vertexIndex, 4);
+        _vertices.RemoveRange(vertexIndex, 4 * count);
+        _uvs.RemoveRange(vertexIndex, 4 * count);
+        _normals.RemoveRange(vertexIndex, 4 * count);
 
-        _indices.RemoveRange(index * 6, 6);
+        _indices.RemoveRange(index * 6, 6 * count);
     }
 
     private const int MAX_VERTICES_FOR_MESH = 65000 - 4 * 100;
@@ -414,7 +421,6 @@ if(rems.length>0) {
                 newMesh.vertices = vertexArray;
                 newMesh.normals = _normals.GetRange(vertexStart, vertexCount).ToArray();
                 newMesh.uv = _uvs.GetRange(vertexStart, vertexCount).ToArray();
-
 
                 var indexStart = i * MAX_INDICES_FOR_MESH;
                 var indexCount = vertexCount * 3 / 2;
