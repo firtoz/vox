@@ -8,10 +8,17 @@ namespace OctreeTest
     [Category("Octree Tests")]
     internal class OctreeNodeTests
     {
+        class TestOctree<T> : Octree<T> {
+            public TestOctree(Bounds bounds) : base(bounds) {}
+            protected override bool IsSameMesh(T a, T b) {
+                return true;
+            }
+        }
+
         [Test]
         public void CoordinateTests()
         {
-            var testOctree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one));
+            var testOctree = new TestOctree<int>(new Bounds(Vector3.zero, Vector3.one));
             var root = testOctree.GetRoot();
 
             Assert.IsTrue(root.IsLeafNode());

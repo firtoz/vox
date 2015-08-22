@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-public class Octree<T> {
+public abstract class Octree<T> {
     private readonly List<OctreeRenderFace<T>> _allFaces = new List<OctreeRenderFace<T>>();
     private readonly List<int> _indices = new List<int>();
 
@@ -315,52 +315,13 @@ if(rems.length>0) {
     private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
     private const int MAX_INDICES_FOR_MESH = MAX_FACES_FOR_MESH * 6;
 
-
-//    private void ApplyToMesh(Mesh sharedMesh, int startIndex, int endIndex) {
-//        sharedMesh.Clear();
-//
-//        sharedMesh.MarkDynamic();
-//
-//        var verticesSlice = _vertices.GetRange(startIndex, endIndex);
-//        var indicesSlice = _indices.GetRange(startIndex/4)
-//
-//        /*
-//            _indices.Add(vertexIndex);
-//            _indices.Add(vertexIndex + 1);
-//            _indices.Add(vertexIndex + 2);
-//
-//            _indices.Add(vertexIndex);
-//            _indices.Add(vertexIndex + 2);
-//            _indices.Add(vertexIndex + 3);    
-//        */
-//            //        var numVertices = _vertices.Count;
-//
-//        //        Debug.Log(numVertices);
-//
-//        if (numVertices < 65535) {
-//            sharedMesh.vertices = _vertices.ToArray();
-//            sharedMesh.normals = _normals.ToArray();
-//            sharedMesh.triangles = _indices.ToArray();
-//            sharedMesh.uv = _uvs.ToArray();
-//        } else {
-//            var numMeshes = numVertices / 65535;
-//            sharedMesh.subMeshCount = numMeshes;
-//
-//            for (var i = 0; i < numMeshes; ++i) {
-//                var start = i * 65535;
-//                var end = Mathf.Min(start + 65535, numVertices) - start;
-//                sharedMesh.SetIndices(_indices.GetRange(start, end).ToArray(), MeshTopology.Triangles, i);
-//            }
-//        }
-//    }
-
     public bool Intersect(Transform transform, Ray ray, int? wantedDepth = null) {
         return new RayIntersection<T>(transform, this, ray, false, wantedDepth).results.Count > 0;
     }
 
     public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult<T> result, int? wantedDepth = null) {
         if (wantedDepth != null && wantedDepth < 0) {
-            throw new ArgumentOutOfRangeException("wantedDepth", "Wanted depth should be at least zero!");
+            throw new ArgumentOutOfRangeException("wantedDepth", "Wanted depth should not be less than zero.");
         }
         // ReSharper disable once ObjectCreationAsStatement
         var results = new RayIntersection<T>(transform, this, ray, false, wantedDepth).results;
@@ -444,4 +405,6 @@ if(rems.length>0) {
             }
         } else {}
     }
+
+    protected abstract bool IsSameMesh(T a, T b);
 }

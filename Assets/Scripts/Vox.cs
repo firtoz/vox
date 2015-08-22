@@ -1,28 +1,24 @@
-﻿
-using System.Linq;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
+﻿using Assets.Scripts;
 using UnityEngine;
 
 public class Vox : MonoBehaviour {
     public float size = 100.0f;
 
-    public Octree<int> octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one * 100));
+    public VoxelTree voxelTree = new VoxelTree(Vector3.zero, Vector3.one * 100);
 
     // Use this for initialization
     private void Start() {}
 
     public void OnEnable() {
-        octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one * 7.5f));
+        voxelTree = new VoxelTree(Vector3.zero, Vector3.one * 50);
 
         //                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one), 5, 8);
         //                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one*0.5f), 6, 8);
         //                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one*0.7f), 7, 8);
 
         //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
-        octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdRight).SetItem(4);
-        octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopBackLeft).SetItem(4);
+        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdRight).SetItem(4);
+        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.TopBackLeft).SetItem(4);
 //        octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopBackRight).SetItem(4);
 
 //        topFwdLeft.SetItem(4);
@@ -31,7 +27,7 @@ public class Vox : MonoBehaviour {
 //        topFwdLeft.RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
 
         //                topFwdLeft.SubDivide();
-        octree.Render(gameObject);
+        voxelTree.Render(gameObject);
 
 //        octree.ApplyToMesh(GetComponent<MeshFilter>().sharedMesh);
     }
@@ -42,40 +38,38 @@ public class Vox : MonoBehaviour {
     // Update is called once per frame
     private void Update() {
         if (Input.GetKeyDown(KeyCode.J)) {
-            this.wantedDepth--;
+            wantedDepth--;
         }
         if (Input.GetKeyDown(KeyCode.K)) {
-            this.wantedDepth++;
+            wantedDepth++;
         }
-        if (octree == null) {
+        if (voxelTree == null) {
             return;
         }
 
         RayIntersectionResult<int> result;
 
         if (useDepth) {
-            octree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out result, wantedDepth);
+            voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out result, wantedDepth);
         } else {
-            octree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out result);
+            voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out result);
         }
 
         if (result.hit) {
             if (Press(0)) {
                 var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
                 if (neighbourCoords != null) {
-                    var final = octree.GetRoot().AddRecursive(neighbourCoords);
+                    var final = voxelTree.GetRoot().AddRecursive(neighbourCoords);
                     final.SetItem(4, true);
 
-                    octree.Render(gameObject);
+                    voxelTree.Render(gameObject);
                 }
             }
-            if (Press(1))
-            {
-                octree.GetRoot().RemoveRecursive(result.coordinates, true);
-                octree.Render(gameObject);
+            if (Press(1)) {
+                voxelTree.GetRoot().RemoveRecursive(result.coordinates, true);
+                voxelTree.Render(gameObject);
             }
-            if (Press(2))
-            {
+            if (Press(2)) {
                 Debug.Log(result.coordinates + " : " + result.neighbourSide);
             }
         }
@@ -114,8 +108,8 @@ public class Vox : MonoBehaviour {
     public bool showGizmos = false;
 
     public void OnDrawGizmosSelected() {
-        if (octree != null && showGizmos) {
-            foreach (var node in octree.DepthFirst()) {
+        if (voxelTree != null && showGizmos) {
+            foreach (var node in voxelTree.DepthFirst()) {
                 Color color;
 
                 if (node.IsLeafNode()) {

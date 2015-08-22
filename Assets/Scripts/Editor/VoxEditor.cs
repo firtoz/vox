@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using Assets.Scripts;
 using UnityEditor;
 using UnityEngine;
 
@@ -20,7 +19,7 @@ public class VoxEditor : Editor {
 
 
         if (GUILayout.Button("Modify")) {
-            var topFwdLeft = vox.octree.GetRoot().GetChild(OctreeNode.ChildIndex.TopFwdLeft);
+            var topFwdLeft = vox.voxelTree.GetRoot().GetChild(OctreeNode.ChildIndex.TopFwdLeft);
 
             topFwdLeft.SetItem(4);
             topFwdLeft.SubDivide();
@@ -31,7 +30,7 @@ public class VoxEditor : Editor {
 //                using (new MeshModification(sharedMesh, "Modify")) {
 
             Undo.RegisterCompleteObjectUndo(vox.gameObject, "Modify");
-            vox.octree.Render(vox.gameObject);
+            vox.voxelTree.Render(vox.gameObject);
             EditorUtility.SetDirty(vox.gameObject);
         }
 //            if (GUILayout.Button("CreateFaces")) {
@@ -51,11 +50,11 @@ public class VoxEditor : Editor {
 ////                triangles = indices.ToArray();
 //            }
         if (GUILayout.Button("Regenerate")) {
-            vox.octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one * 7.5f));
+            vox.voxelTree = new VoxelTree(Vector3.zero, Vector3.one * 50);
 
 //                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one*4), 5, 6);
-            vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one * 0.5f), 6, 8);
-            vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one * 0.7f), 7, 8);
+            vox.voxelTree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one * 0.5f), 6, 8);
+            vox.voxelTree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one * 0.7f), 7, 8);
 
             //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
             //                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
@@ -64,7 +63,7 @@ public class VoxEditor : Editor {
             //                topFwdLeft.SubDivide();
 
             Undo.RegisterCompleteObjectUndo(vox.gameObject, "Modify");
-            vox.octree.Render(vox.gameObject);
+            vox.voxelTree.Render(vox.gameObject);
             EditorUtility.SetDirty(vox.gameObject);
         }
         if (GUILayout.Button("Add Random Bounds")) {
@@ -72,7 +71,7 @@ public class VoxEditor : Editor {
 
 //                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one*4), 5, 6);
 //                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one*0.5f), 6, 8);
-            vox.octree.AddBounds(
+            vox.voxelTree.AddBounds(
                 new Bounds(
                     new Vector3(Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f)) * 3.0f,
                     new Vector3(Random.Range(0.1f, 1.0f), Random.Range(0.1f, 1.0f), Random.Range(0.1f, 1.0f))), 7, 8);
@@ -84,7 +83,7 @@ public class VoxEditor : Editor {
             //                topFwdLeft.SubDivide();
             //                vox.octree.ProcessDrawQueue();
             Undo.RegisterCompleteObjectUndo(vox.gameObject, "Modify");
-            vox.octree.Render(vox.gameObject);
+            vox.voxelTree.Render(vox.gameObject);
             EditorUtility.SetDirty(vox.gameObject);
         }
     }
