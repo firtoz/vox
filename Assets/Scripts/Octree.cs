@@ -163,6 +163,7 @@ public abstract class Octree<T> {
         var faces = octreeNode.CreateFaces();
 
         foreach (var face in faces) {
+            //if the removal queue isn't empty, replace the last one from there!
             if (_removalQueue.Any()) {
                 var lastKey = _removalQueue.Keys.Last();
 
