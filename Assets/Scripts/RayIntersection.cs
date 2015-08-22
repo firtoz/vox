@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +12,10 @@ public class RayIntersection<T> {
     private readonly OctreeNode<T> _rootNode;
 
     public readonly List<RayIntersectionResult<T>> results = new List<RayIntersectionResult<T>>();
+    private readonly bool _debug;
 
-    public RayIntersection(Transform transform, Octree<T> octree, Ray r, bool intersectMultiple, int? wantedDepth = null) {
+    public RayIntersection(Transform transform, Octree<T> octree, Ray r, bool intersectMultiple, int? wantedDepth = null, bool debug = false) {
+        _debug = debug;
         _rootNode = octree.GetRoot();
         if (_rootNode == null) {
             //we had a good run guys, time to call it a day
@@ -160,8 +163,10 @@ public class RayIntersection<T> {
         return zi;
     }
 
-    private void DrawLocalLine(Vector3 a, Vector3 b, Color color) {
-        Debug.DrawLine(_transform.TransformPoint(a), _transform.TransformPoint(b), color, 0, false);
+    private void DrawLocalLine(Vector3 a, Vector3 b, Color color, bool force = false) {
+        if (_debug || force) {
+            Debug.DrawLine(_transform.TransformPoint(a), _transform.TransformPoint(b), color, 0, false);
+        }
     }
 
     private void ProcSubtree(float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, OctreeNode<T> node,
@@ -295,30 +300,30 @@ public class RayIntersection<T> {
         }
     }
 
-    private void DrawBounds(Bounds bounds) {
-        DrawBounds(bounds, Color.white);
+    private void DrawBounds(Bounds bounds, bool force = false) {
+        DrawBounds(bounds, Color.white, force);
     }
 
-    private void DrawBounds(Bounds bounds, Color color) {
+    private void DrawBounds(Bounds bounds, Color color, bool force = false) {
         var min = bounds.min;
         var max = bounds.max;
 
-        DrawLocalLine(min, new Vector3(min.x, min.y, max.z), color);
-        DrawLocalLine(min, new Vector3(min.x, max.y, min.z), color);
-        DrawLocalLine(min, new Vector3(max.x, min.y, min.z), color);
+        DrawLocalLine(min, new Vector3(min.x, min.y, max.z), color, force);
+        DrawLocalLine(min, new Vector3(min.x, max.y, min.z), color, force);
+        DrawLocalLine(min, new Vector3(max.x, min.y, min.z), color, force);
 
-        DrawLocalLine(new Vector3(max.x, min.y, min.z), new Vector3(max.x, min.y, max.z), color);
+        DrawLocalLine(new Vector3(max.x, min.y, min.z), new Vector3(max.x, min.y, max.z), color, force);
 
-        DrawLocalLine(new Vector3(max.x, min.y, max.z), new Vector3(min.x, min.y, max.z), color);
-        DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(min.x, max.y, min.z), color);
-        DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(max.x, min.y, min.z), color);
+        DrawLocalLine(new Vector3(max.x, min.y, max.z), new Vector3(min.x, min.y, max.z), color, force);
+        DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(min.x, max.y, min.z), color, force);
+        DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(max.x, min.y, min.z), color, force);
 
-        DrawLocalLine(max, new Vector3(max.x, max.y, min.z), color);
-        DrawLocalLine(max, new Vector3(max.x, min.y, max.z), color);
-        DrawLocalLine(max, new Vector3(min.x, max.y, max.z), color);
+        DrawLocalLine(max, new Vector3(max.x, max.y, min.z), color, force);
+        DrawLocalLine(max, new Vector3(max.x, min.y, max.z), color, force);
+        DrawLocalLine(max, new Vector3(min.x, max.y, max.z), color, force);
 
-        DrawLocalLine(new Vector3(min.x, min.y, max.z), new Vector3(min.x, max.y, max.z), color);
-        DrawLocalLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z), color);
+        DrawLocalLine(new Vector3(min.x, min.y, max.z), new Vector3(min.x, max.y, max.z), color, force);
+        DrawLocalLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z), color, force);
     }
 
     private Vector3 GetNormal(EntryPlane entryPlane) {
@@ -390,7 +395,7 @@ public class RayIntersection<T> {
             _ray.GetPoint(entryDistance) + _transform.TransformDirection(normal) * size, Color.green, 0, false);
 
         var bounds = node.GetBounds();
-        DrawBounds(bounds, Color.red);
+        DrawBounds(bounds, Color.red, true);
 
         results.Add(new RayIntersectionResult<T>(node, node.GetCoords(), entryDistance, _ray.GetPoint(entryDistance), normal, GetNeighbourSide(entryPlane)));
     }
@@ -411,7 +416,7 @@ public class RayIntersection<T> {
 
         
         var bounds = _rootNode.GetChildBounds(nodeCoordinates);
-        DrawBounds(bounds, Color.red);
+        DrawBounds(bounds, Color.red, true);
 
         results.Add(new RayIntersectionResult<T>(null, nodeCoordinates, entryDistance, _ray.GetPoint(entryDistance), normal, GetNeighbourSide(entryPlane)));
     }

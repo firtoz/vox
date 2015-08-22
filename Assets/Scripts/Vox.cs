@@ -41,6 +41,12 @@ public class Vox : MonoBehaviour {
 
     // Update is called once per frame
     private void Update() {
+        if (Input.GetKeyDown(KeyCode.J)) {
+            this.wantedDepth--;
+        }
+        if (Input.GetKeyDown(KeyCode.K)) {
+            this.wantedDepth++;
+        }
         if (octree == null) {
             return;
         }
@@ -54,7 +60,7 @@ public class Vox : MonoBehaviour {
         }
 
         if (result.hit) {
-            if (Input.GetMouseButtonDown(0)) {
+            if (Press(0)) {
                 var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
                 if (neighbourCoords != null) {
                     var final = octree.GetRoot().AddRecursive(neighbourCoords);
@@ -63,35 +69,43 @@ public class Vox : MonoBehaviour {
                     octree.Render(gameObject);
                 }
             }
-            if (Input.GetMouseButtonDown(1))
+            if (Press(1))
             {
                 octree.GetRoot().RemoveRecursive(result.coordinates, true);
                 octree.Render(gameObject);
             }
-            if (Input.GetMouseButtonDown(2))
+            if (Press(2))
             {
                 Debug.Log(result.coordinates + " : " + result.neighbourSide);
             }
         }
     }
 
-//    public void AddBounds(Bounds bounds)
-//    {
-//        var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-//        cube.transform.position = bounds.center;
-//        cube.transform.localScale = bounds.size;
-//
-//#if UNITY_EDITOR
-//        Undo.RegisterCreatedObjectUndo(cube, "Add Bounds");
-//        Undo.SetTransformParent(cube.transform, transform, "Add Bounds");
-//#else
-//        cube.transform.parent = transform;
-//#endif
-//
-//        octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one * 100));
-//
-//        octree.AddBounds(bounds, 8);
-//    }
+    private static bool Press(int button) {
+        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) {
+            return Input.GetMouseButton(button);
+        }
+
+        return Input.GetMouseButtonDown(button);
+    }
+
+    //    public void AddBounds(Bounds bounds)
+    //    {
+    //        var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+    //        cube.transform.position = bounds.center;
+    //        cube.transform.localScale = bounds.size;
+    //
+    //#if UNITY_EDITOR
+    //        Undo.RegisterCreatedObjectUndo(cube, "Add Bounds");
+    //        Undo.SetTransformParent(cube.transform, transform, "Add Bounds");
+    //#else
+    //        cube.transform.parent = transform;
+    //#endif
+    //
+    //        octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one * 100));
+    //
+    //        octree.AddBounds(bounds, 8);
+    //    }
 
     private void DrawLocalLine(Vector3 a, Vector3 b) {
         Gizmos.DrawLine(transform.TransformPoint(a), transform.TransformPoint(b));

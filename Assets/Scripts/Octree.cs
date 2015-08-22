@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -358,6 +359,9 @@ if(rems.length>0) {
     }
 
     public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult<T> result, int? wantedDepth = null) {
+        if (wantedDepth != null && wantedDepth < 0) {
+            throw new ArgumentOutOfRangeException("wantedDepth", "Wanted depth should be at least zero!");
+        }
         // ReSharper disable once ObjectCreationAsStatement
         var results = new RayIntersection<T>(transform, this, ray, false, wantedDepth).results;
 

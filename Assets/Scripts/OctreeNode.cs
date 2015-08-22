@@ -222,6 +222,20 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     private static void GetAllSolidChildrenOnSide(OctreeNode<T> currentNode, List<OctreeNode<T>> result, NeighbourSide side) {
+        var childCoords = GetChildCoordsOfSide(side);
+
+        foreach (var childNode in childCoords
+            .Select(childCoord => currentNode.GetChild(childCoord.ToIndex()))
+            .Where(childNode => childNode != null && !childNode.IsDeleted())) {
+            if (childNode.IsSolid()) {
+                result.Add(childNode);
+            } else if (!childNode.IsLeafNode()) {
+                GetAllSolidChildrenOnSide(childNode, result, side);
+            }
+        }
+    }
+
+    private static IEnumerable<OctreeChildCoordinates> GetChildCoordsOfSide(NeighbourSide side) {
         OctreeChildCoordinates[] childCoords;
 
         switch (side) {
@@ -246,16 +260,7 @@ public class OctreeNode<T> : OctreeNode {
             default:
                 throw new ArgumentOutOfRangeException("side", side, null);
         }
-
-        foreach (var childNode in childCoords
-            .Select(childCoord => currentNode.GetChild(childCoord.ToIndex()))
-            .Where(childNode => childNode != null && !childNode.IsDeleted())) {
-            if (childNode.IsSolid()) {
-                result.Add(childNode);
-            } else if (childNode.IsLeafNode()) {
-                GetAllSolidChildrenOnSide(childNode, result, side);
-            }
-        }
+        return childCoords;
     }
 
     private SideState GetSideState(OctreeNodeCoordinates coords, NeighbourSide side) {
@@ -413,30 +418,7 @@ public class OctreeNode<T> : OctreeNode {
                 faces.Add(face);
                 break;
             case SideState.Partial:
-                OctreeChildCoordinates[] childCoords;
-
-                switch (side) {
-                    case NeighbourSide.Above:
-                        childCoords = AboveCoords;
-                        break;
-                    case NeighbourSide.Below:
-                        childCoords = BelowCoords;
-                        break;
-                    case NeighbourSide.Left:
-                        childCoords = LeftCoords;
-                        break;
-                    case NeighbourSide.Right:
-                        childCoords = RightCoords;
-                        break;
-                    case NeighbourSide.Forward:
-                        childCoords = ForwardCoords;
-                        break;
-                    case NeighbourSide.Back:
-                        childCoords = BackCoords;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException("side", side, null);
-                }
+                var childCoords = GetChildCoordsOfSide(side);
 
                 foreach (var childCoord in childCoords) {
                     CreateFaces(faces, side,
