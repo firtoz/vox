@@ -175,6 +175,7 @@ public class OctreeNode<T> : OctreeNode {
 
         var neighbourCoords = _nodeCoordinates.GetNeighbourCoords(side);
 
+        //out of the map!
         if (neighbourCoords == null) {
             return result;
         }
@@ -300,6 +301,8 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     public List<OctreeRenderFace<T>> CreateFaces() {
+        AssertNotDeleted();
+
         var faces = new List<OctreeRenderFace<T>>();
 
         foreach (var side in AllSides) {
@@ -317,6 +320,7 @@ public class OctreeNode<T> : OctreeNode {
 
     private void CreateFaces(ICollection<OctreeRenderFace<T>> faces, NeighbourSide side, Bounds bounds,
         OctreeNodeCoordinates coords) {
+        AssertNotDeleted();
         var sidestate = GetSideState(coords, side);
 
         switch (sidestate) {
@@ -657,10 +661,18 @@ public class OctreeNode<T> : OctreeNode {
             RemoveAllChildren();
         }
 
-        _item = item;
-
         if (!_hasItem) {
             _hasItem = true;
+            _item = item;
+            _tree.NodeAdded(this);
+        } else if (_tree.ItemsBelongInSameMesh(_item, item)) {
+            //item not changed or belongs in same mesh as the other one
+            _item = item;
+        } else {
+            //remove from the previous item's mesh
+            _tree.NodeRemoved(this);
+            _item = item;
+            //add to the next item's mesh!
             _tree.NodeAdded(this);
         }
 
@@ -692,14 +704,13 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     public void RemoveItem() {
-        _item = default(T);
-        if (!_hasItem) {
-            return;
+        if (_hasItem) {
+            _tree.NodeRemoved(this);
+
+            _hasItem = false;
         }
 
-        _hasItem = false;
-
-        _tree.NodeRemoved(this);
+        _item = default(T);
     }
 
     public Bounds GetBounds() {

@@ -4,19 +4,52 @@ using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-public abstract class Octree<T> {
-    private readonly List<OctreeRenderFace<T>> _allFaces = new List<OctreeRenderFace<T>>();
-    private readonly List<int> _indices = new List<int>();
+internal class MeshInfo<T> {
+    public readonly List<Vector3> normals = new List<Vector3>();
+    public readonly List<Vector2> uvs = new List<Vector2>();
+    public readonly List<Vector3> vertices = new List<Vector3>();
+    public readonly List<int> indices = new List<int>();
 
+    public readonly SortedList<int, OctreeRenderFace<T>> removalQueue = new SortedList<int, OctreeRenderFace<T>>();
+
+    public readonly List<OctreeRenderFace<T>> allFaces = new List<OctreeRenderFace<T>>();
+
+    public readonly HashSet<OctreeNode<T>> drawQueue = new HashSet<OctreeNode<T>>();
+
+    public readonly Material material;
+
+    public MeshInfo(Material material) {
+        this.material = material;
+    }
+
+
+    /// <summary>
+    /// Removes a face from the _allFaces list.
+    /// </summary>
+    /// <param name="index">The face index</param>
+    /// <param name="count">Number of faces to remove</param>
+    /// <param name="vertexIndexInMesh"></param>
+    /// 
+    public void PopFaces(int index, int count, int vertexIndexInMesh) {
+        allFaces.RemoveRange(index, count);
+
+        vertices.RemoveRange(vertexIndexInMesh, 4 * count);
+        uvs.RemoveRange(vertexIndexInMesh, 4 * count);
+        normals.RemoveRange(vertexIndexInMesh, 4 * count);
+
+        indices.RemoveRange(index * 6, 6 * count);
+    }
+}
+
+public abstract class Octree<T> {
     private readonly Dictionary<OctreeNode<T>, List<OctreeRenderFace<T>>> _nodeFaces =
         new Dictionary<OctreeNode<T>, List<OctreeRenderFace<T>>>();
 
-    private readonly List<Vector3> _normals = new List<Vector3>();
     private readonly OctreeNode<T> _root;
-    private readonly List<Vector2> _uvs = new List<Vector2>();
-    private readonly List<Vector3> _vertices = new List<Vector3>();
 
-    public Octree(Bounds bounds) {
+    private readonly Dictionary<int, MeshInfo<T>> _meshInfos = new Dictionary<int, MeshInfo<T>>();
+
+    protected Octree(Bounds bounds) {
         _root = new OctreeNode<T>(bounds, this);
     }
 
@@ -39,21 +72,39 @@ public abstract class Octree<T> {
         _root.AddBounds(bounds, item, i);
     }
 
-    private readonly HashSet<OctreeNode<T>> _drawQueue = new HashSet<OctreeNode<T>>();
-    private readonly SortedList<int, OctreeRenderFace<T>> _removalQueue = new SortedList<int, OctreeRenderFace<T>>();
+    private MeshInfo<T> GetMeshInfo(T item) {
+        var meshId = GetItemMeshId(item);
 
-    public void NodeAdded(OctreeNode<T> octreeNode) {
-        if (!_drawQueue.Contains(octreeNode)) {
-            _drawQueue.Add(octreeNode);
+        if (!_meshInfos.ContainsKey(meshId)) {
+            _meshInfos.Add(meshId, new MeshInfo<T>(GetMeshMaterial(meshId)));
         }
 
-        foreach (var neighbour in OctreeNode.AllSides
-            .Select(neighbourSide => octreeNode
-                .GetAllSolidNeighbours(neighbourSide))
-            .SelectMany(neighbours => neighbours
-                .Where(neighbour => neighbour != null && neighbour.HasItem())
-                .Where(neighbour => !_drawQueue.Contains(neighbour)))) {
-            _drawQueue.Add(neighbour);
+        return _meshInfos[meshId];
+    }
+
+
+    public void NodeAdded(OctreeNode<T> octreeNode) {
+        var meshInfo = GetMeshInfo(octreeNode.GetItem());
+
+        var drawQueue = meshInfo.drawQueue;
+
+        if (!drawQueue.Contains(octreeNode)) {
+            drawQueue.Add(octreeNode);
+        }
+
+        //re-add all neighbours
+        foreach (var neighbourSide in OctreeNode.AllSides) {
+            var neighbours = octreeNode.GetAllSolidNeighbours(neighbourSide);
+            foreach (var neighbour in neighbours) {
+                if (neighbour == null || !neighbour.IsDeleted() || !neighbour.HasItem()) {
+                    continue;
+                }
+
+                var neighbourDrawQueue = GetMeshInfo(neighbour.GetItem()).drawQueue;
+                if (!neighbourDrawQueue.Contains(neighbour)) {
+                    neighbourDrawQueue.Add(neighbour);
+                }
+            }
         }
 
         //        if (_nodeFaces.ContainsKey(octreeNode)) {
@@ -78,136 +129,168 @@ public abstract class Octree<T> {
     }
 
     private void ProcessDrawQueue() {
-        foreach (var octreeNode in _drawQueue) {
+        foreach (var meshInfo in _meshInfos.Values) {
+            ProcessDrawQueue(meshInfo);
+
+            ProcessRemovalQueue(meshInfo);
+        }
+    }
+
+    private void ProcessDrawQueue(MeshInfo<T> meshInfo) {
+        var drawQueue = meshInfo.drawQueue;
+
+        foreach (var octreeNode in drawQueue)
+        {
             //redraw all nodes in the 'redraw queue'
-            if (_nodeFaces.ContainsKey(octreeNode)) {
+            if (_nodeFaces.ContainsKey(octreeNode))
+            {
                 RemoveNodeInternal(octreeNode);
             }
             AddNodeInternal(octreeNode);
         }
 
-        _drawQueue.Clear();
-
-        ProcessRemovalQueue();
+        drawQueue.Clear();
     }
 
-    private void ProcessRemovalQueue() {
-        if (!_removalQueue.Any()) {
+
+    private static void ProcessRemovalQueue(MeshInfo<T> meshInfo) {
+        var allFacesOfMesh = meshInfo.allFaces;
+
+        var removalQueue = meshInfo.removalQueue;
+        if (!removalQueue.Any()) {
             return;
         }
 
-        var removalIndex = 0;
+        var removedFaces = removalQueue.ToArray();
 
-        var removedIndices = _removalQueue.ToArray();
+        var indexOfFirstFaceToReplace = 0;
 
-        var currentFaceToReplace = removedIndices[removalIndex].Value;
-        var currentFaceIndex = currentFaceToReplace.faceIndexInTree;
+        var firstFaceToReplace = removedFaces[indexOfFirstFaceToReplace].Value;
+        var faceIndexOfFirstFace = firstFaceToReplace.faceIndexInTree;
 
-        var i = _allFaces.Count - 1;
+        var i = allFacesOfMesh.Count - 1;
 
         //iterate backwards to fill up any blanks
         for (; i >= 0; --i) {
             //iterate only until the first face index
-            if (i < currentFaceIndex) {
+            if (i < faceIndexOfFirstFace) {
                 break;
             }
 
-            var currentFace = _allFaces[i];
+            var currentFace = allFacesOfMesh[i];
 
-            PopFaces(i, 1);
+            meshInfo.PopFaces(i, 1, currentFace.vertexIndexInMesh);
+
+//                PopFaces(i, 1, meshInfo, currentFace.vertexIndexInMesh);
 
             //this face is already removed
-            if (currentFace == null) {
+            if (currentFace.isRemoved) {
                 continue;
             }
 
             //replace the current face with the last non-null face
 
-            _allFaces[currentFaceIndex] = currentFace;
+            allFacesOfMesh[faceIndexOfFirstFace] = currentFace;
 
-            var vertexIndex = currentFaceIndex * 4;
+            var vertexIndex = currentFace.vertexIndexInMesh;
+
+
+            var vertices = meshInfo.vertices;
+            var uvs = meshInfo.uvs;
+            var normals = meshInfo.normals;
 
             for (var j = 0; j < 4; j++) {
-                _vertices[vertexIndex + j] = currentFace.vertices[j];
-                _uvs[vertexIndex + j] = currentFace.uvs[j];
-                _normals[vertexIndex + j] = currentFace.normal;
+                vertices[vertexIndex + j] = currentFace.vertices[j];
+                uvs[vertexIndex + j] = currentFace.uvs[j];
+                normals[vertexIndex + j] = currentFace.normal;
             }
 
             //indices don't change, right?
 
-            currentFace.faceIndexInTree = currentFaceIndex;
+            currentFace.faceIndexInTree = faceIndexOfFirstFace;
+            currentFace.vertexIndexInMesh = vertexIndex;
 
             //this face is replaced, try to replace the next one
 
-            removalIndex++;
+            indexOfFirstFaceToReplace++;
 
-            if (removalIndex == removedIndices.Length) {
+            if (indexOfFirstFaceToReplace == removedFaces.Length) {
                 break;
             }
 
-            currentFaceToReplace = removedIndices[removalIndex].Value;
-            currentFaceIndex = currentFaceToReplace.faceIndexInTree;
+            firstFaceToReplace = removedFaces[indexOfFirstFaceToReplace].Value;
+            faceIndexOfFirstFace = firstFaceToReplace.faceIndexInTree;
         }
 
-        _removalQueue.Clear();
-
-//        removalIndex = i + 1;
-//        var facesToRemove = (_allFaces.Count - 1) - removalIndex;
-//
-//        if (facesToRemove > 0) {
-//            PopFaces(removalIndex, facesToRemove);
-//        }
+        removalQueue.Clear();
     }
 
     private void AddNodeInternal(OctreeNode<T> octreeNode) {
         var faces = octreeNode.CreateFaces();
 
+        var meshId = GetItemMeshId(octreeNode.GetItem());
+
+        var meshInfo = GetMeshInfo(octreeNode.GetItem());
+
+        var vertices = meshInfo.vertices;
+        var uvs = meshInfo.uvs;
+        var normals = meshInfo.normals;
+        var indices = meshInfo.indices;
+
+        var removalQueue = meshInfo.removalQueue;
+        var allFaces = meshInfo.allFaces;
+
         foreach (var face in faces) {
             //if the removal queue isn't empty, replace the last one from there!
-            if (_removalQueue.Any()) {
-                var lastKey = _removalQueue.Keys.Last();
+            if (removalQueue.Any()) {
+                var lastKey = removalQueue.Keys.Last();
 
-                var faceToRemove = _removalQueue[lastKey];
+                var faceFromRemovalQueue = removalQueue[lastKey];
 
-                var faceIndex = faceToRemove.faceIndexInTree;
+                var faceIndex = faceFromRemovalQueue.faceIndexInTree;
+                var vertexIndex = faceFromRemovalQueue.vertexIndexInMesh;
+
                 face.faceIndexInTree = faceIndex;
+                face.vertexIndexInMesh = vertexIndex;
 
-                _allFaces[faceIndex] = face;
+                allFaces[faceIndex] = face;
 
-                var vertexOffset = faceIndex * 4;
+                var vertexOffset = vertexIndex;
 
                 //indices don't change!
 
                 for (var i = 0; i < 4; i++) {
                     var currentVertexIndex = vertexOffset + i;
-                    _vertices[currentVertexIndex] = face.vertices[i];
-                    _uvs[currentVertexIndex] = face.uvs[i];
-                    _normals[currentVertexIndex] = face.normal;
+                    vertices[currentVertexIndex] = face.vertices[i];
+                    uvs[currentVertexIndex] = face.uvs[i];
+                    normals[currentVertexIndex] = face.normal;
                 }
 
-                _removalQueue.Remove(lastKey);
+                removalQueue.Remove(lastKey);
             } else {
-                face.faceIndexInTree = _allFaces.Count;
+                var vertexIndex = meshInfo.vertices.Count;
 
-                var vertexIndex = _vertices.Count;
+                face.faceIndexInTree = allFaces.Count;
+                face.meshIndex = meshId;
+                face.vertexIndexInMesh = vertexIndex;
 
-                _allFaces.Add(face);
+                allFaces.Add(face);
 
-                _vertices.AddRange(face.vertices);
-                _uvs.AddRange(face.uvs);
+                vertices.AddRange(face.vertices);
+                uvs.AddRange(face.uvs);
 
-                _normals.Add(face.normal);
-                _normals.Add(face.normal);
-                _normals.Add(face.normal);
-                _normals.Add(face.normal);
+                normals.Add(face.normal);
+                normals.Add(face.normal);
+                normals.Add(face.normal);
+                normals.Add(face.normal);
 
-                _indices.Add(vertexIndex);
-                _indices.Add(vertexIndex + 1);
-                _indices.Add(vertexIndex + 2);
+                indices.Add(vertexIndex);
+                indices.Add(vertexIndex + 1);
+                indices.Add(vertexIndex + 2);
 
-                _indices.Add(vertexIndex);
-                _indices.Add(vertexIndex + 2);
-                _indices.Add(vertexIndex + 3);
+                indices.Add(vertexIndex);
+                indices.Add(vertexIndex + 2);
+                indices.Add(vertexIndex + 3);
             }
         }
 
@@ -259,24 +342,30 @@ if(rems.length>0) {
 
 
     public void NodeRemoved(OctreeNode<T> octreeNode) {
+        var drawQueue = GetMeshInfo(octreeNode.GetItem()).drawQueue;
+
         if (_nodeFaces.ContainsKey(octreeNode)) {
             RemoveNodeInternal(octreeNode);
         }
 
-        if (_drawQueue.Contains(octreeNode)) {
+        if (drawQueue.Contains(octreeNode)) {
             //if it's about to be drawn, it shouldn't.
-            _drawQueue.Remove(octreeNode);
+            drawQueue.Remove(octreeNode);
         }
 
-        foreach (
-            var neighbour in
-                OctreeNode.AllSides.Select(neighbourSide => octreeNode.GetAllSolidNeighbours(neighbourSide))
-                    .SelectMany(
-                        neighbours =>
-                            neighbours
-                                .Where(neighbour => neighbour != null && neighbour.HasItem())
-                                .Where(neighbour => !_drawQueue.Contains(neighbour)))) {
-            _drawQueue.Add(neighbour);
+        foreach (var neighbourSide in OctreeNode.AllSides) {
+            var neighbours = octreeNode.GetAllSolidNeighbours(neighbourSide);
+            foreach (var neighbour in neighbours) {
+                if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem()) {
+                    continue;
+                }
+
+                var meshInfo = GetMeshInfo(neighbour.GetItem());
+                var neighbourDrawQueue = meshInfo.drawQueue;
+                if (!neighbourDrawQueue.Contains(neighbour)) {
+                    neighbourDrawQueue.Add(neighbour);
+                }
+            }
         }
     }
 
@@ -286,31 +375,17 @@ if(rems.length>0) {
         var facesToRemove = _nodeFaces[octreeNode];
         if (facesToRemove.Count > 0) {
             foreach (var face in facesToRemove) {
-                _allFaces[face.faceIndexInTree] = null;
+                var meshInfo = _meshInfos[face.meshIndex];
 
-                _removalQueue.Add(face.faceIndexInTree, face);
+                meshInfo.allFaces[face.faceIndexInTree].isRemoved = true;
+
+                meshInfo.removalQueue.Add(face.faceIndexInTree, face);
             }
         }
 
         _nodeFaces.Remove(octreeNode);
     }
 
-    /// <summary>
-    /// Removes a face from the _allFaces list.
-    /// </summary>
-    /// <param name="index">The face index</param>
-    /// <param name="count">Number of faces to remove</param>
-    private void PopFaces(int index, int count) {
-        _allFaces.RemoveRange(index, count);
-
-        var vertexIndex = index * 4;
-
-        _vertices.RemoveRange(vertexIndex, 4 * count);
-        _uvs.RemoveRange(vertexIndex, 4 * count);
-        _normals.RemoveRange(vertexIndex, 4 * count);
-
-        _indices.RemoveRange(index * 6, 6 * count);
-    }
 
     private const int MAX_VERTICES_FOR_MESH = 65000 - 4 * 100;
     private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
@@ -373,39 +448,55 @@ if(rems.length>0) {
             //recreate meshes
             _renderObject = gameObject;
 
-            var verticesCount = _vertices.Count;
-            var numMeshes = (verticesCount / MAX_VERTICES_FOR_MESH) + 1;
+            foreach (var meshPair in _meshInfos) {
+                var meshInfo = meshPair.Value;
+                var meshId = meshPair.Key;
 
-            for (var i = 0; i < numMeshes; ++i) {
-                var newMesh = new Mesh();
+                var vertices = meshInfo.vertices;
+                var normals = meshInfo.normals;
+                var uvs = meshInfo.uvs;
+                var indices = meshInfo.indices;
 
-                var vertexStart = i * MAX_VERTICES_FOR_MESH;
-                var vertexCount = Mathf.Min(vertexStart + MAX_VERTICES_FOR_MESH, verticesCount) - vertexStart;
+                var verticesCount = vertices.Count;
+                var numMesheObjects = (verticesCount / MAX_VERTICES_FOR_MESH) + 1;
 
-                var vertexArray = _vertices.GetRange(vertexStart, vertexCount).ToArray();
+                for (var i = 0; i < numMesheObjects; ++i) {
+                    var newMesh = new Mesh();
 
-                newMesh.vertices = vertexArray;
-                newMesh.normals = _normals.GetRange(vertexStart, vertexCount).ToArray();
-                newMesh.uv = _uvs.GetRange(vertexStart, vertexCount).ToArray();
+                    var vertexStart = i * MAX_VERTICES_FOR_MESH;
+                    var vertexCount = Mathf.Min(vertexStart + MAX_VERTICES_FOR_MESH, verticesCount) - vertexStart;
 
-                var indexStart = i * MAX_INDICES_FOR_MESH;
-                var indexCount = vertexCount * 3 / 2;
+                    var vertexArray = vertices.GetRange(vertexStart, vertexCount).ToArray();
 
-                newMesh.triangles =
-                    _indices.GetRange(indexStart, indexCount).Select(index => index - vertexStart).ToArray();
+                    newMesh.vertices = vertexArray;
+                    newMesh.normals = normals.GetRange(vertexStart, vertexCount).ToArray();
+                    newMesh.uv = uvs.GetRange(vertexStart, vertexCount).ToArray();
 
-                var meshObject = new GameObject("mesh " + i, typeof (MeshFilter), typeof (MeshRenderer));
-                meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
-                meshObject.GetComponent<MeshRenderer>().sharedMaterial =
-                    gameObject.GetComponent<MeshRenderer>().sharedMaterial;
+                    var indexStart = i * MAX_INDICES_FOR_MESH;
+                    var indexCount = vertexCount * 3 / 2;
 
-                _meshes.Add(newMesh);
-                _meshObjects.Add(meshObject);
+                    newMesh.triangles =
+                        indices.GetRange(indexStart, indexCount).Select(index => index - vertexStart).ToArray();
 
-                meshObject.transform.SetParent(gameObject.transform, false);
+                    var meshObject = new GameObject("mesh " + i + "for " + meshId, typeof (MeshFilter),
+                        typeof (MeshRenderer));
+                    meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
+                    meshObject.GetComponent<MeshRenderer>().sharedMaterial =
+                        meshInfo.material;
+
+                    _meshes.Add(newMesh);
+                    _meshObjects.Add(meshObject);
+
+                    meshObject.transform.SetParent(gameObject.transform, false);
+                }
             }
         } else {}
     }
 
-    protected abstract bool IsSameMesh(T a, T b);
+    protected abstract int GetItemMeshId(T item);
+    protected abstract Material GetMeshMaterial(int meshId);
+
+    public bool ItemsBelongInSameMesh(T a, T b) {
+        return GetItemMeshId(a) == GetItemMeshId(b);
+    }
 }

@@ -18,7 +18,7 @@ public class Vox : MonoBehaviour {
 
         //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
         voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdRight).SetItem(4);
-        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.TopBackLeft).SetItem(4);
+        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.TopBackLeft).SetItem(5);
 //        octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopBackRight).SetItem(4);
 
 //        topFwdLeft.SetItem(4);

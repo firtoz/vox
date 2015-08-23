@@ -10,8 +10,13 @@ namespace OctreeTest
     {
         class TestOctree<T> : Octree<T> {
             public TestOctree(Bounds bounds) : base(bounds) {}
-            protected override bool IsSameMesh(T a, T b) {
-                return true;
+
+            protected override int GetItemMeshId(T item) {
+                return 0;
+            }
+
+            protected override Material GetMeshMaterial(int meshId) {
+                return new Material(Shader.Find("Standard"));
             }
         }
 

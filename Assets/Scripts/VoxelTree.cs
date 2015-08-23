@@ -7,8 +7,14 @@ namespace Assets.Scripts
             
         }
 
-        override protected bool IsSameMesh(int a, int b) {
-            return a == b;
+        override protected int GetItemMeshId(int item) {
+            return item;
+        }
+
+        protected override Material GetMeshMaterial(int meshId) {
+            return new Material(Shader.Find("Standard")) {
+                hideFlags = HideFlags.DontSave
+            };
         }
     }
 }

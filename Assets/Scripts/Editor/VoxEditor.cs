@@ -25,6 +25,7 @@ public class VoxEditor : Editor {
             topFwdLeft.SubDivide();
 
             topFwdLeft.RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
+            topFwdLeft.GetChild(OctreeNode.ChildIndex.TopFwdRight).SetItem(5);
         }
         if (GUILayout.Button("Apply")) {
 //                using (new MeshModification(sharedMesh, "Modify")) {

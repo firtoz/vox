@@ -7,6 +7,9 @@ public class OctreeRenderFace<T>
     public Vector3 normal;
     public int faceIndexInTree;
     private OctreeNode<T> owner;
+    public int meshIndex;
+    public int vertexIndexInMesh;
+    public bool isRemoved = false;
 
     public OctreeRenderFace(OctreeNode<T> owner) {
         this.owner = owner;
