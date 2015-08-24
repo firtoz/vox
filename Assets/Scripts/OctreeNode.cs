@@ -621,10 +621,7 @@ public class OctreeNode<T> : OctreeNode {
                         child = AddChild(octreeNodeChildIndex);
                     } else {
                         if (HasItem()) {
-                            for (var j = 0; j < 8; j++) {
-                                AddChild((ChildIndex) j).SetItem(_item);
-                            }
-                            RemoveItem();
+                            SubDivide();
 
                             child = GetChild(octreeNodeChildIndex);
                         } else {
@@ -640,10 +637,7 @@ public class OctreeNode<T> : OctreeNode {
 
                     if (child == null) {
                         if (HasItem()) {
-                            for (var j = 0; j < 8; j++) {
-                                AddChild((ChildIndex) j).SetItem(_item);
-                            }
-                            RemoveItem();
+                            SubDivide();
 
                             child = GetChild(octreeNodeChildIndex);
                         } else {
