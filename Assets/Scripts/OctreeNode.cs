@@ -180,58 +180,50 @@ public class OctreeNode<T> : OctreeNode {
             return result;
         }
 
-        var currentNode = _root;
+        var currentNeighbourNode = _root;
 
         foreach (var coord in neighbourCoords) {
-            if (currentNode == null) {
+            if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
                 return result;
             }
 
-            if (currentNode.IsDeleted()) {
+            if (currentNeighbourNode.IsSolid()) {
+                result.Add(currentNeighbourNode);
                 return result;
             }
 
-            if (currentNode.IsSolid()) {
-                result.Add(currentNode);
-                return result;
-            }
-
-            currentNode = currentNode.GetChild(coord.ToIndex());
+            currentNeighbourNode = currentNeighbourNode.GetChild(coord.ToIndex());
         }
 
         //last currentNode is the actual node at the neighbour coordinates
 
-        if (currentNode == null) {
+        if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
             return result;
         }
 
-        if (currentNode.IsDeleted()) {
-            return result;
-        }
-
-        if (currentNode.IsSolid()) {
-            result.Add(currentNode);
+        if (currentNeighbourNode.IsSolid()) {
+            result.Add(currentNeighbourNode);
             return result;
         }
 
         //not null and not leaf, so it must be partial
         //get all children on that side
 
-        GetAllSolidChildrenOnSide(currentNode, result, GetOpposite(side));
+        currentNeighbourNode.GetAllSolidChildrenOnSide(result, GetOpposite(side));
 
         return result;
     }
 
-    private static void GetAllSolidChildrenOnSide(OctreeNode<T> currentNode, List<OctreeNode<T>> result, NeighbourSide side) {
+    private void GetAllSolidChildrenOnSide(ICollection<OctreeNode<T>> result, NeighbourSide side) {
         var childCoords = GetChildCoordsOfSide(side);
 
         foreach (var childNode in childCoords
-            .Select(childCoord => currentNode.GetChild(childCoord.ToIndex()))
+            .Select(childCoord => GetChild(childCoord.ToIndex()))
             .Where(childNode => childNode != null && !childNode.IsDeleted())) {
             if (childNode.IsSolid()) {
                 result.Add(childNode);
             } else if (!childNode.IsLeafNode()) {
-                GetAllSolidChildrenOnSide(childNode, result, side);
+                childNode.GetAllSolidChildrenOnSide(result, side);
             }
         }
     }
@@ -275,10 +267,12 @@ public class OctreeNode<T> : OctreeNode {
 
         var currentNode = _root;
 
+        // follow the children until you get to the node
         foreach (var coord in neighbourCoords) {
             if (currentNode == null) {
                 return SideState.Empty;
             }
+
             if (currentNode.IsLeafNode()) {
                 return currentNode.HasItem() ? SideState.Full : SideState.Empty;
             }
@@ -296,36 +290,46 @@ public class OctreeNode<T> : OctreeNode {
             return currentNode.HasItem() ? SideState.Full : SideState.Empty;
         }
 
-        //not null and not leaf, so it must be partial
-        return SideState.Partial;
+        // not null and not leaf, so it must be partial
+        // try to recursively get all nodes on this side
+
+        return currentNode.SideSolid(GetOpposite(side)) ? SideState.Partial : SideState.Empty;
     }
 
-    public List<OctreeRenderFace<T>> CreateFaces() {
+    private bool SideSolid(NeighbourSide side) {
+        var solidChildrenList = new List<OctreeNode<T>>();
+
+        GetAllSolidChildrenOnSide(solidChildrenList, side);
+
+        return solidChildrenList.Count > 0;
+    }
+
+    public List<OctreeRenderFace<T>> CreateFaces(int meshIndex) {
         AssertNotDeleted();
 
         var faces = new List<OctreeRenderFace<T>>();
 
         foreach (var side in AllSides) {
-            faces.AddRange(CreateFaces(side));
+            faces.AddRange(CreateFaces(side, meshIndex));
         }
 
         return faces;
     }
 
-    public List<OctreeRenderFace<T>> CreateFaces(NeighbourSide side) {
+    public List<OctreeRenderFace<T>> CreateFaces(NeighbourSide side, int meshIndex) {
         var faces = new List<OctreeRenderFace<T>>();
-        CreateFaces(faces, side, _bounds, _nodeCoordinates);
+        CreateFaces(faces, side, _bounds, _nodeCoordinates, meshIndex);
         return faces;
     }
 
     private void CreateFaces(ICollection<OctreeRenderFace<T>> faces, NeighbourSide side, Bounds bounds,
-        OctreeNodeCoordinates coords) {
+        OctreeNodeCoordinates coords, int meshIndex) {
         AssertNotDeleted();
         var sidestate = GetSideState(coords, side);
 
         switch (sidestate) {
             case SideState.Empty:
-                var face = new OctreeRenderFace<T>(this);
+                var face = new OctreeRenderFace<T>(this, meshIndex);
 
                 var min = bounds.min;
                 var max = bounds.max;
@@ -427,7 +431,7 @@ public class OctreeNode<T> : OctreeNode {
                 foreach (var childCoord in childCoords) {
                     CreateFaces(faces, side,
                         GetChildBounds(bounds, childCoord.ToIndex()),
-                        new OctreeNodeCoordinates(coords, childCoord));
+                        new OctreeNodeCoordinates(coords, childCoord), meshIndex);
                 }
                 break;
             case SideState.Full:

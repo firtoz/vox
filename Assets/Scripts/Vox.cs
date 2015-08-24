@@ -1,4 +1,5 @@
-﻿using Assets.Scripts;
+﻿using System.Collections.Generic;
+using Assets.Scripts;
 using UnityEngine;
 
 public class Vox : MonoBehaviour {
@@ -12,6 +13,12 @@ public class Vox : MonoBehaviour {
     public void OnEnable() {
         voxelTree = new VoxelTree(Vector3.zero, Vector3.one * 50);
 
+        for (var i = 0; i < indices.Count; i++) {
+            var index = indices[i];
+
+            voxelTree.SetMaterial(index, materials[i]);
+//            voxelTree.SetMaterial(i, 
+        }
         //                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one), 5, 8);
         //                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one*0.5f), 6, 8);
         //                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one*0.7f), 7, 8);
@@ -35,6 +42,11 @@ public class Vox : MonoBehaviour {
     public bool useDepth = true;
     public int wantedDepth = 5;
 
+    public List<int> indices = new List<int> {4, 5};
+    public List<Material> materials = new List<Material>();
+
+    public int materialIndex = 0;
+
     // Update is called once per frame
     private void Update() {
         if (Input.GetKeyDown(KeyCode.J)) {
@@ -42,6 +54,13 @@ public class Vox : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.K)) {
             wantedDepth++;
+        }
+        if (Input.GetKeyDown(KeyCode.I)) {
+            materialIndex = (materialIndex + indices.Count + 1) % indices.Count;
+        }
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            materialIndex = (materialIndex + 1) % indices.Count;
         }
         if (voxelTree == null) {
             return;
@@ -60,7 +79,7 @@ public class Vox : MonoBehaviour {
                 var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
                 if (neighbourCoords != null) {
                     var final = voxelTree.GetRoot().AddRecursive(neighbourCoords);
-                    final.SetItem(4, true);
+                    final.SetItem(indices[materialIndex], true);
 
                     voxelTree.Render(gameObject);
                 }
