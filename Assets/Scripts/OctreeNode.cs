@@ -90,29 +90,11 @@ public abstract class OctreeNode {
     {
         new OctreeChildCoordinates(0, 0, 1), new OctreeChildCoordinates(0, 1, 1), new OctreeChildCoordinates(1, 0, 1), new OctreeChildCoordinates(1, 1, 1)
     };
-}
 
-public class OctreeNode<T> : OctreeNode
-{
-//    private readonly OctreeChildCoordinates[] _coords;
-    private readonly int _depth;
-    private readonly ChildIndex _indexInParent;
-    private readonly OctreeNodeCoordinates _nodeCoordinates;
-    private readonly OctreeNode<T> _parent;
-    private readonly OctreeNode<T> _root;
-    private readonly Bounds _bounds;
-    private int _childCount;
-    private OctreeNode<T>[] _children;
-    private bool _deleted;
-    private bool _hasItem;
-    private int _solidNodeCount;
-    private readonly Dictionary<NeighbourSide, int> _sideSolidCount = new Dictionary<NeighbourSide, int>();
-    private T _item;
-    private readonly Octree<T> _tree;
-    
-    private static void GetNeighbourSides(ChildIndex childIndex, 
-        out NeighbourSide verticalSide, 
-        out NeighbourSide horizontalSide, 
+
+    protected static void GetNeighbourSides(ChildIndex childIndex,
+        out NeighbourSide verticalSide,
+        out NeighbourSide horizontalSide,
         out NeighbourSide depthSide)
     {
 
@@ -168,41 +150,26 @@ public class OctreeNode<T> : OctreeNode
                 throw new ArgumentOutOfRangeException("childIndex", childIndex, null);
         }
     }
+}
 
-    private void AddSolidNode(ChildIndex childIndex, bool actuallySolid)
-    {
-        NeighbourSide verticalSide, depthSide, horizontalSide;
-
-        GetNeighbourSides(childIndex, out verticalSide, out horizontalSide, out depthSide);
-
-        _sideSolidCount[verticalSide]++;
-        _sideSolidCount[depthSide]++;
-        _sideSolidCount[horizontalSide]++;
-
-        if (_parent != null && _solidNodeCount == 0)
-        {
-            _parent.AddSolidNode(_indexInParent, false);
-        }
-        _solidNodeCount++;
-    }
-
-    private void RemoveSolidNode(ChildIndex childIndex, bool wasActuallySolid)
-    {
-        NeighbourSide verticalSide, depthSide, horizontalSide;
-
-        GetNeighbourSides(childIndex, out verticalSide, out horizontalSide, out depthSide);
-
-        _sideSolidCount[verticalSide]--;
-        _sideSolidCount[depthSide]--;
-        _sideSolidCount[horizontalSide]--;
-
-        _solidNodeCount--;
-        if (_solidNodeCount == 0)
-        {
-            _parent.RemoveSolidNode(_indexInParent, false);
-        }
-    }
-
+public class OctreeNode<T> : OctreeNode
+{
+//    private readonly OctreeChildCoordinates[] _coords;
+    private readonly int _depth;
+    private readonly ChildIndex _indexInParent;
+    private readonly OctreeNodeCoordinates _nodeCoordinates;
+    private readonly OctreeNode<T> _parent;
+    private readonly OctreeNode<T> _root;
+    private readonly Bounds _bounds;
+    private int _childCount;
+    private OctreeNode<T>[] _children;
+    private bool _deleted;
+    private bool _hasItem;
+    private int _solidNodeCount;
+    private readonly Dictionary<NeighbourSide, int> _sideSolidCount = new Dictionary<NeighbourSide, int>();
+    private readonly Dictionary<NeighbourSide, List<OctreeNode<T>>> _sideSolidChildren = new Dictionary<NeighbourSide, List<OctreeNode<T>>>();
+    private T _item;
+    private readonly Octree<T> _tree;
 
     public OctreeNode(Bounds bounds, Octree<T> tree) : this(bounds, null, ChildIndex.Invalid, 0, tree)
     {
@@ -236,6 +203,113 @@ public class OctreeNode<T> : OctreeNode
         _sideSolidCount[NeighbourSide.Right] = 0;
         _sideSolidCount[NeighbourSide.Back] = 0;
         _sideSolidCount[NeighbourSide.Forward] = 0;
+
+        _sideSolidChildren[NeighbourSide.Above] = new List<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Below] = new List<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Left] = new List<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Right] = new List<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Back] = new List<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Forward] = new List<OctreeNode<T>>();
+    }
+
+//    private List<OctreeNode<T>> _actuallySolidChildren = new List<OctreeNode<T>>(); 
+
+    private void AddSolidNode(ChildIndex childIndex, bool actuallySolid)
+    {
+        NeighbourSide verticalSide, depthSide, horizontalSide;
+
+        if (childIndex != ChildIndex.Invalid)
+        {
+            GetNeighbourSides(childIndex, out verticalSide, out horizontalSide, out depthSide);
+
+            _sideSolidCount[verticalSide]++;
+            _sideSolidCount[depthSide]++;
+            _sideSolidCount[horizontalSide]++;
+        } else {
+            GetNeighbourSides(_indexInParent, out verticalSide, out horizontalSide, out depthSide);
+        }
+
+        if (_parent != null && _solidNodeCount == 0)
+        {
+            _parent.AddSolidNode(_indexInParent, false);
+        }
+
+        _solidNodeCount++;
+
+        if (!actuallySolid) return;
+
+        OctreeNode<T> actualNode;
+        if (childIndex != ChildIndex.Invalid)
+        {
+            actualNode = GetChild(childIndex);
+
+            _sideSolidChildren[verticalSide].Add(actualNode);
+            _sideSolidChildren[depthSide].Add(actualNode);
+            _sideSolidChildren[horizontalSide].Add(actualNode);
+        }
+        else
+        {
+            actualNode = this;
+        }
+
+        var currentParent = _parent;
+        while(currentParent != null)
+        {
+            currentParent._sideSolidChildren[verticalSide].Add(actualNode);
+            currentParent._sideSolidChildren[depthSide].Add(actualNode);
+            currentParent._sideSolidChildren[horizontalSide].Add(actualNode);
+
+            currentParent = currentParent._parent;
+        }
+    }
+
+    private void RemoveSolidNode(ChildIndex childIndex, bool wasActuallySolid)
+    {
+        NeighbourSide verticalSide, depthSide, horizontalSide;
+
+        if (childIndex != ChildIndex.Invalid)
+        {
+            GetNeighbourSides(childIndex, out verticalSide, out horizontalSide, out depthSide);
+
+            _sideSolidCount[verticalSide]--;
+            _sideSolidCount[depthSide]--;
+            _sideSolidCount[horizontalSide]--;
+        } else {
+            GetNeighbourSides(_indexInParent, out verticalSide, out horizontalSide, out depthSide);
+        }
+
+        _solidNodeCount--;
+
+        if (_parent != null && _solidNodeCount == 0)
+        {
+            _parent.RemoveSolidNode(_indexInParent, false);
+        }
+
+        if (!wasActuallySolid) return;
+
+        OctreeNode<T> actualNode;
+        if (childIndex != ChildIndex.Invalid)
+        {
+            actualNode = GetChild(childIndex);
+
+            _sideSolidChildren[verticalSide].Remove(actualNode);
+            _sideSolidChildren[depthSide].Remove(actualNode);
+            _sideSolidChildren[horizontalSide].Remove(actualNode);
+        }
+        else
+        {
+            actualNode = this;
+        }
+
+        var currentParent = _parent;
+        while (currentParent != null)
+        {
+            currentParent._sideSolidChildren[verticalSide].Remove(actualNode);
+            currentParent._sideSolidChildren[depthSide].Remove(actualNode);
+            currentParent._sideSolidChildren[horizontalSide].Remove(actualNode);
+
+            currentParent = currentParent._parent;
+        }
     }
 
     private void AssertNotDeleted()
@@ -320,8 +394,7 @@ public class OctreeNode<T> : OctreeNode
             currentNeighbourNode = currentNeighbourNode.GetChild(coord.ToIndex());
         }
 
-        //last currentNode is the actual node at the neighbour coordinates
-
+//        last currentNode is the actual node at the neighbour coordinates
         if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted())
         {
 #if !DISABLE_PROFILER
@@ -339,48 +412,7 @@ public class OctreeNode<T> : OctreeNode
             return result;
         }
 
-        //not null and not leaf, so it must be partial
-        //get all children on that side
-
-        currentNeighbourNode.GetAllSolidChildrenOnSide(result, GetOpposite(side));
-
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
-        return result;
-    }
-
-    private void GetAllSolidChildrenOnSide(ICollection<OctreeNode<T>> result, NeighbourSide side)
-    {
-
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("GetAllSolidChildrenOnSide");
-#endif
-        var childCoords = GetChildCoordsOfSide(side);
-
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("Get valid children");
-#endif
-        var validChildren = childCoords.Select(childCoord => GetChild(childCoord.ToIndex())).Where(childNode => childNode != null && !childNode.IsDeleted());
-
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
-
-        foreach (var childNode in validChildren)
-        {
-            if (childNode.IsSolid())
-            {
-                result.Add(childNode);
-            }
-            else if (!childNode.IsLeafNode())
-            {
-                childNode.GetAllSolidChildrenOnSide(result, side);
-            }
-        }
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
+        return currentNeighbourNode._sideSolidChildren[GetOpposite(side)];
     }
 
     private static IEnumerable<OctreeChildCoordinates> GetChildCoordsOfSide(NeighbourSide side)
@@ -727,10 +759,6 @@ public class OctreeNode<T> : OctreeNode
     public OctreeNode<T> GetChild(ChildIndex index)
     {
         AssertNotDeleted();
-        if (!Enum.IsDefined(typeof (ChildIndex), index))
-        {
-            throw new ArgumentOutOfRangeException("index");
-        }
         if (index == ChildIndex.Invalid || _children == null)
         {
             return null;
@@ -824,10 +852,6 @@ public class OctreeNode<T> : OctreeNode
         Profiler.BeginSample("Add child " + index);
 #endif
         AssertNotDeleted();
-        if (!Enum.IsDefined(typeof (ChildIndex), index) || index == ChildIndex.Invalid)
-        {
-            throw new ArgumentException("The child index should be between 0 and 8!", "index");
-        }
 
         if (_children == null)
         {
@@ -984,7 +1008,7 @@ public class OctreeNode<T> : OctreeNode
         {
             _hasItem = true;
 
-            AddSolidNode(_indexInParent, true);
+            AddSolidNode(ChildIndex.Invalid, true);
 
             _item = item;
             _tree.NodeAdded(this);
@@ -1059,7 +1083,7 @@ public class OctreeNode<T> : OctreeNode
         {
             _tree.NodeRemoved(this);
 
-            RemoveSolidNode(_indexInParent, true);
+            RemoveSolidNode(ChildIndex.Invalid, true);
 
             _hasItem = false;
         }
