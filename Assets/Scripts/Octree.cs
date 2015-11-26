@@ -10,7 +10,7 @@ internal class MeshInfo<T> {
     public readonly List<Vector3> vertices = new List<Vector3>();
     public readonly List<int> indices = new List<int>();
 
-    public readonly SortedList<int, OctreeRenderFace<T>> removalQueue = new SortedList<int, OctreeRenderFace<T>>();
+    public readonly SortedDictionary<int, OctreeRenderFace<T>> removalQueue = new SortedDictionary<int, OctreeRenderFace<T>>();
 
     public readonly List<OctreeRenderFace<T>> allFaces = new List<OctreeRenderFace<T>>();
 
