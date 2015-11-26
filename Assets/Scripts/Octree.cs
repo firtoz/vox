@@ -92,43 +92,24 @@ public abstract class Octree<T> {
             drawQueue.Add(octreeNode);
         }
 
-        Profiler.BeginSample("All solid neighbours for added node");
-        var allSolidNeighbours = OctreeNode.AllSides
-            .Select(neighbourSide => octreeNode.GetAllSolidNeighbours(neighbourSide))
-            .SelectMany(neighbours => neighbours);
-        Profiler.EndSample();
+        foreach (var side in OctreeNode.AllSides)
+        {
+            var neighbours = octreeNode.GetAllSolidNeighbours(side);
 
-        //re-add all neighbours
-        foreach (var neighbour in allSolidNeighbours) {
-            if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem()) {
-                continue;
-            }
+            foreach (var neighbour in neighbours)
+            {
+                if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem())
+                {
+                    continue;
+                }
 
-            var neighbourDrawQueue = GetMeshInfo(neighbour.GetItem()).drawQueue;
-            if (!neighbourDrawQueue.Contains(neighbour)) {
-                neighbourDrawQueue.Add(neighbour);
+                var neighbourDrawQueue = GetMeshInfo(neighbour.GetItem()).drawQueue;
+                if (!neighbourDrawQueue.Contains(neighbour))
+                {
+                    neighbourDrawQueue.Add(neighbour);
+                }
             }
         }
-
-        //        if (_nodeFaces.ContainsKey(octreeNode)) {
-        //            throw new ArgumentException("The node is already rendered!", "octreeNode");
-        //        }
-        //
-        //        AddNodeInternal(octreeNode);
-        //
-        //        return;
-        //
-        //        foreach (var neighbourSide in OctreeNode.AllSides)
-        //        {
-        //            var neighbour = octreeNode.GetDeepestSolidNeighbour(neighbourSide);
-        //            if (neighbour == null || !neighbour.HasItem())
-        //            {
-        //                continue;
-        //            }
-        //
-        //            RemoveNodeInternal(neighbour);
-        //            AddNodeInternal(neighbour);
-        //        }
     }
 
     private void ProcessDrawQueue() {
