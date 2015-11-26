@@ -3,14 +3,15 @@
 #endif
 using System;
 using System.Collections.Generic;
-using OctreeTest.IntegrationTestRunner;
 using UnityEngine;
+using UnityTest.IntegrationTestRunner;
+
 #if UTT_SOCKETS_SUPPORTED
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 #endif
 
-namespace OctreeTest
+namespace UnityTest
 {
     public class NetworkResultSender : ITestRunnerCallback
     {
@@ -96,6 +97,11 @@ namespace OctreeTest
         public void TestFinished(TestResult test)
         {
             SendDTO(ResultDTO.CreateTestFinished(test));
+        }
+
+        public void AllScenesFinished()
+        {
+            SendDTO (ResultDTO.CreateAllScenesFinished ());
         }
 
         public void TestRunInterrupted(List<ITestComponent> testsNotRun)

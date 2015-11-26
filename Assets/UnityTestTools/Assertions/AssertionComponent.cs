@@ -7,7 +7,7 @@ using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
-namespace OctreeTest
+namespace UnityTest
 {
     [Serializable]
     public class AssertionComponent : MonoBehaviour, IAssertionComponentConfigurator

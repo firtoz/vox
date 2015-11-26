@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace OctreeTest
+namespace UnityTest
 {
     /// <summary>
     /// Summary description for StackTraceFilter.

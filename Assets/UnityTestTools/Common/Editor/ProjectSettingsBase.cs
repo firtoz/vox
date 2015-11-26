@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public abstract class ProjectSettingsBase : ScriptableObject
     {

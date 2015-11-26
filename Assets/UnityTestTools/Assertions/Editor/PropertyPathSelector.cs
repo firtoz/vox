@@ -5,7 +5,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public class PropertyPathSelector
     {

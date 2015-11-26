@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace OctreeTest
+namespace UnityTest
 {
     class IntegrationTestGroupLine : IntegrationTestRendererBase
     {

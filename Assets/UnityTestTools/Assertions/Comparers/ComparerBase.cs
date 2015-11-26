@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Object = System.Object;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public abstract class ComparerBase : ActionBase
     {

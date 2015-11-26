@@ -8,7 +8,7 @@ using UnityEngine;
 #warning Assertion component is not supported on Windows Store apps
 #endif
 
-namespace OctreeTest
+namespace UnityTest
 {
     [Serializable]
     public class AssertionExplorerWindow : EditorWindow

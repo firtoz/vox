@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OctreeTest.UnitTestRunner
+namespace UnityTest.UnitTestRunner
 {
     public interface ITestRunnerCallback
     {
@@ -11,5 +11,6 @@ namespace OctreeTest.UnitTestRunner
         void RunStarted(string suiteName, int testCount);
         void RunFinished();
         void RunFinishedException(Exception exception);
+        void AllScenesFinished();
     }
 }

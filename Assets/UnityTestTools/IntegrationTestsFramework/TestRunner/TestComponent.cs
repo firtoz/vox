@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace OctreeTest
+namespace UnityTest
 {
     public interface ITestComponent : IComparable<ITestComponent>
     {

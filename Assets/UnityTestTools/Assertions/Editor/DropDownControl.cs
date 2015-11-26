@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace OctreeTest
+namespace UnityTest
 {
     [Serializable]
     internal class DropDownControl<T>

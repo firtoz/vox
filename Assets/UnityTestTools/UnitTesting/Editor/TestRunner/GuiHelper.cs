@@ -11,7 +11,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public static class GuiHelper
     {

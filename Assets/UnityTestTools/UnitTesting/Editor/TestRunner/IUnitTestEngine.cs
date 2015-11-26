@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using OctreeTest.UnitTestRunner;
 using UnityEngine;
+using UnityTest.UnitTestRunner;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public interface IUnitTestEngine
     {

@@ -1,8 +1,7 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public class PlatformRunnerSettings : ProjectSettingsBase
     {

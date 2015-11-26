@@ -7,7 +7,7 @@ using UnityEngine;
 using Event = UnityEngine.Event;
 using System.Text;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public class TestLine : UnitTestRendererLine, IComparable<TestLine>
     {
@@ -17,6 +17,7 @@ namespace OctreeTest
         private readonly string m_ResultId;
         private readonly IList<string> m_Categories;
 		private readonly int m_maxLineLenght = 15000;
+		private UnitTestResult resultCache = null;
         
         private GUIContent m_Content;
 
@@ -43,7 +44,12 @@ namespace OctreeTest
 
         public UnitTestResult result
         {
-            get { return GetUnitTestResult(m_ResultId); }
+            get 
+			{ 
+				if(resultCache == null)
+					resultCache = GetUnitTestResult(m_ResultId);
+				return resultCache; 
+			}
         }
 
         public int CompareTo(TestLine other)

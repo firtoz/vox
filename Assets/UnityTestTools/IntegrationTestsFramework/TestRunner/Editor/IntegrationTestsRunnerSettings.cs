@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public class IntegrationTestsRunnerSettings : ProjectSettingsBase
     {

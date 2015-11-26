@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public class GroupByComparerRenderer : AssertionListRenderer<Type>
     {

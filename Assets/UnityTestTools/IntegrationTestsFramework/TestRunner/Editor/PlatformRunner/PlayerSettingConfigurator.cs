@@ -4,7 +4,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace OctreeTest
+namespace UnityTest
 {
     class PlayerSettingConfigurator
     {

@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using OctreeTest.UnitTestRunner;
 using UnityEditor;
 using UnityEngine;
+using UnityTest.UnitTestRunner;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public partial class UnitTestView
     {
@@ -102,6 +102,7 @@ namespace OctreeTest
         public class TestRunnerEventListener : ITestRunnerCallback
         {
             private readonly Action<ITestResult> m_UpdateCallback;
+			private int m_TestCount;
 
             public TestRunnerEventListener(Action<ITestResult> updateCallback)
             {
@@ -110,7 +111,10 @@ namespace OctreeTest
 
             public void TestStarted(string fullName)
             {
-                EditorUtility.DisplayProgressBar("Unit Tests Runner", fullName, 1);
+				if(m_TestCount < 100)
+                	EditorUtility.DisplayProgressBar("Unit Tests Runner", fullName, 1);
+				else
+					EditorUtility.DisplayProgressBar("Unit Tests Runner", "Running unit tests...", 1);
             }
 
             public void TestFinished(ITestResult result)
@@ -119,6 +123,11 @@ namespace OctreeTest
             }
 
             public void RunStarted(string suiteName, int testCount)
+            {
+				m_TestCount = testCount;
+            }
+
+            public void AllScenesFinished()
             {
             }
 

@@ -5,11 +5,11 @@ using System.Reflection;
 using System.Text;
 using NUnit.Core;
 using NUnit.Core.Filters;
-using OctreeTest.UnitTestRunner;
 using UnityEditor;
 using UnityEngine;
+using UnityTest.UnitTestRunner;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public class NUnitTestEngine : IUnitTestEngine
     {

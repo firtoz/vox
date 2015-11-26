@@ -11,7 +11,7 @@ public class Vox : MonoBehaviour {
     private void Start() {}
 
     public void OnEnable() {
-        voxelTree = new VoxelTree(Vector3.zero, Vector3.one * 50);
+        voxelTree = new VoxelTree(Vector3.zero, Vector3.one * size);
 
         for (var i = 0; i < indices.Count; i++) {
             var index = indices[i];
@@ -66,6 +66,7 @@ public class Vox : MonoBehaviour {
             return;
         }
 
+        Profiler.BeginSample("Intersect");
         RayIntersectionResult<int> result;
 
         if (useDepth) {
@@ -74,19 +75,31 @@ public class Vox : MonoBehaviour {
             voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out result);
         }
 
+        Profiler.EndSample();
+
         if (result.hit) {
             if (Press(0)) {
                 var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
                 if (neighbourCoords != null) {
+                    Profiler.BeginSample("AddRecursive");
                     var final = voxelTree.GetRoot().AddRecursive(neighbourCoords);
                     final.SetItem(indices[materialIndex], true);
+                    Profiler.EndSample();
 
+                    Profiler.BeginSample("Render");
                     voxelTree.Render(gameObject);
+                    Profiler.EndSample();
                 }
             }
-            if (Press(1)) {
+            if (Press(1))
+            {
+                Profiler.BeginSample("RemoveRecursive");
                 voxelTree.GetRoot().RemoveRecursive(result.coordinates, true);
+                Profiler.EndSample();
+
+                Profiler.BeginSample("Render");
                 voxelTree.Render(gameObject);
+                Profiler.EndSample();
             }
             if (Press(2)) {
                 Debug.Log(result.coordinates + " : " + result.neighbourSide);

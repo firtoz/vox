@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public abstract class IntegrationTestRendererBase : IComparable<IntegrationTestRendererBase>
     {

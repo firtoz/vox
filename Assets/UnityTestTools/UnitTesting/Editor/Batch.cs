@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using OctreeTest.UnitTestRunner;
 using UnityEditor;
 using UnityEngine;
+using UnityTest.UnitTestRunner;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public static partial class Batch
     {
@@ -21,7 +21,7 @@ namespace OctreeTest
 
         public static void RunUnitTests()
         {
-			PlayerSettings.useMacAppStoreValidation = false;
+            PlayerSettings.useMacAppStoreValidation = false;
             var filter = GetTestFilter();
             var resultFilePath = GetParameterArgument(k_ResultFilePathParam) ?? Directory.GetCurrentDirectory();
             if (Directory.Exists(resultFilePath))
@@ -117,6 +117,10 @@ namespace OctreeTest
             {
                 EditorApplication.Exit(returnCodeRunError);
                 throw exception;
+            }
+
+            public void AllScenesFinished()
+            {
             }
         }
     }

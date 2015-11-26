@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OctreeTest.IntegrationTestRunner
+namespace UnityTest.IntegrationTestRunner
 {
     public class TestRunnerCallbackList : ITestRunnerCallback
     {
@@ -31,6 +31,14 @@ namespace OctreeTest.IntegrationTestRunner
             foreach (var unitTestRunnerCallback in m_CallbackList)
             {
                 unitTestRunnerCallback.RunFinished(testResults);
+            }
+        }
+
+        public void AllScenesFinished()
+        {
+            foreach (var unitTestRunnerCallback in m_CallbackList)
+            {
+                unitTestRunnerCallback.AllScenesFinished();
             }
         }
 

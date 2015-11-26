@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace OctreeTest
+namespace UnityTest
 {
     public abstract class ActionBase : ScriptableObject
     {

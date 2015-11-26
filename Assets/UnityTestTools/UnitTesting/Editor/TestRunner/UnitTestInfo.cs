@@ -7,7 +7,7 @@ using NUnit.Core;
 using UnityEngine;
 using Object = System.Object;
 
-namespace OctreeTest
+namespace UnityTest
 {
     [Serializable]
     public class UnitTestInfo

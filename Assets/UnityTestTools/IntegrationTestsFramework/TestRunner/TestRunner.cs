@@ -5,14 +5,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using OctreeTest.IntegrationTestRunner;
 using UnityEngine;
+using UnityTest.IntegrationTestRunner;
+using System.IO;
 
-namespace OctreeTest
+namespace UnityTest
 {
     [Serializable]
     public class TestRunner : MonoBehaviour
     {
+        static private int TestSceneNumber = 0;
         static private readonly TestResultRenderer k_ResultRenderer = new TestResultRenderer();
 
         public TestComponent currentTest;
@@ -222,15 +224,15 @@ namespace OctreeTest
                 {
                     if (m_TestState == TestState.Running)
                     {
-						if(currentTest.ShouldSucceedOnAssertions())
-						{
-							var assertionsToCheck = currentTest.gameObject.GetComponentsInChildren<AssertionComponent>().Where(a => a.enabled).ToArray();
-							if (assertionsToCheck.Any () && assertionsToCheck.All(a => a.checksPerformed > 0))
-	                        {
-	                            IntegrationTest.Pass(currentTest.gameObject);
-	                            m_TestState = TestState.Success;
-	                        }
-						}
+                        if(currentTest.ShouldSucceedOnAssertions())
+                        {
+                            var assertionsToCheck = currentTest.gameObject.GetComponentsInChildren<AssertionComponent>().Where(a => a.enabled).ToArray();
+                            if (assertionsToCheck.Any () && assertionsToCheck.All(a => a.checksPerformed > 0))
+                            {
+                                IntegrationTest.Pass(currentTest.gameObject);
+                                m_TestState = TestState.Success;
+                            }
+                        }
                         if (currentTest != null && Time.time > m_StartTime + currentTest.GetTimeout())
                         {
                             m_TestState = TestState.Timeout;
@@ -302,10 +304,15 @@ namespace OctreeTest
         {
             if (isInitializedByRunner) return;
 
-            if (Application.loadedLevel < Application.levelCount - 1)
-                Application.LoadLevel(Application.loadedLevel + 1);
+
+            TestSceneNumber += 1;
+            string testScene = m_Configurator.GetIntegrationTestScenes (TestSceneNumber);
+
+            if (testScene != null)
+                Application.LoadLevel(Path.GetFileNameWithoutExtension(testScene));
             else
             {
+                TestRunnerCallback.AllScenesFinished();
                 k_ResultRenderer.ShowResults();
                 if (m_Configurator.isBatchRun && m_Configurator.sendResultsOverNetwork)
                     Application.Quit();

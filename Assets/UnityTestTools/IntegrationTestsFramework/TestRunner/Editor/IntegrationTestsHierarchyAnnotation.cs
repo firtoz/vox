@@ -2,7 +2,7 @@
 using System.Collections;
 using UnityEditor;
 
-namespace OctreeTest
+namespace UnityTest
 {
 
     [InitializeOnLoad]
