@@ -255,7 +255,6 @@ public abstract class Octree<T> {
                 var vertexOffset = vertexIndex;
 
                 //indices don't change!
-
                 for (var i = 0; i < 4; i++) {
                     var currentVertexIndex = vertexOffset + i;
                     vertices[currentVertexIndex] = face.vertices[i];
@@ -482,27 +481,24 @@ if(rems.length>0) {
                 var meshInfo = meshPair.Value;
                 var meshId = meshPair.Key;
 
-                var vertices = meshInfo.vertices;
-                var normals = meshInfo.normals;
-                var uvs = meshInfo.uvs;
-                var indices = meshInfo.indices;
+                var verticesArray = meshInfo.vertices.ToArray();
+                var normalsArray = meshInfo.normals.ToArray();
+                var uvsArray = meshInfo.uvs.ToArray();
+                var indicesArray = meshInfo.indices.ToArray();
 
-                var verticesCount = vertices.Count;
+                var verticesCount = verticesArray.Length;
                 var numMesheObjects = (verticesCount / MAX_VERTICES_FOR_MESH) + 1;
 
-                for (var i = 0; i < numMesheObjects; ++i)
+                if (numMesheObjects == 1) // no need for loop or array copying
                 {
-                    Profiler.BeginSample("Create mesh " + i);
+                    Profiler.BeginSample("Create mesh " + 0);
 
                     Profiler.BeginSample("new mesh");
                     var newMesh = new Mesh();
                     Profiler.EndSample();
 
-                    var vertexStart = i * MAX_VERTICES_FOR_MESH;
-                    var vertexCount = Mathf.Min(vertexStart + MAX_VERTICES_FOR_MESH, verticesCount) - vertexStart;
-
                     Profiler.BeginSample("Get vertices range");
-                    var vertexArray = vertices.GetRange(vertexStart, vertexCount).ToArray();
+                    var vertexArray = verticesArray;
                     Profiler.EndSample();
 
                     Profiler.BeginSample("Set mesh properties");
@@ -512,26 +508,22 @@ if(rems.length>0) {
                     Profiler.EndSample();
 
                     Profiler.BeginSample("Set mesh normals");
-                    newMesh.normals = normals.GetRange(vertexStart, vertexCount).ToArray();
+                    newMesh.normals = normalsArray;
                     Profiler.EndSample();
 
                     Profiler.BeginSample("Set mesh uvs");
-                    newMesh.uv = uvs.GetRange(vertexStart, vertexCount).ToArray();
+                    newMesh.uv = uvsArray;
                     Profiler.EndSample();
 
                     Profiler.EndSample(); // mesh properties
 
-                    var indexStart = i * MAX_INDICES_FOR_MESH;
-                    var indexCount = vertexCount * 3 / 2;
-
                     Profiler.BeginSample("Set mesh triangles");
-                    newMesh.triangles =
-                        indices.GetRange(indexStart, indexCount).Select(index => index - vertexStart).ToArray();
+                    newMesh.triangles = indicesArray;
                     Profiler.EndSample();
 
                     Profiler.BeginSample("Create new gameobject for mesh");
-                    var meshObject = new GameObject("mesh " + i + " for " + meshId, typeof (MeshFilter),
-                        typeof (MeshRenderer));
+                    var meshObject = new GameObject("mesh " + 0 + " for " + meshId, typeof(MeshFilter),
+                        typeof(MeshRenderer));
                     Profiler.EndSample();
                     Profiler.BeginSample("Set mesh filter for new game object");
                     meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
@@ -552,6 +544,84 @@ if(rems.length>0) {
 
                     Profiler.EndSample();
                 }
+                else
+                {
+                    for (var i = 0; i < numMesheObjects; ++i)
+                    {
+                        Profiler.BeginSample("Create mesh " + i);
+
+                        Profiler.BeginSample("new mesh");
+                        var newMesh = new Mesh();
+                        Profiler.EndSample();
+
+                        var vertexStart = i * MAX_VERTICES_FOR_MESH;
+                        var vertexCount = Mathf.Min(vertexStart + MAX_VERTICES_FOR_MESH, verticesCount) - vertexStart;
+
+                        Profiler.BeginSample("Get vertices range");
+                        var verticesArrayForMesh = new Vector3[vertexCount];
+                        Array.Copy(verticesArray, vertexStart, verticesArrayForMesh, 0, vertexCount);
+                        Profiler.EndSample();
+
+                        Profiler.BeginSample("Set mesh properties");
+
+                        Profiler.BeginSample("Set mesh vertices");
+                        newMesh.vertices = verticesArrayForMesh;
+                        Profiler.EndSample();
+
+                        Profiler.BeginSample("Set mesh normals");
+                        var normalsArrayForMesh = new Vector3[vertexCount];
+                        Array.Copy(normalsArray, vertexStart, normalsArrayForMesh, 0, vertexCount);
+                        newMesh.normals = normalsArrayForMesh;
+                        Profiler.EndSample();
+
+                        Profiler.BeginSample("Set mesh uvs");
+                        var uvsArrayForMesh = new Vector2[vertexCount];
+                        Array.Copy(uvsArray, vertexStart, uvsArrayForMesh, 0, vertexCount);
+                        newMesh.uv = uvsArrayForMesh;
+                        Profiler.EndSample();
+
+                        Profiler.EndSample(); // mesh properties
+
+                        var indexStart = i * MAX_INDICES_FOR_MESH;
+                        var indexCount = vertexCount * 3 / 2;
+
+                        Profiler.BeginSample("Set mesh triangles");
+                        var trianglesArrayForMesh = new int[indexCount];
+                        // manual copy and alter
+                        for (var j = 0; j < indexCount; ++j)
+                        {
+                            trianglesArrayForMesh[j] = indicesArray[indexStart + j] - vertexStart;
+                        }
+
+                        newMesh.triangles = trianglesArrayForMesh;
+
+                        Profiler.EndSample();
+
+                        Profiler.BeginSample("Create new gameobject for mesh");
+                        var meshObject = new GameObject("mesh " + i + " for " + meshId, typeof(MeshFilter),
+                            typeof(MeshRenderer));
+                        Profiler.EndSample();
+                        Profiler.BeginSample("Set mesh filter for new game object");
+                        meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
+                        Profiler.EndSample();
+
+                        Profiler.BeginSample("Set mesh material for new game object");
+                        meshObject.GetComponent<MeshRenderer>().sharedMaterial =
+                            meshInfo.material;
+                        Profiler.EndSample();
+
+                        _meshes.Add(newMesh);
+                        _meshObjects.Add(meshObject);
+
+                        Profiler.BeginSample("Set transform parent");
+                        meshObject.transform.SetParent(gameObject.transform, false);
+                        Profiler.EndSample();
+
+                        Profiler.EndSample();
+                    }
+                }
+
+                
             }
             Profiler.EndSample();
         } else {}
