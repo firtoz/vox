@@ -42,8 +42,8 @@ internal class MeshInfo<T> {
 }
 
 public abstract class Octree<T> {
-    private readonly Dictionary<OctreeNode<T>, List<OctreeRenderFace<T>>> _nodeFaces =
-        new Dictionary<OctreeNode<T>, List<OctreeRenderFace<T>>>();
+    private readonly Dictionary<OctreeNode<T>, HashSet<OctreeRenderFace<T>>> _nodeFaces =
+        new Dictionary<OctreeNode<T>, HashSet<OctreeRenderFace<T>>>();
 
     private readonly OctreeNode<T> _root;
 
@@ -160,15 +160,16 @@ public abstract class Octree<T> {
 
         var indexOfFirstFaceToReplace = 0;
 
-        var firstFaceToReplace = removedFaces[indexOfFirstFaceToReplace].Value;
-        var faceIndexOfFirstFace = firstFaceToReplace.faceIndexInTree;
-
-        var i = allFacesOfMesh.Count - 1;
+        var firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace].Value;
+        var faceIndexOfFirstFaceToRemove = firstFaceToRemove.faceIndexInTree;
+        // [y, y, y, n, y, y, y]
+        // [y, y, y, n, y, y] ^ take this and move it left
+        // [y, y, y, Y, y, y]
 
         //iterate backwards to fill up any blanks
-        for (; i >= 0; --i) {
+        for (var i = allFacesOfMesh.Count - 1; i >= 0; --i) {
             //iterate only until the first face index
-            if (i < faceIndexOfFirstFace) {
+            if (i < faceIndexOfFirstFaceToRemove) {
                 break;
             }
 
@@ -183,9 +184,9 @@ public abstract class Octree<T> {
 
             //replace the current face with the last non-null face
 
-            allFacesOfMesh[faceIndexOfFirstFace] = currentFace;
+            allFacesOfMesh[faceIndexOfFirstFaceToRemove] = currentFace;
 
-            var vertexIndex = firstFaceToReplace.vertexIndexInMesh;
+            var vertexIndex = firstFaceToRemove.vertexIndexInMesh;
 
             var vertices = meshInfo.vertices;
             var uvs = meshInfo.uvs;
@@ -199,7 +200,7 @@ public abstract class Octree<T> {
 
             //indices don't change, right?
 
-            currentFace.faceIndexInTree = faceIndexOfFirstFace;
+            currentFace.faceIndexInTree = faceIndexOfFirstFaceToRemove;
             currentFace.vertexIndexInMesh = vertexIndex;
 
             //this face is replaced, try to replace the next one
@@ -210,8 +211,8 @@ public abstract class Octree<T> {
                 break;
             }
 
-            firstFaceToReplace = removedFaces[indexOfFirstFaceToReplace].Value;
-            faceIndexOfFirstFace = firstFaceToReplace.faceIndexInTree;
+            firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace].Value;
+            faceIndexOfFirstFaceToRemove = firstFaceToRemove.faceIndexInTree;
         }
 
         removalQueue.Clear();
@@ -233,60 +234,54 @@ public abstract class Octree<T> {
         var normals = meshInfo.normals;
         var indices = meshInfo.indices;
 
-        var removalQueue = meshInfo.removalQueue;
+//        var removalQueue = meshInfo.removalQueue;
         var allFaces = meshInfo.allFaces;
 
+
         Profiler.BeginSample("Process new faces: " + newFaces.Count);
-        foreach (var face in newFaces) {
+
+        //        var numFacesToRemove = removalQueue.Count;
+        var numFacesToAdd = newFaces.Count;
+
+        //        var numFacesToReplace = Mathf.Min(numFacesToAdd, numFacesToRemove);
+
+        //        for (var i = 0; i < numFacesToReplace; ++i)
+        //        {
+
+        //        }
+        allFaces.Capacity = allFaces.Count + numFacesToAdd;
+
+        normals.Capacity = normals.Count + 4 * numFacesToAdd;
+        vertices.Capacity = vertices.Count + 4 * numFacesToAdd;
+        uvs.Capacity = uvs.Count + 4 * numFacesToAdd;
+        indices.Capacity = indices.Count + 6 * numFacesToAdd;
+
+        foreach (var face in newFaces)
+        {
             //if the removal queue isn't empty, replace the last one from there!
-            if (removalQueue.Any()) {
-                var lastKey = removalQueue.Keys.Last();
 
-                var faceFromRemovalQueue = removalQueue[lastKey];
+            var vertexIndex = meshInfo.vertices.Count;
 
-                var faceIndex = faceFromRemovalQueue.faceIndexInTree;
-                var vertexIndex = faceFromRemovalQueue.vertexIndexInMesh;
+            face.faceIndexInTree = allFaces.Count;
+            face.vertexIndexInMesh = vertexIndex;
 
-                face.faceIndexInTree = faceIndex;
-                face.vertexIndexInMesh = vertexIndex;
+            allFaces.Add(face);
 
-                allFaces[faceIndex] = face;
+            vertices.AddRange(face.vertices);
+            uvs.AddRange(face.uvs);
 
-                var vertexOffset = vertexIndex;
+            normals.Add(face.normal);
+            normals.Add(face.normal);
+            normals.Add(face.normal);
+            normals.Add(face.normal);
 
-                //indices don't change!
-                for (var i = 0; i < 4; i++) {
-                    var currentVertexIndex = vertexOffset + i;
-                    vertices[currentVertexIndex] = face.vertices[i];
-                    uvs[currentVertexIndex] = face.uvs[i];
-                    normals[currentVertexIndex] = face.normal;
-                }
+            indices.Add(vertexIndex);
+            indices.Add(vertexIndex + 1);
+            indices.Add(vertexIndex + 2);
 
-                removalQueue.Remove(lastKey);
-            } else {
-                var vertexIndex = meshInfo.vertices.Count;
-
-                face.faceIndexInTree = allFaces.Count;
-                face.vertexIndexInMesh = vertexIndex;
-
-                allFaces.Add(face);
-
-                vertices.AddRange(face.vertices);
-                uvs.AddRange(face.uvs);
-
-                normals.Add(face.normal);
-                normals.Add(face.normal);
-                normals.Add(face.normal);
-                normals.Add(face.normal);
-
-                indices.Add(vertexIndex);
-                indices.Add(vertexIndex + 1);
-                indices.Add(vertexIndex + 2);
-
-                indices.Add(vertexIndex);
-                indices.Add(vertexIndex + 2);
-                indices.Add(vertexIndex + 3);
-            }
+            indices.Add(vertexIndex);
+            indices.Add(vertexIndex + 2);
+            indices.Add(vertexIndex + 3);
         }
         Profiler.EndSample();
 

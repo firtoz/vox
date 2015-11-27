@@ -167,7 +167,7 @@ public class OctreeNode<T> : OctreeNode
     private bool _hasItem;
     private int _solidNodeCount;
     private readonly Dictionary<NeighbourSide, int> _sideSolidCount = new Dictionary<NeighbourSide, int>();
-    private readonly Dictionary<NeighbourSide, List<OctreeNode<T>>> _sideSolidChildren = new Dictionary<NeighbourSide, List<OctreeNode<T>>>();
+    private readonly Dictionary<NeighbourSide, HashSet<OctreeNode<T>>> _sideSolidChildren = new Dictionary<NeighbourSide, HashSet<OctreeNode<T>>>();
     private T _item;
     private readonly Octree<T> _tree;
 
@@ -204,12 +204,12 @@ public class OctreeNode<T> : OctreeNode
         _sideSolidCount[NeighbourSide.Back] = 0;
         _sideSolidCount[NeighbourSide.Forward] = 0;
 
-        _sideSolidChildren[NeighbourSide.Above] = new List<OctreeNode<T>>();
-        _sideSolidChildren[NeighbourSide.Below] = new List<OctreeNode<T>>();
-        _sideSolidChildren[NeighbourSide.Left] = new List<OctreeNode<T>>();
-        _sideSolidChildren[NeighbourSide.Right] = new List<OctreeNode<T>>();
-        _sideSolidChildren[NeighbourSide.Back] = new List<OctreeNode<T>>();
-        _sideSolidChildren[NeighbourSide.Forward] = new List<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Above] = new HashSet<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Below] = new HashSet<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Left] = new HashSet<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Right] = new HashSet<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Back] = new HashSet<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Forward] = new HashSet<OctreeNode<T>>();
     }
 
 //    private List<OctreeNode<T>> _actuallySolidChildren = new List<OctreeNode<T>>(); 
@@ -352,12 +352,12 @@ public class OctreeNode<T> : OctreeNode
         return current;
     }
 
-    public List<OctreeNode<T>> GetAllSolidNeighbours(NeighbourSide side)
+    public IEnumerable<OctreeNode<T>> GetAllSolidNeighbours(NeighbourSide side)
     {
 #if !DISABLE_PROFILER
         Profiler.BeginSample("GetAllSolidNeighbours");
 #endif
-        var result = new List<OctreeNode<T>>();
+        var result = new HashSet<OctreeNode<T>>();
 
         var neighbourCoords = _nodeCoordinates.GetNeighbourCoords(side);
 
@@ -548,47 +548,39 @@ public class OctreeNode<T> : OctreeNode
     }
 
 
-    public List<OctreeRenderFace<T>> CreateFaces(int meshIndex)
+    public HashSet<OctreeRenderFace<T>> CreateFaces(int meshIndex)
     {
         AssertNotDeleted();
 
 #if !DISABLE_PROFILER
         Profiler.BeginSample("New List");
 #endif
-        var faces = new List<OctreeRenderFace<T>>();
+        var faces = new HashSet<OctreeRenderFace<T>>();
 #if !DISABLE_PROFILER
         Profiler.EndSample();
 #endif
 
         foreach (var side in AllSides)
         {
-            var newFaces = CreateFaces(side, meshIndex);
-#if !DISABLE_PROFILER
-            Profiler.BeginSample("Add faces into list");
-#endif
-            faces.AddRange(newFaces);
-#if !DISABLE_PROFILER
-            Profiler.EndSample();
-#endif
+            CreateFacesForSideInternal(side, meshIndex, faces);
         }
 
         return faces;
     }
 
-    public List<OctreeRenderFace<T>> CreateFaces(NeighbourSide side, int meshIndex)
+    private void CreateFacesForSideInternal(NeighbourSide side, int meshIndex, ICollection<OctreeRenderFace<T>> faces)
     {
 #if !DISABLE_PROFILER
         Profiler.BeginSample("New List");
 #endif
-        var faces = new List<OctreeRenderFace<T>>();
+//        var faces = new HashSet<OctreeRenderFace<T>>();
 #if !DISABLE_PROFILER
         Profiler.EndSample();
 #endif
-        CreateFaces(faces, side, _bounds, _nodeCoordinates, meshIndex);
-        return faces;
+        CreateFacesForSideInternal(faces, side, _bounds, _nodeCoordinates, meshIndex);
     }
 
-    private void CreateFaces(ICollection<OctreeRenderFace<T>> faces, NeighbourSide side, Bounds bounds, OctreeNodeCoordinates coords, int meshIndex)
+    private void CreateFacesForSideInternal(ICollection<OctreeRenderFace<T>> faces, NeighbourSide side, Bounds bounds, OctreeNodeCoordinates coords, int meshIndex)
     {
         AssertNotDeleted();
 #if !DISABLE_PROFILER
@@ -606,6 +598,8 @@ public class OctreeNode<T> : OctreeNode
         switch (sidestate)
         {
             case SideState.Empty:
+            case SideState.Partial:
+
                 var face = new OctreeRenderFace<T>(this, meshIndex);
 
                 var min = bounds.min;
@@ -708,29 +702,31 @@ public class OctreeNode<T> : OctreeNode
                 Profiler.EndSample();
 #endif
                 break;
-            case SideState.Partial:
-                var childCoords = GetChildCoordsOfSide(side);
-                var childIndex = 0;
-
-                foreach (var childCoord in childCoords)
-                {
-#if !DISABLE_PROFILER
-                    Profiler.BeginSample("Create faces for child " + childIndex);
-                    Profiler.BeginSample("Get bounds and coords");
-#endif
-                    var childBounds = GetChildBounds(bounds, childCoord.ToIndex());
-                    var childAbsCoords = new OctreeNodeCoordinates(coords, childCoord);
-#if !DISABLE_PROFILER
-                    Profiler.EndSample();
-#endif
-
-                    CreateFaces(faces, side, childBounds, childAbsCoords, meshIndex);
-#if !DISABLE_PROFILER
-                    Profiler.EndSample();
-#endif
-                    childIndex++;
-                }
-                break;
+//            case SideState.Partial:
+//                var childCoords = GetChildCoordsOfSide(side);
+//#if !DISABLE_PROFILER
+//                var childIndex = 0;
+//#endif
+//
+//                foreach (var childCoord in childCoords)
+//                {
+//#if !DISABLE_PROFILER
+//                    Profiler.BeginSample("Create faces for child " + childIndex);
+//                    Profiler.BeginSample("Get bounds and coords");
+//#endif
+//                    var childBounds = GetChildBounds(bounds, childCoord.ToIndex());
+//                    var childAbsCoords = new OctreeNodeCoordinates(coords, childCoord);
+//#if !DISABLE_PROFILER
+//                    Profiler.EndSample();
+//#endif
+//
+//                    CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex);
+//#if !DISABLE_PROFILER
+//                    Profiler.EndSample();
+//                    childIndex++;
+//#endif
+//                }
+//                break;
             case SideState.Full:
                 break;
             default:
