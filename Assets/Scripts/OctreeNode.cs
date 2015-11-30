@@ -548,14 +548,14 @@ public class OctreeNode<T> : OctreeNode
     }
 
 
-    public HashSet<OctreeRenderFace<T>> CreateFaces(int meshIndex)
+    public HashSet<OctreeRenderFace> CreateFaces(int meshIndex)
     {
         AssertNotDeleted();
 
 #if !DISABLE_PROFILER
         Profiler.BeginSample("New List");
 #endif
-        var faces = new HashSet<OctreeRenderFace<T>>();
+        var faces = new HashSet<OctreeRenderFace>();
 #if !DISABLE_PROFILER
         Profiler.EndSample();
 #endif
@@ -568,7 +568,7 @@ public class OctreeNode<T> : OctreeNode
         return faces;
     }
 
-    private void CreateFacesForSideInternal(NeighbourSide side, int meshIndex, ICollection<OctreeRenderFace<T>> faces)
+    private void CreateFacesForSideInternal(NeighbourSide side, int meshIndex, ICollection<OctreeRenderFace> faces)
     {
 #if !DISABLE_PROFILER
         Profiler.BeginSample("New List");
@@ -580,7 +580,7 @@ public class OctreeNode<T> : OctreeNode
         CreateFacesForSideInternal(faces, side, _bounds, _nodeCoordinates, meshIndex);
     }
 
-    private void CreateFacesForSideInternal(ICollection<OctreeRenderFace<T>> faces, NeighbourSide side, Bounds bounds, OctreeNodeCoordinates coords, int meshIndex)
+    private void CreateFacesForSideInternal(ICollection<OctreeRenderFace> faces, NeighbourSide side, Bounds bounds, OctreeNodeCoordinates coords, int meshIndex)
     {
         AssertNotDeleted();
 #if !DISABLE_PROFILER
@@ -600,7 +600,7 @@ public class OctreeNode<T> : OctreeNode
             case SideState.Empty:
             case SideState.Partial:
 
-                var face = new OctreeRenderFace<T>(this, meshIndex);
+                var face = new OctreeRenderFace(meshIndex);
 
                 var min = bounds.min;
                 var max = bounds.max;

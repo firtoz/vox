@@ -5,7 +5,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 internal class MeshInfo<T> {
-    public readonly List<OctreeRenderFace<T>> allFaces = new List<OctreeRenderFace<T>>();
+    public readonly List<OctreeRenderFace> allFaces = new List<OctreeRenderFace>();
 
     public readonly HashSet<OctreeNode<T>> drawQueue = new HashSet<OctreeNode<T>>();
     public readonly List<int> indices = new List<int>();
@@ -13,8 +13,8 @@ internal class MeshInfo<T> {
     public readonly Material material;
     public readonly List<Vector3> normals = new List<Vector3>();
 
-    public readonly SortedDictionary<int, OctreeRenderFace<T>> removalQueue =
-        new SortedDictionary<int, OctreeRenderFace<T>>();
+    public readonly SortedDictionary<int, OctreeRenderFace> removalQueue =
+        new SortedDictionary<int, OctreeRenderFace>();
 
     public readonly List<Vector2> uvs = new List<Vector2>();
     public readonly List<Vector3> vertices = new List<Vector3>();
@@ -50,8 +50,8 @@ public abstract class Octree<T> {
     private readonly Dictionary<int, MeshInfo<T>> _meshInfos = new Dictionary<int, MeshInfo<T>>();
     private readonly List<GameObject> _meshObjects = new List<GameObject>();
 
-    private readonly Dictionary<OctreeNode<T>, HashSet<OctreeRenderFace<T>>> _nodeFaces =
-        new Dictionary<OctreeNode<T>, HashSet<OctreeRenderFace<T>>>();
+    private readonly Dictionary<OctreeNode<T>, HashSet<OctreeRenderFace>> _nodeFaces =
+        new Dictionary<OctreeNode<T>, HashSet<OctreeRenderFace>>();
 
     private readonly OctreeNode<T> _root;
 
