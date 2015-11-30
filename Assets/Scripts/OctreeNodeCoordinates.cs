@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Assertions;
 
 public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
     private readonly OctreeChildCoordinates[] _coords;
@@ -14,13 +15,33 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
 
     public OctreeNodeCoordinates(OctreeNodeCoordinates parentCoordinates,
         params OctreeChildCoordinates[] furtherChildren) {
-        _coords = parentCoordinates._coords.Concat(furtherChildren).ToArray();
+        var parentCoords = parentCoordinates._coords;
+
+        _coords = new OctreeChildCoordinates[parentCoords.Length + furtherChildren.Length];
+
+        for (var i = 0; i < parentCoords.Length; ++i) {
+            _coords[i] = parentCoords[i];
+        }
+
+        for (var i = 0; i < furtherChildren.Length; ++i) {
+            _coords[parentCoords.Length + i] = furtherChildren[i];
+        }
+
         _length = _coords.Length;
     }
 
     public OctreeNodeCoordinates(IEnumerable<OctreeChildCoordinates> coords) {
         _coords = coords.ToArray();
         _length = _coords.Length;
+    }
+
+    public OctreeNodeCoordinates GetParentCoordinates() {
+        Assert.IsTrue(_coords.Length > 0, "Cannot get the parent of empty coords");
+
+        var newCoords = new OctreeChildCoordinates[_coords.Length - 1];
+        Array.Copy(_coords, newCoords, _coords.Length - 1);
+
+        return new OctreeNodeCoordinates(newCoords);
     }
 
     public int Length {
@@ -40,12 +61,12 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
     }
 
     protected bool Equals(OctreeNodeCoordinates other) {
-        return Length == other.Length && _coords.SequenceEqual(other._coords);
+        return other.GetHashCode() == GetHashCode();
     }
 
     public override int GetHashCode() {
         unchecked {
-            return ((_coords != null ? _coords.GetHashCode() : 0) * 397) ^ Length;
+            return _coords.Aggregate(_coords.Length, (current, coord) => current * 31 + coord.GetHashCode());
         }
     }
 
@@ -89,32 +110,7 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
                 var currentY = coord.y;
                 var currentZ = coord.z;
 
-                if (lastCoords == null) {
-                    //final coords!
-                    //update coords from the side
-                    switch (side) {
-                        case OctreeNode.NeighbourSide.Above:
-                            currentY += 1;
-                            break;
-                        case OctreeNode.NeighbourSide.Below:
-                            currentY -= 1;
-                            break;
-                        case OctreeNode.NeighbourSide.Left:
-                            currentX -= 1;
-                            break;
-                        case OctreeNode.NeighbourSide.Right:
-                            currentX += 1;
-                            break;
-                        case OctreeNode.NeighbourSide.Forward:
-                            currentZ += 1;
-                            break;
-                        case OctreeNode.NeighbourSide.Back:
-                            currentZ -= 1;
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException("side", side, null);
-                    }
-                } else {
+                if (lastCoords != null) {
                     //let's check the lower coords, if it's out of that bounds then we need to modify ourselves!
                     var lastCoordValue = lastCoords.Value;
 
@@ -156,6 +152,31 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
 
                     if (updateLastCoord) {
                         newCoords[i + 1] = new OctreeChildCoordinates(lastCoordX, lastCoordY, lastCoordZ);
+                    }
+                } else {
+                    //final coords!
+                    //update coords from the side
+                    switch (side) {
+                        case OctreeNode.NeighbourSide.Above:
+                            currentY += 1;
+                            break;
+                        case OctreeNode.NeighbourSide.Below:
+                            currentY -= 1;
+                            break;
+                        case OctreeNode.NeighbourSide.Left:
+                            currentX -= 1;
+                            break;
+                        case OctreeNode.NeighbourSide.Right:
+                            currentX += 1;
+                            break;
+                        case OctreeNode.NeighbourSide.Forward:
+                            currentZ += 1;
+                            break;
+                        case OctreeNode.NeighbourSide.Back:
+                            currentZ -= 1;
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException("side", side, null);
                     }
                 }
 

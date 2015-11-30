@@ -7,7 +7,6 @@ using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-
 public abstract class OctreeNode {
     public enum ChildIndex {
         Invalid = -1,
@@ -170,7 +169,9 @@ public class OctreeNode<T> : OctreeNode
     private readonly Dictionary<NeighbourSide, HashSet<OctreeNode<T>>> _sideSolidChildren = new Dictionary<NeighbourSide, HashSet<OctreeNode<T>>>();
     private T _item;
     private readonly Octree<T> _tree;
-
+#if USE_ALL_NODES
+    private readonly Dictionary<OctreeNodeCoordinates, OctreeNode<T>> _allNodes; 
+#endif
     public OctreeNode(Bounds bounds, Octree<T> tree) : this(bounds, null, ChildIndex.Invalid, 0, tree)
     {
     }
@@ -184,14 +185,21 @@ public class OctreeNode<T> : OctreeNode
         {
             _root = this;
             _nodeCoordinates = new OctreeNodeCoordinates();
-//            _coords = new OctreeChildCoordinates[0];
+#if USE_ALL_NODES
+            // ReSharper disable once UseObjectOrCollectionInitializer
+            _allNodes = new Dictionary<OctreeNodeCoordinates, OctreeNode<T>>();
+            _allNodes[_nodeCoordinates] = this;
+#endif
         }
-        else
-        {
+        else {
             _root = _parent._root;
+#if USE_ALL_NODES
+            _allNodes = _root._allNodes;
+#endif
+
             _nodeCoordinates = new OctreeNodeCoordinates(parent._nodeCoordinates, OctreeChildCoordinates.FromIndex(indexInParent));
-//            _coords = parent._coords.Concat(new[] {OctreeChildCoordinates.FromIndex(indexInParent)}).ToArray();
         }
+
         _indexInParent = indexInParent;
         _item = default(T);
         _depth = depth;
@@ -456,6 +464,60 @@ public class OctreeNode<T> : OctreeNode
             return SideState.Empty;
         }
 
+#if USE_ALL_NODES
+        OctreeNode<T> neighbourNode;
+
+        if (_allNodes.TryGetValue(neighbourCoords, out neighbourNode)) {
+            if (neighbourNode == null) {
+                return SideState.Empty;
+            }
+
+            if (neighbourNode.IsLeafNode())
+            {
+                return neighbourNode.HasItem() ? SideState.Full : SideState.Empty;
+            }
+
+            // not null and not leaf, so the neighbour node must be partial
+
+            SideState sideState;
+            if (neighbourNode.SideSolid(GetOpposite(side)))
+            {
+                // if the opposite side of current node is solid, then this is a partial node.
+                sideState = SideState.Partial;
+            }
+            else
+            {
+                sideState = SideState.Empty;
+            }
+
+            return sideState;
+        }
+
+        // that child doesn't exist
+
+        //let's check the parents
+        while (neighbourCoords.Length > 0) {
+            // get the next parent
+            neighbourCoords = neighbourCoords.GetParentCoordinates();
+
+            //does the next parent exist?
+            if (!_allNodes.TryGetValue(neighbourCoords, out neighbourNode)) {
+                continue;
+            }
+
+            // is the parent a leaf?
+            if (neighbourNode.IsLeafNode()) {
+                return neighbourNode.HasItem() ? SideState.Full : SideState.Empty;
+            }
+
+            // is not a leaf so cannot have an item
+
+            break;
+        }
+
+        return SideState.Empty;
+#else
+
         var currentNode = _root;
 
 #if !DISABLE_PROFILER
@@ -504,11 +566,18 @@ public class OctreeNode<T> : OctreeNode
 #if !DISABLE_PROFILER
         Profiler.BeginSample("Get current node solidity state");
 #endif
-        var sideState = currentNode.SideSolid(GetOpposite(side)) ? SideState.Partial : SideState.Empty;
+        SideState sideState;
+        if (currentNode.SideSolid(GetOpposite(side))) {
+            // if the opposite side of current node is solid, then this is a partial node.
+            sideState = SideState.Partial;
+        } else {
+            sideState = SideState.Empty;
+        }
 #if !DISABLE_PROFILER
         Profiler.EndSample();
 #endif
         return sideState;
+#endif
     }
 
     private bool SideSolid(NeighbourSide side)
@@ -580,7 +649,7 @@ public class OctreeNode<T> : OctreeNode
         CreateFacesForSideInternal(faces, side, _bounds, _nodeCoordinates, meshIndex);
     }
 
-    private void CreateFacesForSideInternal(ICollection<OctreeRenderFace> faces, NeighbourSide side, Bounds bounds, OctreeNodeCoordinates coords, int meshIndex)
+    private void CreateFacesForSideInternal(ICollection<OctreeRenderFace> faces, NeighbourSide side, Bounds bounds, OctreeNodeCoordinates coords, int meshIndex, bool parentPartial = false)
     {
         AssertNotDeleted();
 #if !DISABLE_PROFILER
@@ -598,135 +667,38 @@ public class OctreeNode<T> : OctreeNode
         switch (sidestate)
         {
             case SideState.Empty:
-            case SideState.Partial:
-
-                var face = new OctreeRenderFace(meshIndex);
-
-                var min = bounds.min;
-                var max = bounds.max;
-
-                Vector3 n;
-
-                switch (side)
-                {
-                    case NeighbourSide.Above:
-                        face.vertices[0] = (new Vector3(min.x, max.y, min.z));
-                        face.vertices[1] = (new Vector3(min.x, max.y, max.z));
-                        face.vertices[2] = (max);
-                        face.vertices[3] = (new Vector3(max.x, max.y, min.z));
-
-                        n = Vector3.up;
-
-                        face.uvs[0] = (new Vector2(min.x, min.z));
-                        face.uvs[1] = (new Vector2(min.x, max.z));
-                        face.uvs[2] = (new Vector2(max.x, max.z));
-                        face.uvs[3] = (new Vector2(max.x, min.z));
-                        break;
-                    case NeighbourSide.Below:
-                        face.vertices[0] = (new Vector3(min.x, min.y, max.z));
-                        face.vertices[1] = (min);
-                        face.vertices[2] = (new Vector3(max.x, min.y, min.z));
-                        face.vertices[3] = (new Vector3(max.x, min.y, max.z));
-
-                        n = Vector3.down;
-
-                        face.uvs[0] = (new Vector2(min.x, max.z));
-                        face.uvs[1] = (new Vector2(min.x, min.z));
-                        face.uvs[2] = (new Vector2(max.x, min.z));
-                        face.uvs[3] = (new Vector2(max.x, max.z));
-                        break;
-                    case NeighbourSide.Right:
-                        face.vertices[0] = (new Vector3(min.x, min.y, max.z));
-                        face.vertices[1] = (new Vector3(min.x, max.y, max.z));
-                        face.vertices[2] = (new Vector3(min.x, max.y, min.z));
-                        face.vertices[3] = (min);
-
-                        n = Vector3.left;
-
-                        face.uvs[0] = (new Vector2(max.z, min.y));
-                        face.uvs[1] = (new Vector2(max.z, max.y));
-                        face.uvs[2] = (new Vector2(min.z, max.y));
-                        face.uvs[3] = (new Vector2(min.z, min.y));
-                        break;
-                    case NeighbourSide.Left:
-                        face.vertices[0] = (new Vector3(max.x, min.y, min.z));
-                        face.vertices[1] = (new Vector3(max.x, max.y, min.z));
-                        face.vertices[2] = (max);
-                        face.vertices[3] = (new Vector3(max.x, min.y, max.z));
-
-
-                        n = Vector3.right;
-
-                        face.uvs[0] = (new Vector2(min.z, min.y));
-                        face.uvs[1] = (new Vector2(min.z, max.y));
-                        face.uvs[2] = (new Vector2(max.z, max.y));
-                        face.uvs[3] = (new Vector2(max.z, min.y));
-                        break;
-                    case NeighbourSide.Back:
-                        face.vertices[0] = (new Vector3(max.x, min.y, max.z));
-                        face.vertices[1] = (max);
-                        face.vertices[2] = (new Vector3(min.x, max.y, max.z));
-                        face.vertices[3] = (new Vector3(min.x, min.y, max.z));
-
-                        n = Vector3.forward;
-
-                        face.uvs[0] = (new Vector2(max.x, min.y));
-                        face.uvs[1] = (new Vector2(max.x, max.y));
-                        face.uvs[2] = (new Vector2(min.x, max.y));
-                        face.uvs[3] = (new Vector2(min.x, min.y));
-                        break;
-                    case NeighbourSide.Forward:
-                        face.vertices[0] = (min);
-                        face.vertices[1] = (new Vector3(min.x, max.y, min.z));
-                        face.vertices[2] = (new Vector3(max.x, max.y, min.z));
-                        face.vertices[3] = (new Vector3(max.x, min.y, min.z));
-
-                        n = Vector3.back;
-
-                        face.uvs[0] = (new Vector2(min.x, min.y));
-                        face.uvs[1] = (new Vector2(min.x, max.y));
-                        face.uvs[2] = (new Vector2(max.x, max.y));
-                        face.uvs[3] = (new Vector2(max.x, min.y));
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException("side", side, null);
-                }
-
-                face.normal = n;
-
-#if !DISABLE_PROFILER
-                Profiler.BeginSample("Add face into list");
-#endif
-                faces.Add(face);
-#if !DISABLE_PROFILER
-                Profiler.EndSample();
-#endif
-                break;
 //            case SideState.Partial:
-//                var childCoords = GetChildCoordsOfSide(side);
-//#if !DISABLE_PROFILER
-//                var childIndex = 0;
-//#endif
-//
-//                foreach (var childCoord in childCoords)
-//                {
-//#if !DISABLE_PROFILER
-//                    Profiler.BeginSample("Create faces for child " + childIndex);
-//                    Profiler.BeginSample("Get bounds and coords");
-//#endif
-//                    var childBounds = GetChildBounds(bounds, childCoord.ToIndex());
-//                    var childAbsCoords = new OctreeNodeCoordinates(coords, childCoord);
-//#if !DISABLE_PROFILER
-//                    Profiler.EndSample();
-//#endif
-//
-//                    CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex);
-//#if !DISABLE_PROFILER
-//                    Profiler.EndSample();
-//                    childIndex++;
-//#endif
-//                }
-//                break;
+
+                AddFaceToList(faces, side, bounds, meshIndex);
+                break;
+            case SideState.Partial:
+                if (!parentPartial) {
+                    var childCoords = GetChildCoordsOfSide(side);
+#if !DISABLE_PROFILER
+                var childIndex = 0;
+#endif
+
+                    foreach (var childCoord in childCoords) {
+#if !DISABLE_PROFILER
+                    Profiler.BeginSample("Create faces for child " + childIndex);
+                    Profiler.BeginSample("Get bounds and coords");
+#endif
+                        var childBounds = GetChildBounds(bounds, childCoord.ToIndex());
+                        var childAbsCoords = new OctreeNodeCoordinates(coords, childCoord);
+#if !DISABLE_PROFILER
+                    Profiler.EndSample();
+#endif
+
+                        CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex);
+#if !DISABLE_PROFILER
+                    Profiler.EndSample();
+                    childIndex++;
+#endif
+                    }
+                } else {
+                    AddFaceToList(faces, side, bounds, meshIndex);
+                }
+                break;
             case SideState.Full:
                 break;
             default:
@@ -735,6 +707,109 @@ public class OctreeNode<T> : OctreeNode
 
 #if !DISABLE_PROFILER
         Profiler.EndSample();
+#endif
+    }
+
+    private static void AddFaceToList(ICollection<OctreeRenderFace> faces, NeighbourSide side, Bounds bounds, int meshIndex) {
+        var face = new OctreeRenderFace(meshIndex);
+
+        var min = bounds.min;
+        var max = bounds.max;
+
+        Vector3 n;
+
+        switch (side) {
+            case NeighbourSide.Above:
+                face.vertices[0] = (new Vector3(min.x, max.y, min.z));
+                face.vertices[1] = (new Vector3(min.x, max.y, max.z));
+                face.vertices[2] = (max);
+                face.vertices[3] = (new Vector3(max.x, max.y, min.z));
+
+                n = Vector3.up;
+
+                face.uvs[0] = (new Vector2(min.x, min.z));
+                face.uvs[1] = (new Vector2(min.x, max.z));
+                face.uvs[2] = (new Vector2(max.x, max.z));
+                face.uvs[3] = (new Vector2(max.x, min.z));
+                break;
+            case NeighbourSide.Below:
+                face.vertices[0] = (new Vector3(min.x, min.y, max.z));
+                face.vertices[1] = (min);
+                face.vertices[2] = (new Vector3(max.x, min.y, min.z));
+                face.vertices[3] = (new Vector3(max.x, min.y, max.z));
+
+                n = Vector3.down;
+
+                face.uvs[0] = (new Vector2(min.x, max.z));
+                face.uvs[1] = (new Vector2(min.x, min.z));
+                face.uvs[2] = (new Vector2(max.x, min.z));
+                face.uvs[3] = (new Vector2(max.x, max.z));
+                break;
+            case NeighbourSide.Right:
+                face.vertices[0] = (new Vector3(min.x, min.y, max.z));
+                face.vertices[1] = (new Vector3(min.x, max.y, max.z));
+                face.vertices[2] = (new Vector3(min.x, max.y, min.z));
+                face.vertices[3] = (min);
+
+                n = Vector3.left;
+
+                face.uvs[0] = (new Vector2(max.z, min.y));
+                face.uvs[1] = (new Vector2(max.z, max.y));
+                face.uvs[2] = (new Vector2(min.z, max.y));
+                face.uvs[3] = (new Vector2(min.z, min.y));
+                break;
+            case NeighbourSide.Left:
+                face.vertices[0] = (new Vector3(max.x, min.y, min.z));
+                face.vertices[1] = (new Vector3(max.x, max.y, min.z));
+                face.vertices[2] = (max);
+                face.vertices[3] = (new Vector3(max.x, min.y, max.z));
+
+
+                n = Vector3.right;
+
+                face.uvs[0] = (new Vector2(min.z, min.y));
+                face.uvs[1] = (new Vector2(min.z, max.y));
+                face.uvs[2] = (new Vector2(max.z, max.y));
+                face.uvs[3] = (new Vector2(max.z, min.y));
+                break;
+            case NeighbourSide.Back:
+                face.vertices[0] = (new Vector3(max.x, min.y, max.z));
+                face.vertices[1] = (max);
+                face.vertices[2] = (new Vector3(min.x, max.y, max.z));
+                face.vertices[3] = (new Vector3(min.x, min.y, max.z));
+
+                n = Vector3.forward;
+
+                face.uvs[0] = (new Vector2(max.x, min.y));
+                face.uvs[1] = (new Vector2(max.x, max.y));
+                face.uvs[2] = (new Vector2(min.x, max.y));
+                face.uvs[3] = (new Vector2(min.x, min.y));
+                break;
+            case NeighbourSide.Forward:
+                face.vertices[0] = (min);
+                face.vertices[1] = (new Vector3(min.x, max.y, min.z));
+                face.vertices[2] = (new Vector3(max.x, max.y, min.z));
+                face.vertices[3] = (new Vector3(max.x, min.y, min.z));
+
+                n = Vector3.back;
+
+                face.uvs[0] = (new Vector2(min.x, min.y));
+                face.uvs[1] = (new Vector2(min.x, max.y));
+                face.uvs[2] = (new Vector2(max.x, max.y));
+                face.uvs[3] = (new Vector2(max.x, min.y));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("side", side, null);
+        }
+
+        face.normal = n;
+
+#if !DISABLE_PROFILER
+                Profiler.BeginSample("Add face into list");
+#endif
+        faces.Add(face);
+#if !DISABLE_PROFILER
+                Profiler.EndSample();
 #endif
     }
 
@@ -766,6 +841,10 @@ public class OctreeNode<T> : OctreeNode
     private OctreeNode<T> SetChild(ChildIndex index, OctreeNode<T> child)
     {
         AssertNotDeleted();
+#if USE_ALL_NODES
+        _allNodes[child._nodeCoordinates] = child;
+#endif
+
         _children[(int) index] = child;
         return child;
     }
@@ -904,8 +983,11 @@ public class OctreeNode<T> : OctreeNode
         }
     }
 
-    private void SetDeleted()
-    {
+    private void SetDeleted() {
+#if USE_ALL_NODES
+        _allNodes.Remove(_nodeCoordinates);
+#endif
+
         //calling toarray here to force enumeration to flag deleted
         foreach (var octreeNode in BreadthFirst().ToArray())
         {

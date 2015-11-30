@@ -13,8 +13,8 @@ internal class MeshInfo<T> {
     public readonly Material material;
     public readonly List<Vector3> normals = new List<Vector3>();
 
-    public readonly SortedDictionary<int, OctreeRenderFace> removalQueue =
-        new SortedDictionary<int, OctreeRenderFace>();
+    public readonly List<OctreeRenderFace> removalQueue =
+        new List<OctreeRenderFace>();
 
     public readonly List<Vector2> uvs = new List<Vector2>();
     public readonly List<Vector3> vertices = new List<Vector3>();
@@ -158,11 +158,13 @@ public abstract class Octree<T> {
             return;
         }
 
+        removalQueue.Sort((a, b) => a.faceIndexInTree.CompareTo(b.faceIndexInTree));
+
         var removedFaces = removalQueue.ToArray();
 
         var indexOfFirstFaceToReplace = 0;
 
-        var firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace].Value;
+        var firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace];
         var faceIndexOfFirstFaceToRemove = firstFaceToRemove.faceIndexInTree;
         // [y, y, y, n, y, y, y]
         // [y, y, y, n, y, y] ^ take this and move it left
@@ -213,7 +215,7 @@ public abstract class Octree<T> {
                 break;
             }
 
-            firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace].Value;
+            firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace];
             faceIndexOfFirstFaceToRemove = firstFaceToRemove.faceIndexInTree;
         }
 
@@ -378,7 +380,7 @@ if(rems.length>0) {
 
                 meshInfo.allFaces[face.faceIndexInTree].isRemoved = true;
 
-                meshInfo.removalQueue.Add(face.faceIndexInTree, face);
+                meshInfo.removalQueue.Add(face);
             }
         }
 
