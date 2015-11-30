@@ -5,18 +5,19 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 internal class MeshInfo<T> {
-    public readonly List<Vector3> normals = new List<Vector3>();
-    public readonly List<Vector2> uvs = new List<Vector2>();
-    public readonly List<Vector3> vertices = new List<Vector3>();
-    public readonly List<int> indices = new List<int>();
-
-    public readonly SortedDictionary<int, OctreeRenderFace<T>> removalQueue = new SortedDictionary<int, OctreeRenderFace<T>>();
-
     public readonly List<OctreeRenderFace<T>> allFaces = new List<OctreeRenderFace<T>>();
 
     public readonly HashSet<OctreeNode<T>> drawQueue = new HashSet<OctreeNode<T>>();
+    public readonly List<int> indices = new List<int>();
 
     public readonly Material material;
+    public readonly List<Vector3> normals = new List<Vector3>();
+
+    public readonly SortedDictionary<int, OctreeRenderFace<T>> removalQueue =
+        new SortedDictionary<int, OctreeRenderFace<T>>();
+
+    public readonly List<Vector2> uvs = new List<Vector2>();
+    public readonly List<Vector3> vertices = new List<Vector3>();
 
     public MeshInfo(Material material) {
         this.material = material;
@@ -24,12 +25,11 @@ internal class MeshInfo<T> {
 
 
     /// <summary>
-    /// Removes a face from the _allFaces list.
+    ///     Removes a face from the _allFaces list.
     /// </summary>
     /// <param name="index">The face index</param>
     /// <param name="count">Number of faces to remove</param>
     /// <param name="vertexIndexInMesh"></param>
-    /// 
     public void PopFaces(int index, int count, int vertexIndexInMesh) {
         allFaces.RemoveRange(index, count);
 
@@ -42,12 +42,21 @@ internal class MeshInfo<T> {
 }
 
 public abstract class Octree<T> {
+    private const int MAX_VERTICES_FOR_MESH = 65000 - 4 * 100;
+    private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
+    private const int MAX_INDICES_FOR_MESH = MAX_FACES_FOR_MESH * 6;
+    private readonly List<Mesh> _meshes = new List<Mesh>();
+
+    private readonly Dictionary<int, MeshInfo<T>> _meshInfos = new Dictionary<int, MeshInfo<T>>();
+    private readonly List<GameObject> _meshObjects = new List<GameObject>();
+
     private readonly Dictionary<OctreeNode<T>, HashSet<OctreeRenderFace<T>>> _nodeFaces =
         new Dictionary<OctreeNode<T>, HashSet<OctreeRenderFace<T>>>();
 
     private readonly OctreeNode<T> _root;
 
-    private readonly Dictionary<int, MeshInfo<T>> _meshInfos = new Dictionary<int, MeshInfo<T>>();
+
+    private GameObject _renderObject;
 
     protected Octree(Bounds bounds) {
         _root = new OctreeNode<T>(bounds, this);
@@ -82,7 +91,6 @@ public abstract class Octree<T> {
         return _meshInfos[meshId];
     }
 
-
     public void NodeAdded(OctreeNode<T> octreeNode) {
         var meshInfo = GetMeshInfo(octreeNode.GetItem());
 
@@ -92,20 +100,16 @@ public abstract class Octree<T> {
             drawQueue.Add(octreeNode);
         }
 
-        foreach (var side in OctreeNode.AllSides)
-        {
+        foreach (var side in OctreeNode.AllSides) {
             var neighbours = octreeNode.GetAllSolidNeighbours(side);
 
-            foreach (var neighbour in neighbours)
-            {
-                if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem())
-                {
+            foreach (var neighbour in neighbours) {
+                if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem()) {
                     continue;
                 }
 
                 var neighbourDrawQueue = GetMeshInfo(neighbour.GetItem()).drawQueue;
-                if (!neighbourDrawQueue.Contains(neighbour))
-                {
+                if (!neighbourDrawQueue.Contains(neighbour)) {
                     neighbourDrawQueue.Add(neighbour);
                 }
             }
@@ -131,11 +135,9 @@ public abstract class Octree<T> {
         var drawQueue = meshInfo.drawQueue;
 
         Profiler.BeginSample("Draw Queue Length : " + drawQueue.Count);
-        foreach (var octreeNode in drawQueue)
-        {
+        foreach (var octreeNode in drawQueue) {
             //redraw all nodes in the 'redraw queue'
-            if (_nodeFaces.ContainsKey(octreeNode))
-            {
+            if (_nodeFaces.ContainsKey(octreeNode)) {
                 RemoveNodeInternal(octreeNode);
             }
             AddNodeInternal(octreeNode);
@@ -218,8 +220,7 @@ public abstract class Octree<T> {
         removalQueue.Clear();
     }
 
-    private void AddNodeInternal(OctreeNode<T> octreeNode)
-    {
+    private void AddNodeInternal(OctreeNode<T> octreeNode) {
         Profiler.BeginSample("AddNodeInternal");
         var meshId = GetItemMeshId(octreeNode.GetItem());
 
@@ -256,8 +257,7 @@ public abstract class Octree<T> {
         uvs.Capacity = uvs.Count + 4 * numFacesToAdd;
         indices.Capacity = indices.Count + 6 * numFacesToAdd;
 
-        foreach (var face in newFaces)
-        {
+        foreach (var face in newFaces) {
             //if the removal queue isn't empty, replace the last one from there!
 
             var vertexIndex = meshInfo.vertices.Count;
@@ -386,11 +386,6 @@ if(rems.length>0) {
         Profiler.EndSample();
     }
 
-
-    private const int MAX_VERTICES_FOR_MESH = 65000 - 4 * 100;
-    private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
-    private const int MAX_INDICES_FOR_MESH = MAX_FACES_FOR_MESH * 6;
-
     public bool Intersect(Transform transform, Ray ray, int? wantedDepth = null) {
         return new RayIntersection<T>(transform, this, ray, false, wantedDepth).results.Count > 0;
     }
@@ -411,13 +406,7 @@ if(rems.length>0) {
         return false;
     }
 
-
-    private GameObject _renderObject;
-    private readonly List<Mesh> _meshes = new List<Mesh>();
-    private readonly List<GameObject> _meshObjects = new List<GameObject>();
-
-    public void Render(GameObject gameObject)
-    {
+    public void Render(GameObject gameObject) {
         Profiler.BeginSample("Process draw queue");
         ProcessDrawQueue();
         Profiler.EndSample();
@@ -438,28 +427,21 @@ if(rems.length>0) {
             var numChildren = gameObject.transform.childCount;
 
             Profiler.BeginSample("Destroy children");
-            for (var i = numChildren - 1; i >= 0; i--)
-            {
+            for (var i = numChildren - 1; i >= 0; i--) {
                 var child = gameObject.transform.GetChild(i).gameObject;
-                if (Application.isPlaying)
-                {
+                if (Application.isPlaying) {
                     Object.Destroy(child);
-                } else
-                {
+                } else {
                     Object.DestroyImmediate(child);
                 }
             }
             Profiler.EndSample();
 
             Profiler.BeginSample("Destroy meshes");
-            foreach (var mesh in _meshes)
-            {
-                if (Application.isPlaying)
-                {
+            foreach (var mesh in _meshes) {
+                if (Application.isPlaying) {
                     Object.Destroy(mesh);
-                }
-                else
-                {
+                } else {
                     Object.DestroyImmediate(mesh);
                 }
             }
@@ -482,7 +464,7 @@ if(rems.length>0) {
                 var indicesArray = meshInfo.indices.ToArray();
 
                 var verticesCount = verticesArray.Length;
-                var numMesheObjects = (verticesCount / MAX_VERTICES_FOR_MESH) + 1;
+                var numMesheObjects = verticesCount / MAX_VERTICES_FOR_MESH + 1;
 
                 if (numMesheObjects == 1) // no need for loop or array copying
                 {
@@ -517,8 +499,8 @@ if(rems.length>0) {
                     Profiler.EndSample();
 
                     Profiler.BeginSample("Create new gameobject for mesh");
-                    var meshObject = new GameObject("mesh " + 0 + " for " + meshId, typeof(MeshFilter),
-                        typeof(MeshRenderer));
+                    var meshObject = new GameObject("mesh " + 0 + " for " + meshId, typeof (MeshFilter),
+                        typeof (MeshRenderer));
                     Profiler.EndSample();
                     Profiler.BeginSample("Set mesh filter for new game object");
                     meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
@@ -538,11 +520,8 @@ if(rems.length>0) {
                     Profiler.EndSample();
 
                     Profiler.EndSample();
-                }
-                else
-                {
-                    for (var i = 0; i < numMesheObjects; ++i)
-                    {
+                } else {
+                    for (var i = 0; i < numMesheObjects; ++i) {
                         Profiler.BeginSample("Create mesh " + i);
 
                         Profiler.BeginSample("new mesh");
@@ -583,8 +562,7 @@ if(rems.length>0) {
                         Profiler.BeginSample("Set mesh triangles");
                         var trianglesArrayForMesh = new int[indexCount];
                         // manual copy and alter
-                        for (var j = 0; j < indexCount; ++j)
-                        {
+                        for (var j = 0; j < indexCount; ++j) {
                             trianglesArrayForMesh[j] = indicesArray[indexStart + j] - vertexStart;
                         }
 
@@ -593,8 +571,8 @@ if(rems.length>0) {
                         Profiler.EndSample();
 
                         Profiler.BeginSample("Create new gameobject for mesh");
-                        var meshObject = new GameObject("mesh " + i + " for " + meshId, typeof(MeshFilter),
-                            typeof(MeshRenderer));
+                        var meshObject = new GameObject("mesh " + i + " for " + meshId, typeof (MeshFilter),
+                            typeof (MeshRenderer));
                         Profiler.EndSample();
                         Profiler.BeginSample("Set mesh filter for new game object");
                         meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
@@ -615,11 +593,9 @@ if(rems.length>0) {
                         Profiler.EndSample();
                     }
                 }
-
-                
             }
             Profiler.EndSample();
-        } else {}
+        }
     }
 
     protected abstract int GetItemMeshId(T item);

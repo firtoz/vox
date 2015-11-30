@@ -8,10 +8,9 @@ namespace Assets.Scripts
             
         }
 
-        override protected int GetItemMeshId(int item) {
+        protected override int GetItemMeshId(int item) {
             return item;
         }
-
 
         private readonly Dictionary<int, Material> _materials = new Dictionary<int, Material>();
          
