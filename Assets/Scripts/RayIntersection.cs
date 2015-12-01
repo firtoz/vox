@@ -203,7 +203,14 @@ public class RayIntersection<T> {
                 } else {
                     //oops, went too deep!!!
                     //trace back to wanted depth
-                    ProcessTerminal(new OctreeNodeCoordinates(nodeCoordinates.ToList().GetRange(0, wantedDepth.Value)), tx0, ty0, tz0);
+
+                    var newCoords = new OctreeChildCoordinates[wantedDepth.Value];
+
+                    for (var i = 0; i < newCoords.Length; ++i) {
+                        newCoords[i] = nodeCoordinates[i];
+                    }
+
+                    ProcessTerminal(new OctreeNodeCoordinates(newCoords), tx0, ty0, tz0);
                 }
                 return;
             }

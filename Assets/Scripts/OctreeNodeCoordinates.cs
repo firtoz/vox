@@ -30,10 +30,15 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
         _length = _coords.Length;
     }
 
-    public OctreeNodeCoordinates(IEnumerable<OctreeChildCoordinates> coords) {
-        _coords = coords.ToArray();
+    public OctreeNodeCoordinates(OctreeChildCoordinates[] coords) {
+        _coords = coords;
         _length = _coords.Length;
     }
+
+//    public OctreeNodeCoordinates(IEnumerable<OctreeChildCoordinates> coords) {
+//        _coords = coords.ToArray();
+//        _length = _coords.Length;
+//    }
 
     public OctreeNodeCoordinates GetParentCoordinates() {
         Assert.IsTrue(_coords.Length > 0, "Cannot get the parent of empty coords");
@@ -101,7 +106,11 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
         if (_coords.Length > 0) {
             newCoords = new OctreeChildCoordinates[_coords.Length];
 
-            OctreeChildCoordinates? lastCoords = null;
+            var hasLastCoords = false;
+            var lastCoordX = 0;
+            var lastCoordY = 0;
+            var lastCoordZ = 0;
+//            var lastCoords = new OctreeChildCoordinates();
 
             for (var i = _coords.Length - 1; i >= 0; --i) {
                 var coord = _coords[i];
@@ -110,13 +119,11 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
                 var currentY = coord.y;
                 var currentZ = coord.z;
 
-                if (lastCoords != null) {
+                if (hasLastCoords) {
                     //let's check the lower coords, if it's out of that bounds then we need to modify ourselves!
-                    var lastCoordValue = lastCoords.Value;
-
-                    var lastCoordX = lastCoordValue.x;
-                    var lastCoordY = lastCoordValue.y;
-                    var lastCoordZ = lastCoordValue.z;
+//                    var lastCoordX = lastCoords.x;
+//                    var lastCoordY = lastCoords.y;
+//                    var lastCoordZ = lastCoords.z;
 
                     var updateLastCoord = false;
 
@@ -180,16 +187,19 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
                     }
                 }
 
-                newCoords[i] = new OctreeChildCoordinates(currentX, currentY, currentZ);
-                lastCoords = newCoords[i];
+                var newCoord = new OctreeChildCoordinates(currentX, currentY, currentZ);
+                newCoords[i] = newCoord;
+
+                lastCoordX = currentX;
+                lastCoordY = currentY;
+                lastCoordZ = currentZ;
+                hasLastCoords = true;
             }
 
-            if (lastCoords != null) {
-                var lastCoordValue = lastCoords.Value;
-
-                if (lastCoordValue.x < 0 || lastCoordValue.x > 1 ||
-                    lastCoordValue.y < 0 || lastCoordValue.y > 1 ||
-                    lastCoordValue.z < 0 || lastCoordValue.z > 1) {
+            if (hasLastCoords) {
+                if (lastCoordX < 0 || lastCoordX > 1 ||
+                    lastCoordY < 0 || lastCoordY > 1 ||
+                    lastCoordZ < 0 || lastCoordZ > 1) {
                     //invalid coords
                     newCoords = null;
                 }
@@ -198,10 +208,6 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
             newCoords = null;
         }
 
-        if (newCoords == null) {
-            return null;
-        }
-
-        return new OctreeNodeCoordinates(newCoords);
+        return newCoords == null ? null : new OctreeNodeCoordinates(newCoords);
     }
 }

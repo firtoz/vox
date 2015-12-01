@@ -8,7 +8,7 @@ namespace OctreeTest
     [Category("Octree Tests")]
     internal class OctreeNodeTests
     {
-        class TestOctree<T> : Octree<T> {
+        private class TestOctree<T> : Octree<T> {
             public TestOctree(Bounds bounds) : base(bounds) {}
 
             protected override int GetItemMeshId(T item) {
@@ -30,25 +30,27 @@ namespace OctreeTest
             Assert.AreEqual(0, root.GetChildCount());
 
             Assert.AreEqual(0, root.GetCoords().Length);
-            Assert.IsNull(root.GetChild(OctreeNode.ChildIndex.Invalid));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                root.GetChild(OctreeNode.ChildIndex.Invalid);
+            });
+
             for (var i = 0; i < 8; i++)
             {
                 Assert.IsNull(root.GetChild((OctreeNode.ChildIndex) i));
             }
 
-            Assert.Throws<ArgumentException>(() =>
-            {
-                var invalidIndex = -2;
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                const int invalidIndex = -2;
                 root.AddChild((OctreeNode.ChildIndex) invalidIndex);
             });
 
-            Assert.Throws<ArgumentException>(() =>
-            {
-                var invalidIndex = 9;
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                const int invalidIndex = 9;
                 root.AddChild((OctreeNode.ChildIndex) invalidIndex);
             });
 
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 root.AddChild(OctreeNode.ChildIndex.Invalid);
             });
@@ -81,15 +83,13 @@ namespace OctreeTest
                 }
             }
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                var invalidIndex = -2;
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                const int invalidIndex = -2;
                 root.GetChild((OctreeNode.ChildIndex) invalidIndex);
             });
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                var invalidIndex = 9;
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                const int invalidIndex = 9;
                 root.GetChild((OctreeNode.ChildIndex) invalidIndex);
             });
 
