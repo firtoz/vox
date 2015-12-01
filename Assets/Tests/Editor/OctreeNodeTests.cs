@@ -73,7 +73,7 @@ namespace OctreeTest
 
             for (var i = 0; i < 8; i++)
             {
-                if (i == 1)
+                if (i == 2)
                 {
                     Assert.AreEqual(firstChild, root.GetChild((OctreeNode.ChildIndex) i));
                 }

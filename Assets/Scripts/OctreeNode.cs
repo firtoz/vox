@@ -1,4 +1,5 @@
 ﻿#define DISABLE_PROFILER
+//#define USE_ALL_NODES
 
 using System;
 using System.Collections.Generic;
@@ -10,14 +11,18 @@ using UnityEngine.Assertions;
 public abstract class OctreeNode {
     public enum ChildIndex {
         Invalid = -1,
-        TopFwdLeft = 0,
-        TopFwdRight = 1,
-        TopBackLeft = 2,
-        TopBackRight = 3,
-        BotFwdLeft = 4,
-        BotFwdRight = 5,
-        BotBackLeft = 6,
-        BotBackRight = 7
+
+        BotFwdRight = 0,
+        BotFwdLeft = 1,
+
+        TopFwdRight = 2,
+        TopFwdLeft = 3,
+
+        BotBackRight = 4,
+        BotBackLeft = 5,
+
+        TopBackRight = 6,
+        TopBackLeft = 7,
     }
 
     public enum NeighbourSide {
@@ -624,7 +629,7 @@ public class OctreeNode<T> : OctreeNode {
                 AddFaceToList(faces, side, bounds, meshIndex);
                 break;
             case SideState.Partial:
-                if (!parentPartial) {
+                if (parentPartial) {
                     var childCoords = GetChildCoordsOfSide(side);
 #if !DISABLE_PROFILER
                 var childIndex = 0;
@@ -815,7 +820,7 @@ public class OctreeNode<T> : OctreeNode {
         }
     }
 
-    public Bounds GetChildBounds(ChildIndex childIndex) {
+    private Bounds GetChildBounds(ChildIndex childIndex) {
         AssertNotDeleted();
 
         return GetChildBounds(_bounds, childIndex);
@@ -830,7 +835,7 @@ public class OctreeNode<T> : OctreeNode {
         return coordinates.Aggregate(result, (current, coordinate) => GetChildBounds(current, coordinate.ToIndex()));
     }
 
-    public static Bounds GetChildBounds(Bounds originalBounds, ChildIndex childIndex) {
+    private static Bounds GetChildBounds(Bounds originalBounds, ChildIndex childIndex) {
         Vector3 childDirection;
 
         switch (childIndex) {
