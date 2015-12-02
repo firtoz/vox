@@ -138,6 +138,8 @@ public abstract class Octree<T> {
         // [y, y, y, n, y, y] ^ take this and move it left
         // [y, y, y, Y, y, y]
 
+        var numFacesToPop = 0;
+
         //iterate backwards to fill up any blanks
         for (var i = allFacesOfMesh.Count - 1; i >= 0; --i) {
             //iterate only until the first face index
@@ -147,7 +149,7 @@ public abstract class Octree<T> {
 
             var currentFace = allFacesOfMesh[i];
 
-            meshInfo.PopFaces(i, 1, currentFace.vertexIndexInMesh);
+            numFacesToPop++;
 
             //this face is already removed
             if (currentFace.isRemoved) {
@@ -185,6 +187,11 @@ public abstract class Octree<T> {
 
             firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace];
             faceIndexOfFirstFaceToRemove = firstFaceToRemove.faceIndexInTree;
+        }
+
+        if (numFacesToPop > 0) {
+            var index = allFacesOfMesh.Count - numFacesToPop;
+            meshInfo.PopFaces(index, numFacesToPop, index * 4);
         }
 
         removalQueue.Clear();
