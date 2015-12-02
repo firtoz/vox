@@ -1,5 +1,5 @@
 ﻿#define DISABLE_PROFILER
-//#define USE_ALL_NODES
+#define USE_ALL_NODES
 
 using System;
 using System.Collections.Generic;
@@ -356,6 +356,14 @@ public class OctreeNode<T> : OctreeNode {
         OctreeNode<T> neighbourNode;
 
         if (_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
+            if (neighbourNode.IsSolid())
+            {
+#if !DISABLE_PROFILER
+            Profiler.EndSample();
+#endif
+                return new HashSet<OctreeNode<T>> { neighbourNode };
+            }
+
             return neighbourNode._sideSolidChildren[GetOpposite(side)];
         }
 
