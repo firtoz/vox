@@ -168,7 +168,7 @@ public class OctreeNode<T> : OctreeNode {
     private T _item;
     private readonly Octree<T> _tree;
 #if USE_ALL_NODES
-    private readonly Dictionary<OctreeNodeCoordinates, OctreeNode<T>> _allNodes; 
+    private readonly Dictionary<int, OctreeNode<T>> _allNodes; 
 #endif
     public OctreeNode(Bounds bounds, Octree<T> tree) : this(bounds, null, ChildIndex.Invalid, 0, tree) {}
 
@@ -181,8 +181,8 @@ public class OctreeNode<T> : OctreeNode {
             _nodeCoordinates = new OctreeNodeCoordinates();
 #if USE_ALL_NODES
     // ReSharper disable once UseObjectOrCollectionInitializer
-            _allNodes = new Dictionary<OctreeNodeCoordinates, OctreeNode<T>>();
-            _allNodes[_nodeCoordinates] = this;
+            _allNodes = new Dictionary<int, OctreeNode<T>>();
+            _allNodes[_nodeCoordinates.GetHashCode()] = this;
 #endif
         } else {
             _root = _parent._root;
@@ -342,8 +342,6 @@ public class OctreeNode<T> : OctreeNode {
 #if !DISABLE_PROFILER
         Profiler.BeginSample("GetAllSolidNeighbours");
 #endif
-        var result = new HashSet<OctreeNode<T>>();
-
         var neighbourCoords = _nodeCoordinates.GetNeighbourCoords(side);
 
         //out of the map!
@@ -351,25 +349,59 @@ public class OctreeNode<T> : OctreeNode {
 #if !DISABLE_PROFILER
             Profiler.EndSample();
 #endif
-            return result;
+            return null;
         }
 
-        var currentNeighbourNode = _root;
+#if USE_ALL_NODES
+        OctreeNode<T> neighbourNode;
+
+        if (_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
+            return neighbourNode._sideSolidChildren[GetOpposite(side)];
+        }
+
+        // that child doesn't exist
+
+        //let's check the parents
+        while (neighbourCoords.Length > 0)
+        {
+            // get the next parent
+            neighbourCoords = neighbourCoords.GetParentCoordinates();
+
+            //does the next parent exist?
+            if (!_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode))
+            {
+                continue;
+            }
+
+            // is the parent a leaf?
+            if (neighbourNode.IsSolid())
+            {
+                return new HashSet<OctreeNode<T>> { neighbourNode };
+            }
+
+            // is not a leaf so cannot have an item
+
+            break;
+        }
+
+        return null;
+#else
+
+            var currentNeighbourNode = _root;
 
         foreach (var coord in neighbourCoords) {
             if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
 #if !DISABLE_PROFILER
                 Profiler.EndSample();
 #endif
-                return result;
+                return null;
             }
 
             if (currentNeighbourNode.IsSolid()) {
-                result.Add(currentNeighbourNode);
 #if !DISABLE_PROFILER
                 Profiler.EndSample();
 #endif
-                return result;
+                return new HashSet<OctreeNode<T>> { currentNeighbourNode };
             }
 
             currentNeighbourNode = currentNeighbourNode.GetChild(coord.ToIndex());
@@ -380,18 +412,18 @@ public class OctreeNode<T> : OctreeNode {
 #if !DISABLE_PROFILER
             Profiler.EndSample();
 #endif
-            return result;
+            return null;
         }
 
         if (currentNeighbourNode.IsSolid()) {
-            result.Add(currentNeighbourNode);
 #if !DISABLE_PROFILER
             Profiler.EndSample();
 #endif
-            return result;
+            return new HashSet<OctreeNode<T>> { currentNeighbourNode };
         }
 
         return currentNeighbourNode._sideSolidChildren[GetOpposite(side)];
+#endif
     }
 
     private static IEnumerable<OctreeChildCoordinates> GetChildCoordsOfSide(NeighbourSide side) {
@@ -434,7 +466,7 @@ public class OctreeNode<T> : OctreeNode {
 #if USE_ALL_NODES
         OctreeNode<T> neighbourNode;
 
-        if (_allNodes.TryGetValue(neighbourCoords, out neighbourNode)) {
+        if (_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
             if (neighbourNode == null) {
                 return SideState.Empty;
             }
@@ -468,7 +500,7 @@ public class OctreeNode<T> : OctreeNode {
             neighbourCoords = neighbourCoords.GetParentCoordinates();
 
             //does the next parent exist?
-            if (!_allNodes.TryGetValue(neighbourCoords, out neighbourNode)) {
+            if (!_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
                 continue;
             }
 
@@ -802,7 +834,7 @@ public class OctreeNode<T> : OctreeNode {
     private OctreeNode<T> SetChild(ChildIndex index, OctreeNode<T> child) {
         AssertNotDeleted();
 #if USE_ALL_NODES
-        _allNodes[child._nodeCoordinates] = child;
+        _allNodes.Add(child._nodeCoordinates.GetHashCode(), child);
 #endif
 
         _children[(int) index] = child;
@@ -932,7 +964,7 @@ public class OctreeNode<T> : OctreeNode {
 
     private void SetDeleted() {
 #if USE_ALL_NODES
-        _allNodes.Remove(_nodeCoordinates);
+        _allNodes.Remove(_nodeCoordinates.GetHashCode());
 #endif
 
         //calling toarray here to force enumeration to flag deleted
@@ -959,39 +991,27 @@ public class OctreeNode<T> : OctreeNode {
             var octreeNodeChildIndex = (ChildIndex) i;
             var childBounds = GetChildBounds(octreeNodeChildIndex);
 
-            if (childBounds.Intersects(bounds)) {
+            if (childBounds.Intersects(bounds))
+            {
+                var child = GetChild(octreeNodeChildIndex);
+                if (child == null)
+                {
+                    if (HasItem()) {
+                        SubDivide();
+                        child = GetChild(octreeNodeChildIndex);
+                    } else {
+                        child = AddChild(octreeNodeChildIndex);
+                    }
+
+                }
+
                 if (bounds.Contains(childBounds.min) && bounds.Contains(childBounds.max)) {
                     //child intersects and is completely contained by it
-
-                    var child = GetChild(octreeNodeChildIndex);
-                    if (child != null) {
-                        RemoveChild(octreeNodeChildIndex);
-                        child = AddChild(octreeNodeChildIndex);
-                    } else {
-                        if (HasItem()) {
-                            SubDivide();
-
-                            child = GetChild(octreeNodeChildIndex);
-                        } else {
-                            child = AddChild(octreeNodeChildIndex);
-                        }
-                    }
 
                     child.SetItem(item);
                 } else {
                     //child intersects but is not completely contained by it
 
-                    var child = GetChild(octreeNodeChildIndex);
-
-                    if (child == null) {
-                        if (HasItem()) {
-                            SubDivide();
-
-                            child = GetChild(octreeNodeChildIndex);
-                        } else {
-                            child = AddChild(octreeNodeChildIndex);
-                        }
-                    }
                     child.AddBounds(bounds, item, remainingDepth - 1);
                 }
             }

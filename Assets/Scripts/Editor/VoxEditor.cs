@@ -68,24 +68,7 @@ public class VoxEditor : Editor {
             EditorUtility.SetDirty(vox.gameObject);
         }
         if (GUILayout.Button("Add Random Bounds")) {
-//                vox.octree = new Octree<int>(new Bounds(Vector3.zero, Vector3.one*7.5f));
-
-//                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one*4), 5, 6);
-//                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one*0.5f), 6, 8);
-            vox.voxelTree.AddBounds(
-                new Bounds(
-                    new Vector3(Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f)) * 20.0f,
-                    new Vector3(Random.Range(0.1f, 10.0f), Random.Range(0.1f, 10.0f), Random.Range(0.1f, 10.0f))), 7, 8);
-
-            //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
-            //                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
-            //                topFwdLeft.SetItem(4);
-
-            //                topFwdLeft.SubDivide();
-            //                vox.octree.ProcessDrawQueue();
-            Undo.RegisterCompleteObjectUndo(vox.gameObject, "Modify");
-            vox.voxelTree.Render(vox.gameObject);
-            EditorUtility.SetDirty(vox.gameObject);
+            vox.addBoundsNextFrame = true;
         }
     }
 

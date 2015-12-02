@@ -29,6 +29,13 @@ namespace OctreeTest {
                 }
             }
 
+            Assert.AreEqual(new OctreeNodeCoordinates(new OctreeNodeCoordinates()), new OctreeNodeCoordinates());
+            Assert.AreEqual(new OctreeChildCoordinates(new OctreeChildCoordinates()), new OctreeChildCoordinates());
+
+            Assert.AreEqual(new OctreeChildCoordinates(new OctreeChildCoordinates(0,0,1)), new OctreeChildCoordinates(0,0,1));
+            Assert.AreEqual(new OctreeChildCoordinates(new OctreeChildCoordinates(0,1,0)), new OctreeChildCoordinates(0,1,0));
+            Assert.AreEqual(new OctreeChildCoordinates(new OctreeChildCoordinates(1,0,0)), new OctreeChildCoordinates(1,0,0));
+
             // same constructor, equal
             Assert.AreEqual(new OctreeNodeCoordinates(new[] {
                 new OctreeChildCoordinates(1, 0, 0),
@@ -45,6 +52,42 @@ namespace OctreeTest {
             }), new OctreeNodeCoordinates(new OctreeNodeCoordinates(),
                 new OctreeChildCoordinates(1, 0, 0),
                 new OctreeChildCoordinates(0, 1, 0)));
+
+            // construct from parent with no coords
+            Assert.AreEqual(new OctreeNodeCoordinates(new[] {
+                new OctreeChildCoordinates(1, 0, 0),
+                new OctreeChildCoordinates(0, 1, 0)
+            }), new OctreeNodeCoordinates(new OctreeNodeCoordinates(),
+                new OctreeChildCoordinates(1, 0, 0),
+                new OctreeChildCoordinates(0, 1, 0)));
+
+            Assert.IsTrue(Equals(new OctreeNodeCoordinates(new[] {
+                new OctreeChildCoordinates(1, 0, 0),
+                new OctreeChildCoordinates(0, 1, 0)
+            }), new OctreeNodeCoordinates(new OctreeNodeCoordinates(),
+                new OctreeChildCoordinates(1, 0, 0),
+                new OctreeChildCoordinates(0, 1, 0))));
+
+            Assert.IsFalse(Equals(new OctreeNodeCoordinates(new[] {
+                new OctreeChildCoordinates(1, 0, 0),
+                new OctreeChildCoordinates(0, 1, 0)
+            }), null));
+
+            Assert.IsFalse(new OctreeNodeCoordinates(new[] {
+                new OctreeChildCoordinates(1, 0, 0),
+                new OctreeChildCoordinates(0, 1, 0)
+            }).Equals(null));
+
+            var a = new OctreeNodeCoordinates(new[] {
+                new OctreeChildCoordinates(1, 0, 0),
+                new OctreeChildCoordinates(0, 1, 0)
+            });
+
+            var b = a;
+
+            // ReSharper disable once EqualExpressionComparison
+            Assert.IsTrue(a.Equals(a));
+            Assert.IsTrue(a.Equals(b));
 
             // construct from parent with one coord
             Assert.AreEqual(new OctreeNodeCoordinates(new[] {
@@ -92,14 +135,14 @@ namespace OctreeTest {
             });
 
             Assert.AreEqual(2, grandChildCoords.Length);
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), grandChildCoords[0]);
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), grandChildCoords[1]);
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), grandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), grandChildCoords.GetCoord(1));
             var leftOfGrandChildCoords = grandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Left);
 
             Assert.AreEqual(2, leftOfGrandChildCoords.Length);
 
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), leftOfGrandChildCoords[0]);
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), leftOfGrandChildCoords[1]);
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), leftOfGrandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), leftOfGrandChildCoords.GetCoord(1));
 
             Assert.NotNull(leftOfGrandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Right));
 
@@ -110,8 +153,8 @@ namespace OctreeTest {
 
             Assert.AreEqual(2, furtherLeftCoords.Length);
 
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), furtherLeftCoords[0]);
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), furtherLeftCoords[1]);
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), furtherLeftCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), furtherLeftCoords.GetCoord(1));
 
             furtherLeftCoords = furtherLeftCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Left);
 
@@ -124,8 +167,8 @@ namespace OctreeTest {
 
             Assert.AreEqual(2, rightOfGrandChildCoords.Length);
 
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), rightOfGrandChildCoords[0]);
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), rightOfGrandChildCoords[1]);
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), rightOfGrandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), rightOfGrandChildCoords.GetCoord(1));
 
             var aboveGrandChildCoords = grandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Above);
 
@@ -136,8 +179,8 @@ namespace OctreeTest {
 
             Assert.AreEqual(2, belowGrandChildCoords.Length);
 
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), belowGrandChildCoords[0]);
-            Assert.AreEqual(new OctreeChildCoordinates(0, 0, 0), belowGrandChildCoords[1]);
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), belowGrandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(0, 0, 0), belowGrandChildCoords.GetCoord(1));
 
             var furterBelowGrandChildCoords = belowGrandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Below);
             Assert.AreEqual(furterBelowGrandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Above),
@@ -145,8 +188,8 @@ namespace OctreeTest {
 
             Assert.AreEqual(2, furterBelowGrandChildCoords.Length);
 
-            Assert.AreEqual(new OctreeChildCoordinates(1, 0, 1), furterBelowGrandChildCoords[0]);
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), furterBelowGrandChildCoords[1]);
+            Assert.AreEqual(new OctreeChildCoordinates(1, 0, 1), furterBelowGrandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), furterBelowGrandChildCoords.GetCoord(1));
 
             var behindGrandChildCoords = grandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Back);
             Assert.AreEqual(behindGrandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Forward),
@@ -154,8 +197,8 @@ namespace OctreeTest {
 
             Assert.AreEqual(2, belowGrandChildCoords.Length);
 
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), behindGrandChildCoords[0]);
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), behindGrandChildCoords[1]);
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), behindGrandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), behindGrandChildCoords.GetCoord(1));
 
             var inFrontOfGrandChildCoords = grandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Forward);
             Assert.AreEqual(inFrontOfGrandChildCoords.GetNeighbourCoords(OctreeNode.NeighbourSide.Back),
@@ -163,8 +206,8 @@ namespace OctreeTest {
 
             Assert.AreEqual(2, belowGrandChildCoords.Length);
 
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), inFrontOfGrandChildCoords[0]);
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), inFrontOfGrandChildCoords[1]);
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), inFrontOfGrandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), inFrontOfGrandChildCoords.GetCoord(1));
 
             const int incorrectSide = 6;
             Assert.Throws<ArgumentOutOfRangeException>(

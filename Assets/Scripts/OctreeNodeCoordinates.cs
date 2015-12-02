@@ -7,10 +7,15 @@ using UnityEngine.Assertions;
 public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
     private readonly OctreeChildCoordinates[] _coords;
     private readonly int _length;
+    private int _hashCode;
+    private bool _hasHashCode;
 
     public OctreeNodeCoordinates() {
         _coords = new OctreeChildCoordinates[0];
-        _length = _coords.Length;
+        _hashCode = 0;
+        _length = 0;
+
+        _hasHashCode = true;
     }
 
     public OctreeNodeCoordinates(OctreeNodeCoordinates parentCoordinates,
@@ -53,10 +58,6 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
         get { return _length; }
     }
 
-    public OctreeChildCoordinates this[int i] {
-        get { return _coords[i]; }
-    }
-
     IEnumerator IEnumerable.GetEnumerator() {
         return GetEnumerator();
     }
@@ -70,15 +71,31 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
     }
 
     public override int GetHashCode() {
-        unchecked {
-            return _coords.Aggregate(_coords.Length, (current, coord) => current * 31 + coord.GetHashCode());
+        // ReSharper disable NonReadonlyMemberInGetHashCode
+        if (_hasHashCode) {
+            return _hashCode;
         }
+
+        unchecked
+        {
+            _hashCode = _coords.Length;
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var coord in _coords)
+            {
+                _hashCode = _hashCode * 31 + coord.GetHashCode();
+            }
+        }
+
+        _hasHashCode = true;
+
+        return _hashCode;
+        // ReSharper restore NonReadonlyMemberInGetHashCode
     }
 
     public override string ToString() {
         var s = "[ ";
         for (var i = 0; i < _length; i++) {
-            var coord = this[i];
+            var coord = _coords[i];
 
             if (i > 0) {
                 s += ", ";
@@ -209,5 +226,9 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
         }
 
         return newCoords == null ? null : new OctreeNodeCoordinates(newCoords);
+    }
+
+    public OctreeChildCoordinates GetCoord(int i) {
+        return _coords[i];
     }
 }

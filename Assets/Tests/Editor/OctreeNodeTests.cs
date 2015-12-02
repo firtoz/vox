@@ -95,7 +95,7 @@ namespace OctreeTest
 
             var firstChildCoords = firstChild.GetCoords();
             Assert.AreEqual(1, firstChildCoords.Length);
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), firstChildCoords[0]);
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), firstChildCoords.GetCoord(0));
 
 
             var grandChild = firstChild.AddChild(OctreeNode.ChildIndex.TopBackLeft);
@@ -110,8 +110,8 @@ namespace OctreeTest
 
             var grandChildCoords = grandChild.GetCoords();
             Assert.AreEqual(2, grandChildCoords.Length);
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), grandChildCoords[0]);
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), grandChildCoords[1]);
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), grandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), grandChildCoords.GetCoord(1));
 
             var rootCoords = new OctreeNodeCoordinates();
 

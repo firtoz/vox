@@ -207,7 +207,7 @@ public class RayIntersection<T> {
                     var newCoords = new OctreeChildCoordinates[wantedDepth.Value];
 
                     for (var i = 0; i < newCoords.Length; ++i) {
-                        newCoords[i] = nodeCoordinates[i];
+                        newCoords[i] = nodeCoordinates.GetCoord(i);
                     }
 
                     ProcessTerminal(new OctreeNodeCoordinates(newCoords), tx0, ty0, tz0);
