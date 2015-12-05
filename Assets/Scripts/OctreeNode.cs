@@ -9,54 +9,6 @@ using UnityEngine;
 using UnityEngine.Assertions;
 
 public abstract class OctreeNode {
-    private static readonly Vector3 TopFwdLeftCoords = new Vector3(-1, -1, 1);
-    private static readonly Vector3 TopFwdRightCoords = new Vector3(1, -1, 1);
-
-    private static readonly Vector3 TopBackLeftCoords = new Vector3(-1, -1, -1);
-    private static readonly Vector3 TopBackRightCoords = new Vector3(1, -1, -1);
-
-    private static readonly Vector3 BotFwdLeftCoords = new Vector3(-1, 1, 1);
-    private static readonly Vector3 BotFwdRightCoords =new Vector3(1, 1, 1);
-                
-    private static readonly Vector3 BotBackLeftCoords = new Vector3(-1, 1, -1);
-    private static readonly Vector3 BotBackRightCoords = new Vector3(1, 1, -1);
-
-    protected static Vector3 GetChildDirection(ChildIndex childIndex)
-    {
-        Vector3 childDirection;
-
-        switch (childIndex)
-        {
-            case ChildIndex.TopFwdLeft:
-                childDirection = TopFwdLeftCoords;
-                break;
-            case ChildIndex.TopFwdRight:
-                childDirection = TopFwdRightCoords;
-                break;
-            case ChildIndex.TopBackLeft:
-                childDirection = TopBackLeftCoords;
-                break;
-            case ChildIndex.TopBackRight:
-                childDirection = TopBackRightCoords;
-                break;
-            case ChildIndex.BotFwdLeft:
-                childDirection = BotFwdLeftCoords;
-                break;
-            case ChildIndex.BotFwdRight:
-                childDirection = BotFwdRightCoords;
-                break;
-            case ChildIndex.BotBackLeft:
-                childDirection = BotBackLeftCoords;
-                break;
-            case ChildIndex.BotBackRight:
-                childDirection = BotBackRightCoords;
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-        return childDirection;
-    }
-
     public enum ChildIndex {
         Invalid = -1,
 
@@ -70,7 +22,7 @@ public abstract class OctreeNode {
         BotBackLeft = 5,
 
         TopBackRight = 6,
-        TopBackLeft = 7,
+        TopBackLeft = 7
     }
 
     public enum NeighbourSide {
@@ -82,6 +34,18 @@ public abstract class OctreeNode {
         Back = 5,
         Invalid = -1
     }
+
+    private static readonly Vector3 TopFwdLeftCoords = new Vector3(-1, -1, 1);
+    private static readonly Vector3 TopFwdRightCoords = new Vector3(1, -1, 1);
+
+    private static readonly Vector3 TopBackLeftCoords = new Vector3(-1, -1, -1);
+    private static readonly Vector3 TopBackRightCoords = new Vector3(1, -1, -1);
+
+    private static readonly Vector3 BotFwdLeftCoords = new Vector3(-1, 1, 1);
+    private static readonly Vector3 BotFwdRightCoords = new Vector3(1, 1, 1);
+
+    private static readonly Vector3 BotBackLeftCoords = new Vector3(-1, 1, -1);
+    private static readonly Vector3 BotBackRightCoords = new Vector3(1, 1, -1);
 
     public static readonly NeighbourSide[] AllSides = {
         NeighbourSide.Above, NeighbourSide.Below, NeighbourSide.Forward, NeighbourSide.Back, NeighbourSide.Left,
@@ -117,6 +81,40 @@ public abstract class OctreeNode {
         new OctreeChildCoordinates(0, 0, 1), new OctreeChildCoordinates(0, 1, 1), new OctreeChildCoordinates(1, 0, 1),
         new OctreeChildCoordinates(1, 1, 1)
     };
+
+    protected static Vector3 GetChildDirection(ChildIndex childIndex) {
+        Vector3 childDirection;
+
+        switch (childIndex) {
+            case ChildIndex.TopFwdLeft:
+                childDirection = TopFwdLeftCoords;
+                break;
+            case ChildIndex.TopFwdRight:
+                childDirection = TopFwdRightCoords;
+                break;
+            case ChildIndex.TopBackLeft:
+                childDirection = TopBackLeftCoords;
+                break;
+            case ChildIndex.TopBackRight:
+                childDirection = TopBackRightCoords;
+                break;
+            case ChildIndex.BotFwdLeft:
+                childDirection = BotFwdLeftCoords;
+                break;
+            case ChildIndex.BotFwdRight:
+                childDirection = BotFwdRightCoords;
+                break;
+            case ChildIndex.BotBackLeft:
+                childDirection = BotBackLeftCoords;
+                break;
+            case ChildIndex.BotBackRight:
+                childDirection = BotBackRightCoords;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+        return childDirection;
+    }
 
     public static NeighbourSide GetOpposite(NeighbourSide side) {
         switch (side) {
@@ -196,28 +194,29 @@ public abstract class OctreeNode {
 }
 
 public class OctreeNode<T> : OctreeNode {
+#if USE_ALL_NODES
+    private readonly Dictionary<int, OctreeNode<T>> _allNodes;
+#endif
+    private readonly Bounds _bounds;
 //    private readonly OctreeChildCoordinates[] _coords;
     private readonly int _depth;
     private readonly ChildIndex _indexInParent;
     private readonly OctreeNodeCoordinates _nodeCoordinates;
     private readonly OctreeNode<T> _parent;
     private readonly OctreeNode<T> _root;
-    private readonly Bounds _bounds;
-    private int _childCount;
-    private OctreeNode<T>[] _children;
-    private bool _deleted;
-    private bool _hasItem;
-    private int _solidNodeCount;
-    private readonly Dictionary<NeighbourSide, int> _sideSolidCount = new Dictionary<NeighbourSide, int>();
 
     private readonly Dictionary<NeighbourSide, HashSet<OctreeNode<T>>> _sideSolidChildren =
         new Dictionary<NeighbourSide, HashSet<OctreeNode<T>>>();
 
-    private T _item;
+    private readonly Dictionary<NeighbourSide, int> _sideSolidCount = new Dictionary<NeighbourSide, int>();
     private readonly Octree<T> _tree;
-#if USE_ALL_NODES
-    private readonly Dictionary<int, OctreeNode<T>> _allNodes; 
-#endif
+    private int _childCount;
+    private OctreeNode<T>[] _children;
+    private bool _deleted;
+    private bool _hasItem;
+
+    private T _item;
+    private int _solidNodeCount;
     public OctreeNode(Bounds bounds, Octree<T> tree) : this(bounds, null, ChildIndex.Invalid, 0, tree) {}
 
     public OctreeNode(Bounds bounds, OctreeNode<T> parent, ChildIndex indexInParent, int depth, Octree<T> tree) {
@@ -228,7 +227,7 @@ public class OctreeNode<T> : OctreeNode {
             _root = this;
             _nodeCoordinates = new OctreeNodeCoordinates();
 #if USE_ALL_NODES
-    // ReSharper disable once UseObjectOrCollectionInitializer
+            // ReSharper disable once UseObjectOrCollectionInitializer
             _allNodes = new Dictionary<int, OctreeNode<T>>();
             _allNodes[_nodeCoordinates.GetHashCode()] = this;
 #endif
@@ -417,21 +416,18 @@ public class OctreeNode<T> : OctreeNode {
         // that child doesn't exist
 
         //let's check the parents
-        while (neighbourCoords.Length > 0)
-        {
+        while (neighbourCoords.Length > 0) {
             // get the next parent
             neighbourCoords = neighbourCoords.GetParentCoordinates();
 
             //does the next parent exist?
-            if (!_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode))
-            {
+            if (!_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
                 continue;
             }
 
             // is the parent a leaf?
-            if (neighbourNode.IsSolid())
-            {
-                return new HashSet<OctreeNode<T>> { neighbourNode };
+            if (neighbourNode.IsSolid()) {
+                return new HashSet<OctreeNode<T>> {neighbourNode};
             }
 
             // is not a leaf so cannot have an item
@@ -522,21 +518,17 @@ public class OctreeNode<T> : OctreeNode {
         OctreeNode<T> neighbourNode;
 
         if (_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
-            if (neighbourNode.IsLeafNode())
-            {
+            if (neighbourNode.IsLeafNode()) {
                 return neighbourNode.HasItem() ? SideState.Full : SideState.Empty;
             }
 
             // not null and not leaf, so the neighbour node must be partial
 
             SideState sideState;
-            if (neighbourNode.SideSolid(GetOpposite(side)))
-            {
+            if (neighbourNode.SideSolid(GetOpposite(side))) {
                 // if the opposite side of current node is solid, then this is a partial node.
                 sideState = SideState.Partial;
-            }
-            else
-            {
+            } else {
                 sideState = SideState.Empty;
             }
 
@@ -1008,8 +1000,7 @@ public class OctreeNode<T> : OctreeNode {
 
     private void SetDeleted() {
         //calling toarray here to force enumeration to flag deleted
-        foreach (var octreeNode in BreadthFirst().ToArray())
-        {
+        foreach (var octreeNode in BreadthFirst().ToArray()) {
 #if USE_ALL_NODES
             _allNodes.Remove(octreeNode._nodeCoordinates.GetHashCode());
 #endif
@@ -1036,18 +1027,15 @@ public class OctreeNode<T> : OctreeNode {
             var octreeNodeChildIndex = (ChildIndex) i;
             var childBounds = GetChildBounds(octreeNodeChildIndex);
 
-            if (childBounds.Intersects(bounds))
-            {
+            if (childBounds.Intersects(bounds)) {
                 var child = GetChild(octreeNodeChildIndex);
-                if (child == null)
-                {
+                if (child == null) {
                     if (HasItem()) {
                         SubDivide();
                         child = GetChild(octreeNodeChildIndex);
                     } else {
                         child = AddChild(octreeNodeChildIndex);
                     }
-
                 }
 
                 if (bounds.Contains(childBounds.min) && bounds.Contains(childBounds.max)) {
@@ -1265,12 +1253,6 @@ public class OctreeNode<T> : OctreeNode {
 #endif
     }
 
-    private enum SideState {
-        Empty,
-        Partial,
-        Full
-    }
-
     public bool IsSolid() {
         return IsLeafNode() && HasItem();
     }
@@ -1382,5 +1364,11 @@ public class OctreeNode<T> : OctreeNode {
 #if !DISABLE_PROFILER
         Profiler.EndSample();
 #endif
+    }
+
+    private enum SideState {
+        Empty,
+        Partial,
+        Full
     }
 }
