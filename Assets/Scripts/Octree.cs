@@ -545,6 +545,12 @@ if(rems.length>0) {
             Profiler.EndSample();
 
             Profiler.EndSample(); // create mesh
+
+            var meshCollider = objectsForMesh[0].GetComponent<MeshCollider>();
+            if (meshCollider) {
+                meshCollider.enabled = false;
+                meshCollider.enabled = true;
+            }
         } else {
             for (var i = 0; i < numMeshObjects; ++i) {
                 Profiler.BeginSample("Create mesh " + i);
