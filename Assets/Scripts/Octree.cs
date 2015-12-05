@@ -14,8 +14,8 @@ public abstract class Octree<T> {
 
     private readonly Dictionary<int, MeshInfo<T>> _meshInfos = new Dictionary<int, MeshInfo<T>>();
 
-    private readonly Dictionary<OctreeNode<T>, HashSet<OctreeRenderFace>> _nodeFaces =
-        new Dictionary<OctreeNode<T>, HashSet<OctreeRenderFace>>();
+    private readonly Dictionary<int, HashSet<OctreeRenderFace>> _nodeFaces =
+        new Dictionary<int, HashSet<OctreeRenderFace>>();
 
     private readonly OctreeNode<T> _root;
 
@@ -47,11 +47,16 @@ public abstract class Octree<T> {
     private MeshInfo<T> GetMeshInfo(T item) {
         var meshId = GetItemMeshId(item);
 
-        if (!_meshInfos.ContainsKey(meshId)) {
-            _meshInfos.Add(meshId, new MeshInfo<T>(GetMeshMaterial(meshId)));
+        MeshInfo<T> meshInfo;
+
+        if (_meshInfos.TryGetValue(meshId, out meshInfo)) {
+            return meshInfo;
         }
 
-        return _meshInfos[meshId];
+        meshInfo = new MeshInfo<T>(GetMeshMaterial(meshId));
+        _meshInfos.Add(meshId, meshInfo);
+
+        return meshInfo;
     }
 
     public void NodeAdded(OctreeNode<T> octreeNode) {
@@ -102,19 +107,20 @@ public abstract class Octree<T> {
     private void ProcessDrawQueue(MeshInfo<T> meshInfo) {
         var drawQueue = meshInfo.drawQueue;
 
-        Profiler.BeginSample("Draw Queue Length : " + drawQueue.Count);
+//        Profiler.BeginSample("Draw Queue Length : " + drawQueue.Count);
         foreach (var octreeNode in drawQueue) {
+            var nodeHashCode = octreeNode.GetHashCode();
             //redraw all nodes in the 'redraw queue'
-            if (_nodeFaces.ContainsKey(octreeNode)) {
-                RemoveNodeInternal(octreeNode);
+            if (_nodeFaces.ContainsKey(nodeHashCode)) {
+                RemoveNodeInternal(nodeHashCode);
             }
             AddNodeInternal(octreeNode);
         }
-        Profiler.EndSample();
+//        Profiler.EndSample();
 
-        Profiler.BeginSample("Clear draw queue");
+//        Profiler.BeginSample("Clear draw queue");
         drawQueue.Clear();
-        Profiler.EndSample();
+//        Profiler.EndSample();
     }
 
 
@@ -126,14 +132,14 @@ public abstract class Octree<T> {
             return;
         }
 
-        removalQueue.Sort((a, b) => a.faceIndexInTree.CompareTo(b.faceIndexInTree));
+        removalQueue.Sort();
 
         var removedFaces = removalQueue.ToArray();
 
         var indexOfFirstFaceToReplace = 0;
 
         var firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace];
-        var faceIndexOfFirstFaceToRemove = firstFaceToRemove.faceIndexInTree;
+        var faceIndexOfFirstFaceToRemove = firstFaceToRemove;
         // [y, y, y, n, y, y, y]
         // [y, y, y, n, y, y] ^ take this and move it left
         // [y, y, y, Y, y, y]
@@ -160,7 +166,7 @@ public abstract class Octree<T> {
 
             allFacesOfMesh[faceIndexOfFirstFaceToRemove] = currentFace;
 
-            var vertexIndex = firstFaceToRemove.vertexIndexInMesh;
+            var vertexIndex = firstFaceToRemove * 4;
 
             var vertices = meshInfo.vertices;
             var uvs = meshInfo.uvs;
@@ -186,7 +192,7 @@ public abstract class Octree<T> {
             }
 
             firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace];
-            faceIndexOfFirstFaceToRemove = firstFaceToRemove.faceIndexInTree;
+            faceIndexOfFirstFaceToRemove = firstFaceToRemove;
         }
 
         if (numFacesToPop > 0) {
@@ -198,12 +204,12 @@ public abstract class Octree<T> {
     }
 
     private void AddNodeInternal(OctreeNode<T> octreeNode) {
-        Profiler.BeginSample("AddNodeInternal");
+//        Profiler.BeginSample("AddNodeInternal");
         var meshId = GetItemMeshId(octreeNode.GetItem());
 
-        Profiler.BeginSample("Create Faces for octreeNode");
+//        Profiler.BeginSample("Create Faces for octreeNode");
         var newFaces = octreeNode.CreateFaces(meshId);
-        Profiler.EndSample();
+//        Profiler.EndSample();
 
         var meshInfo = GetMeshInfo(octreeNode.GetItem());
 
@@ -216,7 +222,7 @@ public abstract class Octree<T> {
         var allFaces = meshInfo.allFaces;
 
 
-        Profiler.BeginSample("Process new faces: " + newFaces.Count);
+//        Profiler.BeginSample("Process new faces: " + newFaces.Count);
 
         //        var numFacesToRemove = removalQueue.Count;
         var numFacesToAdd = newFaces.Count;
@@ -244,13 +250,11 @@ public abstract class Octree<T> {
 
             allFaces.Add(face);
 
-            vertices.AddRange(face.vertices);
-            uvs.AddRange(face.uvs);
-
-            normals.Add(face.normal);
-            normals.Add(face.normal);
-            normals.Add(face.normal);
-            normals.Add(face.normal);
+            for (var i = 0; i < 4; ++i) {
+                vertices.Add(face.vertices[i]);
+                uvs.Add(face.uvs[i]);
+                normals.Add(face.normal);
+            }
 
             indices.Add(vertexIndex);
             indices.Add(vertexIndex + 1);
@@ -260,11 +264,8 @@ public abstract class Octree<T> {
             indices.Add(vertexIndex + 2);
             indices.Add(vertexIndex + 3);
         }
-        Profiler.EndSample();
 
-        _nodeFaces[octreeNode] = newFaces;
-
-        Profiler.EndSample();
+        _nodeFaces.Add(octreeNode.GetHashCode(), newFaces);
     }
 
 
@@ -315,8 +316,10 @@ if(rems.length>0) {
         Profiler.BeginSample("Node Removed");
         var drawQueue = GetMeshInfo(octreeNode.GetItem()).drawQueue;
 
-        if (_nodeFaces.ContainsKey(octreeNode)) {
-            RemoveNodeInternal(octreeNode);
+        var nodeHashCode = octreeNode.GetHashCode();
+
+        if (_nodeFaces.ContainsKey(nodeHashCode)) {
+            RemoveNodeInternal(nodeHashCode);
         }
 
         if (drawQueue.Contains(octreeNode)) {
@@ -348,24 +351,20 @@ if(rems.length>0) {
 
     // TODO optimize further!
     // can do the blank filling during the draw queue
-    private void RemoveNodeInternal(OctreeNode<T> octreeNode) {
-        Profiler.BeginSample("RemoveNodeInternal");
-        var facesToRemove = _nodeFaces[octreeNode];
+    private void RemoveNodeInternal(int nodeHashCode) {
+        var facesToRemove = _nodeFaces[nodeHashCode];
+
         if (facesToRemove.Count > 0) {
             foreach (var face in facesToRemove) {
-                if (!_meshInfos.ContainsKey(face.meshIndex)) {
-                    Debug.Log("What?! " + face.meshIndex);
-                }
                 var meshInfo = _meshInfos[face.meshIndex];
 
                 meshInfo.allFaces[face.faceIndexInTree].isRemoved = true;
 
-                meshInfo.removalQueue.Add(face);
+                meshInfo.removalQueue.Add(face.faceIndexInTree);
             }
         }
 
-        _nodeFaces.Remove(octreeNode);
-        Profiler.EndSample();
+        _nodeFaces.Remove(nodeHashCode);
     }
 
     public bool Intersect(Transform transform, Ray ray, int? wantedDepth = null) {

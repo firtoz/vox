@@ -10,8 +10,8 @@ internal class MeshInfo<T> {
     public readonly Material material;
     public readonly List<Vector3> normals = new List<Vector3>();
 
-    public readonly List<OctreeRenderFace> removalQueue =
-        new List<OctreeRenderFace>();
+    public readonly List<int> removalQueue =
+        new List<int>();
 
     public readonly List<Vector2> uvs = new List<Vector2>();
     public readonly List<Vector3> vertices = new List<Vector3>();

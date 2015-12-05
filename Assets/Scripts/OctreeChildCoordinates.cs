@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 
 public struct OctreeChildCoordinates {
-    private static readonly Dictionary<OctreeChildCoordinates, OctreeNode.ChildIndex> CoordinateToChildIndices =
-        new Dictionary<OctreeChildCoordinates, OctreeNode.ChildIndex>();
+    private static readonly Dictionary<int, OctreeNode.ChildIndex> CoordinateToChildIndices =
+        new Dictionary<int, OctreeNode.ChildIndex>();
 
     static OctreeChildCoordinates() {
         for (var i = 0; i < 8; i++) {
             var index = (OctreeNode.ChildIndex) i;
-            CoordinateToChildIndices[FromIndex(index)] = index;
+            CoordinateToChildIndices[FromIndex(index).GetHashCode()] = index;
         }
     }
 
@@ -55,7 +55,7 @@ public struct OctreeChildCoordinates {
 
     public OctreeNode.ChildIndex ToIndex() {
         OctreeNode.ChildIndex index;
-        if (!CoordinateToChildIndices.TryGetValue(this, out index)) {
+        if (!CoordinateToChildIndices.TryGetValue(GetHashCode(), out index)) {
             index = OctreeNode.ChildIndex.Invalid;
         }
         return index;

@@ -9,6 +9,54 @@ using UnityEngine;
 using UnityEngine.Assertions;
 
 public abstract class OctreeNode {
+    private static readonly Vector3 TopFwdLeftCoords = new Vector3(-1, -1, 1);
+    private static readonly Vector3 TopFwdRightCoords = new Vector3(1, -1, 1);
+
+    private static readonly Vector3 TopBackLeftCoords = new Vector3(-1, -1, -1);
+    private static readonly Vector3 TopBackRightCoords = new Vector3(1, -1, -1);
+
+    private static readonly Vector3 BotFwdLeftCoords = new Vector3(-1, 1, 1);
+    private static readonly Vector3 BotFwdRightCoords =new Vector3(1, 1, 1);
+                
+    private static readonly Vector3 BotBackLeftCoords = new Vector3(-1, 1, -1);
+    private static readonly Vector3 BotBackRightCoords = new Vector3(1, 1, -1);
+
+    protected static Vector3 GetChildDirection(ChildIndex childIndex)
+    {
+        Vector3 childDirection;
+
+        switch (childIndex)
+        {
+            case ChildIndex.TopFwdLeft:
+                childDirection = TopFwdLeftCoords;
+                break;
+            case ChildIndex.TopFwdRight:
+                childDirection = TopFwdRightCoords;
+                break;
+            case ChildIndex.TopBackLeft:
+                childDirection = TopBackLeftCoords;
+                break;
+            case ChildIndex.TopBackRight:
+                childDirection = TopBackRightCoords;
+                break;
+            case ChildIndex.BotFwdLeft:
+                childDirection = BotFwdLeftCoords;
+                break;
+            case ChildIndex.BotFwdRight:
+                childDirection = BotFwdRightCoords;
+                break;
+            case ChildIndex.BotBackLeft:
+                childDirection = BotBackLeftCoords;
+                break;
+            case ChildIndex.BotBackRight:
+                childDirection = BotBackRightCoords;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+        return childDirection;
+    }
+
     public enum ChildIndex {
         Invalid = -1,
 
@@ -356,12 +404,11 @@ public class OctreeNode<T> : OctreeNode {
         OctreeNode<T> neighbourNode;
 
         if (_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
-            if (neighbourNode.IsSolid())
-            {
+            if (neighbourNode.IsSolid()) {
 #if !DISABLE_PROFILER
-            Profiler.EndSample();
+        Profiler.EndSample();
 #endif
-                return new HashSet<OctreeNode<T>> { neighbourNode };
+                return new HashSet<OctreeNode<T>> {neighbourNode};
             }
 
             return neighbourNode._sideSolidChildren[GetOpposite(side)];
@@ -434,7 +481,7 @@ public class OctreeNode<T> : OctreeNode {
 #endif
     }
 
-    private static IEnumerable<OctreeChildCoordinates> GetChildCoordsOfSide(NeighbourSide side) {
+    private static OctreeChildCoordinates[] GetChildCoordsOfSide(NeighbourSide side) {
         OctreeChildCoordinates[] childCoords;
 
         switch (side) {
@@ -475,10 +522,6 @@ public class OctreeNode<T> : OctreeNode {
         OctreeNode<T> neighbourNode;
 
         if (_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
-            if (neighbourNode == null) {
-                return SideState.Empty;
-            }
-
             if (neighbourNode.IsLeafNode())
             {
                 return neighbourNode.HasItem() ? SideState.Full : SideState.Empty;
@@ -509,6 +552,10 @@ public class OctreeNode<T> : OctreeNode {
 
             //does the next parent exist?
             if (!_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
+                continue;
+            }
+
+            if (neighbourNode.IsDeleted()) {
                 continue;
             }
 
@@ -669,18 +716,19 @@ public class OctreeNode<T> : OctreeNode {
                 AddFaceToList(faces, side, bounds, meshIndex);
                 break;
             case SideState.Partial:
-                if (parentPartial) {
+                if (!parentPartial) {
                     var childCoords = GetChildCoordsOfSide(side);
 #if !DISABLE_PROFILER
                 var childIndex = 0;
 #endif
 
-                    foreach (var childCoord in childCoords) {
+                    for (var i = 0; i < childCoords.Length; i++) {
+                        var childCoord = childCoords[i];
 #if !DISABLE_PROFILER
                     Profiler.BeginSample("Create faces for child " + childIndex);
                     Profiler.BeginSample("Get bounds and coords");
 #endif
-                        var childBounds = GetChildBounds(bounds, childCoord.ToIndex());
+                        var childBounds = GetChildBoundsInternal(bounds, childCoord.ToIndex());
                         var childAbsCoords = new OctreeNodeCoordinates(coords, childCoord);
 #if !DISABLE_PROFILER
                     Profiler.EndSample();
@@ -842,6 +890,7 @@ public class OctreeNode<T> : OctreeNode {
     private OctreeNode<T> SetChild(ChildIndex index, OctreeNode<T> child) {
         AssertNotDeleted();
 #if USE_ALL_NODES
+        child.AssertNotDeleted();
         _allNodes.Add(child._nodeCoordinates.GetHashCode(), child);
 #endif
 
@@ -863,7 +912,7 @@ public class OctreeNode<T> : OctreeNode {
     private Bounds GetChildBounds(ChildIndex childIndex) {
         AssertNotDeleted();
 
-        return GetChildBounds(_bounds, childIndex);
+        return GetChildBoundsInternal(_bounds, childIndex);
     }
 
     //recursive, can be phantom bounds!
@@ -871,41 +920,28 @@ public class OctreeNode<T> : OctreeNode {
         AssertNotDeleted();
 
         var result = GetBounds();
+        var child = this;
 
-        return coordinates.Aggregate(result, (current, coordinate) => GetChildBounds(current, coordinate.ToIndex()));
+        foreach (var coordinate in coordinates) {
+            if (child != null) {
+                // current child (or self) isn't null, try to get the real child
+                child = child.GetChild(coordinate.ToIndex());
+
+                if (child != null) {
+                    // the child is there, no need to calculate!
+                    result = child.GetBounds();
+                    continue;
+                }
+            }
+            // no child there... get phantom bounds
+            result = GetChildBoundsInternal(result, coordinate.ToIndex());
+        }
+        return result;
     }
 
-    private static Bounds GetChildBounds(Bounds originalBounds, ChildIndex childIndex) {
-        Vector3 childDirection;
 
-        switch (childIndex) {
-            case ChildIndex.TopFwdLeft:
-                childDirection = new Vector3(-1, -1, 1);
-                break;
-            case ChildIndex.TopFwdRight:
-                childDirection = new Vector3(1, -1, 1);
-                break;
-            case ChildIndex.TopBackLeft:
-                childDirection = new Vector3(-1, -1, -1);
-                break;
-            case ChildIndex.TopBackRight:
-                childDirection = new Vector3(1, -1, -1);
-                break;
-            case ChildIndex.BotFwdLeft:
-                childDirection = new Vector3(-1, 1, 1);
-                break;
-            case ChildIndex.BotFwdRight:
-                childDirection = new Vector3(1, 1, 1);
-                break;
-            case ChildIndex.BotBackLeft:
-                childDirection = new Vector3(-1, 1, -1);
-                break;
-            case ChildIndex.BotBackRight:
-                childDirection = new Vector3(1, 1, -1);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
+    private static Bounds GetChildBoundsInternal(Bounds originalBounds, ChildIndex childIndex) {
+        var childDirection = GetChildDirection(childIndex);
 
         var childSize = originalBounds.extents;
 
@@ -971,12 +1007,13 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     private void SetDeleted() {
+        //calling toarray here to force enumeration to flag deleted
+        foreach (var octreeNode in BreadthFirst().ToArray())
+        {
 #if USE_ALL_NODES
-        _allNodes.Remove(_nodeCoordinates.GetHashCode());
+            _allNodes.Remove(octreeNode._nodeCoordinates.GetHashCode());
 #endif
 
-        //calling toarray here to force enumeration to flag deleted
-        foreach (var octreeNode in BreadthFirst().ToArray()) {
             if (octreeNode._hasItem) {
                 octreeNode.RemoveItem();
             }
