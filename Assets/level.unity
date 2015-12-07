@@ -135,6 +135,7 @@ MonoBehaviour:
   - {fileID: 2100000, guid: fa1b49acaf9b64a41ae37001710847ae, type: 2}
   materialIndex: 0
   showGizmos: 0
+  addBoundsNextFrame: 0
 --- !u!23 &916304649
 MeshRenderer:
   m_ObjectHideFlags: 0

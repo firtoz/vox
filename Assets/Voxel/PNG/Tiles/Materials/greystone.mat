@@ -94,7 +94,7 @@ Material:
       data:
         first:
           name: _Parallax
-        second: .0199999996
+        second: .0401000008
       data:
         first:
           name: _ZWrite
