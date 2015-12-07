@@ -13,21 +13,21 @@ public struct OctreeChildCoordinates {
     }
 
     public bool Equals(OctreeChildCoordinates other) {
-        return x == other.x && y == other.y && z == other.z;
+        return z == other.z && y == other.y && x == other.x;
     }
 
     public override int GetHashCode() {
         unchecked {
-            var hashCode = x;
+            var hashCode = z;
             hashCode = (hashCode * 397) ^ y;
-            hashCode = (hashCode * 397) ^ z;
+            hashCode = (hashCode * 397) ^ x;
             return hashCode;
         }
     }
 
-    public readonly int x;
-    public readonly int y;
     public readonly int z;
+    public readonly int y;
+    public readonly int x;
 
     public OctreeChildCoordinates(int x, int y, int z) {
         this.x = x;
@@ -63,22 +63,22 @@ public struct OctreeChildCoordinates {
 
     public static OctreeChildCoordinates FromIndex(OctreeNode.ChildIndex index) {
         switch (index) {
-            case OctreeNode.ChildIndex.TopFwdLeft:
-                return new OctreeChildCoordinates(0, 1, 1);
-            case OctreeNode.ChildIndex.TopFwdRight:
-                return new OctreeChildCoordinates(1, 1, 1);
-            case OctreeNode.ChildIndex.TopBackLeft:
-                return new OctreeChildCoordinates(0, 1, 0);
-            case OctreeNode.ChildIndex.TopBackRight:
+            case OctreeNode.ChildIndex.AboveBackRight:
                 return new OctreeChildCoordinates(1, 1, 0);
-            case OctreeNode.ChildIndex.BotFwdLeft:
-                return new OctreeChildCoordinates(0, 0, 1);
-            case OctreeNode.ChildIndex.BotFwdRight:
-                return new OctreeChildCoordinates(1, 0, 1);
-            case OctreeNode.ChildIndex.BotBackLeft:
-                return new OctreeChildCoordinates(0, 0, 0);
-            case OctreeNode.ChildIndex.BotBackRight:
+            case OctreeNode.ChildIndex.AboveBackLeft:
+                return new OctreeChildCoordinates(1, 1, 1);
+            case OctreeNode.ChildIndex.AboveForwardRight:
+                return new OctreeChildCoordinates(0, 1, 0);
+            case OctreeNode.ChildIndex.AboveForwardLeft:
+                return new OctreeChildCoordinates(0, 1, 1);
+            case OctreeNode.ChildIndex.BelowBackRight:
                 return new OctreeChildCoordinates(1, 0, 0);
+            case OctreeNode.ChildIndex.BelowBackLeft:
+                return new OctreeChildCoordinates(1, 0, 1);
+            case OctreeNode.ChildIndex.BelowForwardRight:
+                return new OctreeChildCoordinates(0, 0, 0);
+            case OctreeNode.ChildIndex.BelowForwardLeft:
+                return new OctreeChildCoordinates(0, 0, 1);
             default:
                 throw new ArgumentOutOfRangeException("index", index, null);
         }

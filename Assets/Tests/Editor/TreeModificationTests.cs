@@ -30,8 +30,8 @@ namespace OctreeTest
         public void Test() {
             var voxelTree = new VoxelTree(Vector3.zero, Vector3.one * size);
 
-            voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdRight).SetItem(4);
-            voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.TopBackLeft).SetItem(5);
+            voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveBackLeft).SetItem(4);
+            voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveForwardRight).SetItem(5);
 
 
         }

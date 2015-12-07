@@ -23,15 +23,15 @@ public class Vox : MonoBehaviour {
         //                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one*0.5f), 6, 8);
         //                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one*0.7f), 7, 8);
 
-        //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
-        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdRight).SetItem(4);
-        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.TopBackLeft).SetItem(5);
-//        octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopBackRight).SetItem(4);
+        //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.AboveBackRight);
+        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveBackLeft).SetItem(4);
+        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveForwardRight).SetItem(5);
+//        octree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveForwardLeft).SetItem(4);
 
 //        topFwdLeft.SetItem(4);
 //        topFwdLeft.SubDivide();
 //
-//        topFwdLeft.RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
+//        topFwdLeft.RemoveChild(OctreeNode.ChildIndex.AboveBackRight);
 
         //                topFwdLeft.SubDivide();
         voxelTree.Render(gameObject);
@@ -61,8 +61,8 @@ public class Vox : MonoBehaviour {
                     new Vector3(Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f)) * 20.0f,
                     new Vector3(Random.Range(0.1f, 10.0f), Random.Range(0.1f, 10.0f), Random.Range(0.1f, 10.0f))), 7, 8);
 
-            //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
-            //                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
+            //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.AboveBackRight);
+            //                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveBackRight);
             //                topFwdLeft.SetItem(4);
 
             //                topFwdLeft.SubDivide();
@@ -105,7 +105,7 @@ public class Vox : MonoBehaviour {
                 if (neighbourCoords != null) {
 //                    Debug.Log(neighbourCoords);
                     Profiler.BeginSample("AddRecursive");
-                    var final = voxelTree.GetRoot().AddRecursive(neighbourCoords);
+                    var final = neighbourCoords.GetTree().GetRoot().AddRecursive(neighbourCoords);
                     final.SetItem(indices[materialIndex], true);
                     Profiler.EndSample();
 

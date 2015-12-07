@@ -19,13 +19,13 @@ public class VoxEditor : Editor {
 
 
         if (GUILayout.Button("Modify")) {
-            var topFwdLeft = vox.voxelTree.GetRoot().GetChild(OctreeNode.ChildIndex.TopFwdLeft);
+            var topFwdLeft = vox.voxelTree.GetRoot().GetChild(OctreeNode.ChildIndex.AboveBackRight);
 
             topFwdLeft.SetItem(4);
             topFwdLeft.SubDivide();
 
-            topFwdLeft.RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
-            topFwdLeft.GetChild(OctreeNode.ChildIndex.TopFwdRight).SetItem(5);
+            topFwdLeft.RemoveChild(OctreeNode.ChildIndex.AboveBackRight);
+            topFwdLeft.GetChild(OctreeNode.ChildIndex.AboveBackLeft).SetItem(5);
         }
         if (GUILayout.Button("Apply")) {
 //                using (new MeshModification(sharedMesh, "Modify")) {
@@ -57,8 +57,8 @@ public class VoxEditor : Editor {
             vox.voxelTree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one * 0.5f), 6, 8);
             vox.voxelTree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one * 0.7f), 7, 8);
 
-            //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.TopFwdLeft);
-            //                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.TopFwdLeft);
+            //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.AboveBackRight);
+            //                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveBackRight);
             //                topFwdLeft.SetItem(4);
 
             //                topFwdLeft.SubDivide();

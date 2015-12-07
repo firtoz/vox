@@ -1,5 +1,5 @@
 ﻿#define DISABLE_PROFILER
-#define USE_ALL_NODES
+//#define USE_ALL_NODES
 
 using System;
 using System.Collections.Generic;
@@ -8,77 +8,79 @@ using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.Assertions;
 
+public enum NeighbourSide
+{
+    Above = 0,
+    Below = 1,
+    Right = 2,
+    Left = 3,
+    Back = 4,
+    Forward = 5,
+    Invalid = -1
+}
+
 public abstract class OctreeNode {
     public enum ChildIndex {
         Invalid = -1,
 
-        BotFwdRight = 0,
-        BotFwdLeft = 1,
+        BelowBackLeft = 0,
+        BelowBackRight = 1,
 
-        TopFwdRight = 2,
-        TopFwdLeft = 3,
+        AboveBackLeft = 2,
+        AboveBackRight = 3,
 
-        BotBackRight = 4,
-        BotBackLeft = 5,
+        BelowForwardLeft = 4,
+        BelowForwardRight = 5,
 
-        TopBackRight = 6,
-        TopBackLeft = 7
+        AboveForwardLeft = 6,
+        AboveForwardRight = 7
     }
 
-    public enum NeighbourSide {
-        Above = 0,
-        Below = 1,
-        Left = 2,
-        Right = 3,
-        Forward = 4,
-        Back = 5,
-        Invalid = -1
-    }
 
-    private static readonly Vector3 TopFwdLeftCoords = new Vector3(-1, -1, 1);
-    private static readonly Vector3 TopFwdRightCoords = new Vector3(1, -1, 1);
+    private static readonly Vector3 AboveBackRightCoords = new Vector3(-1, -1, 1);
+    private static readonly Vector3 AboveBackLeftCoords = new Vector3(1, -1, 1);
 
-    private static readonly Vector3 TopBackLeftCoords = new Vector3(-1, -1, -1);
-    private static readonly Vector3 TopBackRightCoords = new Vector3(1, -1, -1);
+    private static readonly Vector3 AboveForwardRightCoords = new Vector3(-1, -1, -1);
+    private static readonly Vector3 AboveForwardLeftCoords = new Vector3(1, -1, -1);
 
-    private static readonly Vector3 BotFwdLeftCoords = new Vector3(-1, 1, 1);
-    private static readonly Vector3 BotFwdRightCoords = new Vector3(1, 1, 1);
+    private static readonly Vector3 BelowBackRightCoords = new Vector3(-1, 1, 1);
+    private static readonly Vector3 BelowBackLeftCoords = new Vector3(1, 1, 1);
 
-    private static readonly Vector3 BotBackLeftCoords = new Vector3(-1, 1, -1);
-    private static readonly Vector3 BotBackRightCoords = new Vector3(1, 1, -1);
+    private static readonly Vector3 BelowForwardRightCoords = new Vector3(-1, 1, -1);
+    private static readonly Vector3 BelowForwardLeftCoords = new Vector3(1, 1, -1);
 
     public static readonly NeighbourSide[] AllSides = {
-        NeighbourSide.Above, NeighbourSide.Below, NeighbourSide.Forward, NeighbourSide.Back, NeighbourSide.Left,
-        NeighbourSide.Right
+        NeighbourSide.Above, NeighbourSide.Below, NeighbourSide.Back, NeighbourSide.Forward, NeighbourSide.Right,
+        NeighbourSide.Left
     };
 
     protected static readonly OctreeChildCoordinates[] AboveCoords = {
-        new OctreeChildCoordinates(0, 1, 0), new OctreeChildCoordinates(1, 1, 0), new OctreeChildCoordinates(0, 1, 1),
+        new OctreeChildCoordinates(0, 1, 0), new OctreeChildCoordinates(0, 1, 1), new OctreeChildCoordinates(1, 1, 0),
         new OctreeChildCoordinates(1, 1, 1)
     };
 
     protected static readonly OctreeChildCoordinates[] BelowCoords = {
-        new OctreeChildCoordinates(0, 0, 0), new OctreeChildCoordinates(1, 0, 0), new OctreeChildCoordinates(0, 0, 1),
+        new OctreeChildCoordinates(0, 0, 0), new OctreeChildCoordinates(0, 0, 1), new OctreeChildCoordinates(1, 0, 0),
         new OctreeChildCoordinates(1, 0, 1)
     };
 
     protected static readonly OctreeChildCoordinates[] LeftCoords = {
-        new OctreeChildCoordinates(0, 0, 0), new OctreeChildCoordinates(0, 1, 0), new OctreeChildCoordinates(0, 0, 1),
-        new OctreeChildCoordinates(0, 1, 1)
-    };
-
-    protected static readonly OctreeChildCoordinates[] RightCoords = {
-        new OctreeChildCoordinates(1, 0, 0), new OctreeChildCoordinates(1, 1, 0), new OctreeChildCoordinates(1, 0, 1),
-        new OctreeChildCoordinates(1, 1, 1)
-    };
-
-    protected static readonly OctreeChildCoordinates[] BackCoords = {
         new OctreeChildCoordinates(0, 0, 0), new OctreeChildCoordinates(0, 1, 0), new OctreeChildCoordinates(1, 0, 0),
         new OctreeChildCoordinates(1, 1, 0)
     };
 
-    protected static readonly OctreeChildCoordinates[] ForwardCoords = {
+    protected static readonly OctreeChildCoordinates[] RightCoords = {
         new OctreeChildCoordinates(0, 0, 1), new OctreeChildCoordinates(0, 1, 1), new OctreeChildCoordinates(1, 0, 1),
+        new OctreeChildCoordinates(1, 1, 1)
+    };
+
+    protected static readonly OctreeChildCoordinates[] BackCoords = {
+        new OctreeChildCoordinates(0, 0, 0), new OctreeChildCoordinates(0, 1, 0), new OctreeChildCoordinates(0, 0, 1),
+        new OctreeChildCoordinates(0, 1, 1)
+    };
+
+    protected static readonly OctreeChildCoordinates[] ForwardCoords = {
+        new OctreeChildCoordinates(1, 0, 0), new OctreeChildCoordinates(1, 1, 0), new OctreeChildCoordinates(1, 0, 1),
         new OctreeChildCoordinates(1, 1, 1)
     };
 
@@ -86,29 +88,29 @@ public abstract class OctreeNode {
         Vector3 childDirection;
 
         switch (childIndex) {
-            case ChildIndex.TopFwdLeft:
-                childDirection = TopFwdLeftCoords;
+            case ChildIndex.AboveBackRight:
+                childDirection = AboveBackRightCoords;
                 break;
-            case ChildIndex.TopFwdRight:
-                childDirection = TopFwdRightCoords;
+            case ChildIndex.AboveBackLeft:
+                childDirection = AboveBackLeftCoords;
                 break;
-            case ChildIndex.TopBackLeft:
-                childDirection = TopBackLeftCoords;
+            case ChildIndex.AboveForwardRight:
+                childDirection = AboveForwardRightCoords;
                 break;
-            case ChildIndex.TopBackRight:
-                childDirection = TopBackRightCoords;
+            case ChildIndex.AboveForwardLeft:
+                childDirection = AboveForwardLeftCoords;
                 break;
-            case ChildIndex.BotFwdLeft:
-                childDirection = BotFwdLeftCoords;
+            case ChildIndex.BelowBackRight:
+                childDirection = BelowBackRightCoords;
                 break;
-            case ChildIndex.BotFwdRight:
-                childDirection = BotFwdRightCoords;
+            case ChildIndex.BelowBackLeft:
+                childDirection = BelowBackLeftCoords;
                 break;
-            case ChildIndex.BotBackLeft:
-                childDirection = BotBackLeftCoords;
+            case ChildIndex.BelowForwardRight:
+                childDirection = BelowForwardRightCoords;
                 break;
-            case ChildIndex.BotBackRight:
-                childDirection = BotBackRightCoords;
+            case ChildIndex.BelowForwardLeft:
+                childDirection = BelowForwardLeftCoords;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -122,14 +124,14 @@ public abstract class OctreeNode {
                 return NeighbourSide.Below;
             case NeighbourSide.Below:
                 return NeighbourSide.Above;
-            case NeighbourSide.Left:
-                return NeighbourSide.Right;
             case NeighbourSide.Right:
                 return NeighbourSide.Left;
-            case NeighbourSide.Forward:
-                return NeighbourSide.Back;
+            case NeighbourSide.Left:
+                return NeighbourSide.Right;
             case NeighbourSide.Back:
                 return NeighbourSide.Forward;
+            case NeighbourSide.Forward:
+                return NeighbourSide.Back;
             default:
                 throw new ArgumentOutOfRangeException("side", side, null);
         }
@@ -147,45 +149,45 @@ public abstract class OctreeNode {
                 horizontalSide = NeighbourSide.Invalid;
                 depthSide = NeighbourSide.Invalid;
                 break;
-            case ChildIndex.BotFwdRight:
-                verticalSide = NeighbourSide.Below;
-                depthSide = NeighbourSide.Forward;
-                horizontalSide = NeighbourSide.Right;
-                break;
-            case ChildIndex.BotFwdLeft:
-                verticalSide = NeighbourSide.Below;
-                depthSide = NeighbourSide.Forward;
-                horizontalSide = NeighbourSide.Left;
-                break;
-            case ChildIndex.TopFwdRight:
-                verticalSide = NeighbourSide.Above;
-                depthSide = NeighbourSide.Forward;
-                horizontalSide = NeighbourSide.Right;
-                break;
-            case ChildIndex.TopFwdLeft:
-                verticalSide = NeighbourSide.Above;
-                depthSide = NeighbourSide.Forward;
-                horizontalSide = NeighbourSide.Left;
-                break;
-            case ChildIndex.BotBackRight:
-                verticalSide = NeighbourSide.Below;
-                depthSide = NeighbourSide.Back;
-                horizontalSide = NeighbourSide.Right;
-                break;
-            case ChildIndex.BotBackLeft:
+            case ChildIndex.BelowBackLeft:
                 verticalSide = NeighbourSide.Below;
                 depthSide = NeighbourSide.Back;
                 horizontalSide = NeighbourSide.Left;
                 break;
-            case ChildIndex.TopBackRight:
+            case ChildIndex.BelowBackRight:
+                verticalSide = NeighbourSide.Below;
+                depthSide = NeighbourSide.Back;
+                horizontalSide = NeighbourSide.Right;
+                break;
+            case ChildIndex.AboveBackLeft:
+                verticalSide = NeighbourSide.Above;
+                depthSide = NeighbourSide.Back;
+                horizontalSide = NeighbourSide.Left;
+                break;
+            case ChildIndex.AboveBackRight:
                 verticalSide = NeighbourSide.Above;
                 depthSide = NeighbourSide.Back;
                 horizontalSide = NeighbourSide.Right;
                 break;
-            case ChildIndex.TopBackLeft:
-                verticalSide = NeighbourSide.Above;
-                depthSide = NeighbourSide.Back;
+            case ChildIndex.BelowForwardLeft:
+                verticalSide = NeighbourSide.Below;
+                depthSide = NeighbourSide.Forward;
                 horizontalSide = NeighbourSide.Left;
+                break;
+            case ChildIndex.BelowForwardRight:
+                verticalSide = NeighbourSide.Below;
+                depthSide = NeighbourSide.Forward;
+                horizontalSide = NeighbourSide.Right;
+                break;
+            case ChildIndex.AboveForwardLeft:
+                verticalSide = NeighbourSide.Above;
+                depthSide = NeighbourSide.Forward;
+                horizontalSide = NeighbourSide.Left;
+                break;
+            case ChildIndex.AboveForwardRight:
+                verticalSide = NeighbourSide.Above;
+                depthSide = NeighbourSide.Forward;
+                horizontalSide = NeighbourSide.Right;
                 break;
             default:
                 throw new ArgumentOutOfRangeException("childIndex", childIndex, null);
@@ -201,9 +203,12 @@ public class OctreeNode<T> : OctreeNode {
 //    private readonly OctreeChildCoordinates[] _coords;
     private readonly int _depth;
     private readonly ChildIndex _indexInParent;
-    private readonly OctreeNodeCoordinates _nodeCoordinates;
+    private readonly OctreeNodeCoordinates<T> _nodeCoordinates;
     private readonly OctreeNode<T> _parent;
-    private readonly OctreeNode<T> _root;
+
+    private OctreeNode<T> GetRoot() {
+      return _tree.GetRoot(); 
+    }
 
     private readonly Dictionary<NeighbourSide, HashSet<OctreeNode<T>>> _sideSolidChildren =
         new Dictionary<NeighbourSide, HashSet<OctreeNode<T>>>();
@@ -224,20 +229,18 @@ public class OctreeNode<T> : OctreeNode {
         _bounds = bounds;
         _parent = parent;
         if (parent == null) {
-            _root = this;
-            _nodeCoordinates = new OctreeNodeCoordinates();
+            _nodeCoordinates = new OctreeNodeCoordinates<T>(tree);
 #if USE_ALL_NODES
             // ReSharper disable once UseObjectOrCollectionInitializer
             _allNodes = new Dictionary<int, OctreeNode<T>>();
             _allNodes[_nodeCoordinates.GetHashCode()] = this;
 #endif
         } else {
-            _root = _parent._root;
 #if USE_ALL_NODES
             _allNodes = _root._allNodes;
 #endif
 
-            _nodeCoordinates = new OctreeNodeCoordinates(parent._nodeCoordinates,
+            _nodeCoordinates = new OctreeNodeCoordinates<T>(tree, parent._nodeCoordinates,
                 OctreeChildCoordinates.FromIndex(indexInParent));
         }
 
@@ -248,17 +251,17 @@ public class OctreeNode<T> : OctreeNode {
 
         _sideSolidCount[NeighbourSide.Above] = 0;
         _sideSolidCount[NeighbourSide.Below] = 0;
-        _sideSolidCount[NeighbourSide.Left] = 0;
         _sideSolidCount[NeighbourSide.Right] = 0;
-        _sideSolidCount[NeighbourSide.Back] = 0;
+        _sideSolidCount[NeighbourSide.Left] = 0;
         _sideSolidCount[NeighbourSide.Forward] = 0;
+        _sideSolidCount[NeighbourSide.Back] = 0;
 
         _sideSolidChildren[NeighbourSide.Above] = new HashSet<OctreeNode<T>>();
         _sideSolidChildren[NeighbourSide.Below] = new HashSet<OctreeNode<T>>();
-        _sideSolidChildren[NeighbourSide.Left] = new HashSet<OctreeNode<T>>();
         _sideSolidChildren[NeighbourSide.Right] = new HashSet<OctreeNode<T>>();
-        _sideSolidChildren[NeighbourSide.Back] = new HashSet<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Left] = new HashSet<OctreeNode<T>>();
         _sideSolidChildren[NeighbourSide.Forward] = new HashSet<OctreeNode<T>>();
+        _sideSolidChildren[NeighbourSide.Back] = new HashSet<OctreeNode<T>>();
     }
 
 //    private List<OctreeNode<T>> _actuallySolidChildren = new List<OctreeNode<T>>(); 
@@ -438,7 +441,7 @@ public class OctreeNode<T> : OctreeNode {
         return null;
 #else
 
-            var currentNeighbourNode = _root;
+        var currentNeighbourNode = neighbourCoords.GetTree().GetRoot();
 
         foreach (var coord in neighbourCoords) {
             if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
@@ -487,16 +490,16 @@ public class OctreeNode<T> : OctreeNode {
             case NeighbourSide.Below:
                 childCoords = BelowCoords;
                 break;
-            case NeighbourSide.Left:
+            case NeighbourSide.Right:
                 childCoords = LeftCoords;
                 break;
-            case NeighbourSide.Right:
+            case NeighbourSide.Left:
                 childCoords = RightCoords;
                 break;
-            case NeighbourSide.Forward:
+            case NeighbourSide.Back:
                 childCoords = ForwardCoords;
                 break;
-            case NeighbourSide.Back:
+            case NeighbourSide.Forward:
                 childCoords = BackCoords;
                 break;
             default:
@@ -505,7 +508,7 @@ public class OctreeNode<T> : OctreeNode {
         return childCoords;
     }
 
-    private SideState GetSideState(OctreeNodeCoordinates coords, NeighbourSide side) {
+    private SideState GetSideState(OctreeNodeCoordinates<T> coords, NeighbourSide side) {
         AssertNotDeleted();
         var neighbourCoords = coords.GetNeighbourCoords(side);
 
@@ -564,7 +567,7 @@ public class OctreeNode<T> : OctreeNode {
         return SideState.Empty;
 #else
 
-        var currentNode = _root;
+        var currentNode = neighbourCoords.GetTree().GetRoot();
 
 #if !DISABLE_PROFILER
         Profiler.BeginSample("Follow neighbour coords");
@@ -687,7 +690,7 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     private void CreateFacesForSideInternal(ICollection<OctreeRenderFace> faces, NeighbourSide side, Bounds bounds,
-        OctreeNodeCoordinates coords, int meshIndex, bool parentPartial = false) {
+        OctreeNodeCoordinates<T> coords, int meshIndex, bool parentPartial = false) {
         AssertNotDeleted();
 #if !DISABLE_PROFILER
         Profiler.BeginSample("get side state");
@@ -714,6 +717,7 @@ public class OctreeNode<T> : OctreeNode {
                 var childIndex = 0;
 #endif
 
+                    // ReSharper disable once ForCanBeConvertedToForeach
                     for (var i = 0; i < childCoords.Length; i++) {
                         var childCoord = childCoords[i];
 #if !DISABLE_PROFILER
@@ -721,7 +725,7 @@ public class OctreeNode<T> : OctreeNode {
                     Profiler.BeginSample("Get bounds and coords");
 #endif
                         var childBounds = GetChildBoundsInternal(bounds, childCoord.ToIndex());
-                        var childAbsCoords = new OctreeNodeCoordinates(coords, childCoord);
+                        var childAbsCoords = new OctreeNodeCoordinates<T>(_tree, coords, childCoord);
 #if !DISABLE_PROFILER
                     Profiler.EndSample();
 #endif
@@ -783,7 +787,7 @@ public class OctreeNode<T> : OctreeNode {
                 face.uvs[2] = new Vector2(max.x, min.z);
                 face.uvs[3] = new Vector2(max.x, max.z);
                 break;
-            case NeighbourSide.Right:
+            case NeighbourSide.Left:
                 face.vertices[0] = new Vector3(min.x, min.y, max.z);
                 face.vertices[1] = new Vector3(min.x, max.y, max.z);
                 face.vertices[2] = new Vector3(min.x, max.y, min.z);
@@ -796,7 +800,7 @@ public class OctreeNode<T> : OctreeNode {
                 face.uvs[2] = new Vector2(min.z, max.y);
                 face.uvs[3] = new Vector2(min.z, min.y);
                 break;
-            case NeighbourSide.Left:
+            case NeighbourSide.Right:
                 face.vertices[0] = new Vector3(max.x, min.y, min.z);
                 face.vertices[1] = new Vector3(max.x, max.y, min.z);
                 face.vertices[2] = max;
@@ -810,7 +814,7 @@ public class OctreeNode<T> : OctreeNode {
                 face.uvs[2] = new Vector2(max.z, max.y);
                 face.uvs[3] = new Vector2(max.z, min.y);
                 break;
-            case NeighbourSide.Back:
+            case NeighbourSide.Forward:
                 face.vertices[0] = new Vector3(max.x, min.y, max.z);
                 face.vertices[1] = max;
                 face.vertices[2] = new Vector3(min.x, max.y, max.z);
@@ -823,7 +827,7 @@ public class OctreeNode<T> : OctreeNode {
                 face.uvs[2] = new Vector2(min.x, max.y);
                 face.uvs[3] = new Vector2(min.x, min.y);
                 break;
-            case NeighbourSide.Forward:
+            case NeighbourSide.Back:
                 face.vertices[0] = min;
                 face.vertices[1] = new Vector3(min.x, max.y, min.z);
                 face.vertices[2] = new Vector3(max.x, max.y, min.z);
@@ -908,7 +912,7 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     //recursive, can be phantom bounds!
-    public Bounds GetChildBounds(OctreeNodeCoordinates coordinates) {
+    public Bounds GetChildBounds(OctreeNodeCoordinates<T> coordinates) {
         AssertNotDeleted();
 
         var result = GetBounds();
@@ -1140,7 +1144,7 @@ public class OctreeNode<T> : OctreeNode {
         return _bounds;
     }
 
-    public OctreeNodeCoordinates GetCoords() {
+    public OctreeNodeCoordinates<T> GetCoords() {
         AssertNotDeleted();
         return _nodeCoordinates;
     }
@@ -1166,7 +1170,7 @@ public class OctreeNode<T> : OctreeNode {
         var queue = new Queue<OctreeNode<T>>();
         queue.Enqueue(this);
 
-        var discovered = new HashSet<OctreeNode<T>> {_root};
+        var discovered = new HashSet<OctreeNode<T>> {GetRoot()};
 
         while (queue.Count > 0) {
             var node = queue.Dequeue();
@@ -1257,7 +1261,7 @@ public class OctreeNode<T> : OctreeNode {
         return IsLeafNode() && HasItem();
     }
 
-    public OctreeNode<T> AddRecursive(OctreeNodeCoordinates coordinates) {
+    public OctreeNode<T> AddRecursive(OctreeNodeCoordinates<T> coordinates) {
         var node = this;
 
         foreach (var coordinate in coordinates) {
@@ -1283,7 +1287,7 @@ public class OctreeNode<T> : OctreeNode {
         return _parent;
     }
 
-    public void RemoveRecursive(OctreeNodeCoordinates coordinates, bool cleanup = false) {
+    public void RemoveRecursive(OctreeNodeCoordinates<T> coordinates, bool cleanup = false) {
         if (coordinates.Length == 0) {
             return;
         }
@@ -1370,5 +1374,9 @@ public class OctreeNode<T> : OctreeNode {
         Empty,
         Partial,
         Full
+    }
+
+    public Octree<T> GetTree() {
+        return _tree;
     }
 }

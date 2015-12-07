@@ -1,7 +1,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class RayIntersection<T> {
@@ -14,6 +13,8 @@ public class RayIntersection<T> {
     public readonly List<RayIntersectionResult<T>> results = new List<RayIntersectionResult<T>>();
     private readonly bool _debug;
 
+    private readonly Octree<T> _octree;
+
     public RayIntersection(Transform transform, Octree<T> octree, Ray r, bool intersectMultiple, int? wantedDepth = null, bool debug = false) {
         _debug = debug;
         _rootNode = octree.GetRoot();
@@ -21,7 +22,8 @@ public class RayIntersection<T> {
             //we had a good run guys, time to call it a day
             return;
         }
-        
+
+        _octree = octree;
         _transform = transform;
         _ray = r;
         _intersectMultiple = intersectMultiple;
@@ -102,7 +104,7 @@ public class RayIntersection<T> {
     private static EntryPlane GetEntryPlane(float tx0, float ty0, float tz0) {
         if (tx0 > ty0) {
             if (tx0 > tz0) {
-                //x greatest
+                //z greatest
                 return EntryPlane.YZ;
             }
         } else if (ty0 > tz0) {
@@ -110,7 +112,7 @@ public class RayIntersection<T> {
             return EntryPlane.XZ;
         }
 
-        //z greatest
+        //x greatest
 
         return EntryPlane.XY;
     }
@@ -170,7 +172,7 @@ public class RayIntersection<T> {
     }
 
     private void ProcSubtree(float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, OctreeNode<T> node,
-                             bool insideSolidNode, int currentDepth, int? wantedDepth, OctreeNodeCoordinates nodeCoordinates) {
+                             bool insideSolidNode, int currentDepth, int? wantedDepth, OctreeNodeCoordinates<T> nodeCoordinates) {
         if (!_intersectMultiple && results.Count > 0) {
             return;
         }
@@ -210,7 +212,7 @@ public class RayIntersection<T> {
                         newCoords[i] = nodeCoordinates.GetCoord(i);
                     }
 
-                    ProcessTerminal(new OctreeNodeCoordinates(newCoords), tx0, ty0, tz0);
+                    ProcessTerminal(new OctreeNodeCoordinates<T>(_octree, newCoords), tx0, ty0, tz0);
                 }
                 return;
             }
@@ -242,7 +244,7 @@ public class RayIntersection<T> {
             }
 
             var nextDepth = currentDepth + 1;
-            var childCoords = new OctreeNodeCoordinates(nodeCoordinates, OctreeChildCoordinates.FromIndex(childIndex));
+            var childCoords = new OctreeNodeCoordinates<T>(_octree, nodeCoordinates, OctreeChildCoordinates.FromIndex(childIndex));
 
             OctreeNode<T> childNode;
 
@@ -254,14 +256,14 @@ public class RayIntersection<T> {
 
             switch (currNode) {
                 //0= none
-                //1 = only z
+                //1 = only x
                 //2 = only y
-                //3 = 2 + 1 = y and z
-                //4 = only x
-                //5 = 4 + 1 = x and z
-                //6 = 4 + 2 = x and y
-                //7 = 4 + 2 + 1 = x and y and z
-                //x sets 4, y set 2, z sets 1
+                //3 = 2 + 1 = y and x
+                //4 = only z
+                //5 = 4 + 1 = z and x
+                //6 = 4 + 2 = z and y
+                //7 = 4 + 2 + 1 = z and y and x
+                //z sets 4, y set 2, x sets 1
                 //except if the bit is already set, then it can't set it again so 8
                 case 0:
                     //0= none
@@ -269,7 +271,7 @@ public class RayIntersection<T> {
                     currNode = NewNode(txm, 1, tym, 2, tzm, 4);
                     break;
                 case 1:
-                    //1 = only x
+                    //1 = only z
                     ProcSubtree(txm, ty0, tz0, tx1, tym, tzm, childNode, insideSolidNode, nextDepth, wantedDepth, childCoords);
                     currNode = NewNode(tx1, 8, tym, 3, tzm, 5);
                     break;
@@ -279,27 +281,27 @@ public class RayIntersection<T> {
                     currNode = NewNode(txm, 3, ty1, 8, tzm, 6);
                     break;
                 case 3:
-                    //3 = 2 + 1 = y and z
+                    //3 = 2 + 1 = y and x
                     ProcSubtree(txm, tym, tz0, tx1, ty1, tzm, childNode, insideSolidNode, nextDepth, wantedDepth, childCoords);
                     currNode = NewNode(tx1, 8, ty1, 8, tzm, 7);
                     break;
                 case 4:
-                    //4 = only x
+                    //4 = only z
                     ProcSubtree(tx0, ty0, tzm, txm, tym, tz1, childNode, insideSolidNode, nextDepth, wantedDepth, childCoords);
                     currNode = NewNode(txm, 5, tym, 6, tz1, 8);
                     break;
                 case 5:
-                    //5 = 4 + 1 = x and z
+                    //5 = 4 + 1 = z and x
                     ProcSubtree(txm, ty0, tzm, tx1, tym, tz1, childNode, insideSolidNode, nextDepth, wantedDepth, childCoords);
                     currNode = NewNode(tx1, 8, tym, 7, tz1, 8);
                     break;
                 case 6:
-                    //6 = 4 + 2 = x and y
+                    //6 = 4 + 2 = z and y
                     ProcSubtree(tx0, tym, tzm, txm, ty1, tz1, childNode, insideSolidNode, nextDepth, wantedDepth, childCoords);
                     currNode = NewNode(txm, 7, ty1, 8, tz1, 8);
                     break;
                 case 7:
-                    //7 = 4 + 2 + 1 = x and y and z
+                    //7 = 4 + 2 + 1 = z and y and x
                     ProcSubtree(txm, tym, tzm, tx1, ty1, tz1, childNode, insideSolidNode, nextDepth, wantedDepth, childCoords);
                     currNode = 8;
                     break;
@@ -366,23 +368,23 @@ public class RayIntersection<T> {
     }
 
 
-    private OctreeNode.NeighbourSide GetNeighbourSide(EntryPlane entryPlane) {
+    private NeighbourSide GetNeighbourSide(EntryPlane entryPlane) {
         switch (entryPlane) {
             case EntryPlane.XY:
                 if ((_a & 4) == 0) {
-                    return OctreeNode.NeighbourSide.Forward;
+                    return NeighbourSide.Back;
                 }
-                return OctreeNode.NeighbourSide.Back;
+                return NeighbourSide.Forward;
             case EntryPlane.XZ:
                 if ((_a & 2) == 0) {
-                    return OctreeNode.NeighbourSide.Below;
+                    return NeighbourSide.Below;
                 }
-                return OctreeNode.NeighbourSide.Above;
+                return NeighbourSide.Above;
             case EntryPlane.YZ:
                 if ((_a & 1) == 0) {
-                    return OctreeNode.NeighbourSide.Right;
+                    return NeighbourSide.Left;
                 }
-                return OctreeNode.NeighbourSide.Left;
+                return NeighbourSide.Right;
             default:
                 throw new ArgumentOutOfRangeException("entryPlane", entryPlane, null);
         }
@@ -407,7 +409,7 @@ public class RayIntersection<T> {
         results.Add(new RayIntersectionResult<T>(node, node.GetCoords(), entryDistance, _ray.GetPoint(entryDistance), normal, GetNeighbourSide(entryPlane)));
     }
 
-    private void ProcessTerminal(OctreeNodeCoordinates nodeCoordinates, float tx0, float ty0, float tz0)
+    private void ProcessTerminal(OctreeNodeCoordinates<T> nodeCoordinates, float tx0, float ty0, float tz0)
     {
         var entryDistance = Mathf.Max(tx0, ty0, tz0);
 

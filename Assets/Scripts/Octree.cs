@@ -12,12 +12,16 @@ public abstract class Octree<T> {
     private readonly Dictionary<int, List<GameObject>> _gameObjectForMeshInfo = new Dictionary<int, List<GameObject>>();
 //    private readonly List<Mesh> _meshes = new List<Mesh>();
 
-    private readonly Dictionary<int, MeshInfo<T>> _meshInfos = new Dictionary<int, MeshInfo<T>>();
+    private Dictionary<int, MeshInfo<T>> _meshInfos = new Dictionary<int, MeshInfo<T>>();
+
+    private readonly Dictionary<NeighbourSide, Octree<T>> _neighbourTrees = new Dictionary<NeighbourSide, Octree<T>>();
 
     private readonly Dictionary<int, HashSet<OctreeRenderFace>> _nodeFaces =
         new Dictionary<int, HashSet<OctreeRenderFace>>();
 
     private readonly OctreeNode<T> _root;
+
+    private bool _isCreatedByAnotherTree;
 
     private GameObject _renderObject;
 
@@ -72,16 +76,15 @@ public abstract class Octree<T> {
             var neighbours = octreeNode.GetAllSolidNeighbours(side);
 
             if (neighbours != null) {
-                foreach (var neighbour in neighbours)
-                {
-                    if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem())
-                    {
+                foreach (var neighbour in neighbours) {
+                    if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem()) {
                         continue;
                     }
 
-                    var neighbourDrawQueue = GetMeshInfo(neighbour.GetItem()).drawQueue;
-                    if (!neighbourDrawQueue.Contains(neighbour))
-                    {
+                    var neighbourTree = neighbour.GetTree();
+
+                    var neighbourDrawQueue = neighbourTree.GetMeshInfo(neighbour.GetItem()).drawQueue;
+                    if (!neighbourDrawQueue.Contains(neighbour)) {
                         neighbourDrawQueue.Add(neighbour);
                     }
                 }
@@ -330,17 +333,14 @@ if(rems.length>0) {
         foreach (var neighbourSide in OctreeNode.AllSides) {
             var neighbours = octreeNode.GetAllSolidNeighbours(neighbourSide);
             if (neighbours != null) {
-                foreach (var neighbour in neighbours)
-                {
-                    if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem())
-                    {
+                foreach (var neighbour in neighbours) {
+                    if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem()) {
                         continue;
                     }
 
-                    var neighbourMeshInfo = GetMeshInfo(neighbour.GetItem());
+                    var neighbourMeshInfo = neighbour.GetTree().GetMeshInfo(neighbour.GetItem());
                     var neighbourDrawQueue = neighbourMeshInfo.drawQueue;
-                    if (!neighbourDrawQueue.Contains(neighbour))
-                    {
+                    if (!neighbourDrawQueue.Contains(neighbour)) {
                         neighbourDrawQueue.Add(neighbour);
                     }
                 }
@@ -365,25 +365,42 @@ if(rems.length>0) {
         }
 
         _nodeFaces.Remove(nodeHashCode);
+
+        if (_isCreatedByAnotherTree && _nodeFaces.Count == 0) {
+            Debug.Log("welp");
+        }
     }
 
     public bool Intersect(Transform transform, Ray ray, int? wantedDepth = null) {
         return new RayIntersection<T>(transform, this, ray, false, wantedDepth).results.Count > 0;
     }
 
+    private bool _intersecting = false;
     public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult<T> result, int? wantedDepth = null) {
+        _intersecting = true;
         if (wantedDepth != null && wantedDepth < 0) {
             throw new ArgumentOutOfRangeException("wantedDepth", "Wanted depth should not be less than zero.");
         }
-        // ReSharper disable once ObjectCreationAsStatement
+
         var results = new RayIntersection<T>(transform, this, ray, false, wantedDepth).results;
 
         if (results.Count > 0) {
             result = results[0];
+            _intersecting = false;
+            return true;
+        }
+
+        foreach (var neighbourTree in _neighbourTrees.Values) {
+            if (neighbourTree._intersecting || !neighbourTree.Intersect(transform, ray, out result, wantedDepth)) {
+                continue;
+            }
+
+            _intersecting = false;
             return true;
         }
 
         result = new RayIntersectionResult<T>(false);
+        _intersecting = false;
         return false;
     }
 
@@ -392,6 +409,7 @@ if(rems.length>0) {
         ProcessDrawQueue();
         Profiler.EndSample();
 
+        var meshInfos = _meshInfos;
         if (_renderObject != gameObject) {
             var numChildren = gameObject.transform.childCount;
 
@@ -406,35 +424,21 @@ if(rems.length>0) {
             }
             Profiler.EndSample();
 
-//            Profiler.BeginSample("Destroy meshes");
-//            foreach (var mesh in _meshes) {
-//                if (Application.isPlaying) {
-//                    Object.Destroy(mesh);
-//                } else {
-//                    Object.DestroyImmediate(mesh);
-//                }
-//            }
-//            Profiler.EndSample();
-
-//            _meshes.Clear();
-
             //recreate meshes
             _renderObject = gameObject;
 
             Profiler.BeginSample("Recreate meshes");
-            foreach (var meshPair in _meshInfos) {
+            foreach (var meshPair in meshInfos) {
                 var meshInfo = meshPair.Value;
                 var meshId = meshPair.Key;
 
-
                 var objectsForMesh = new List<GameObject>();
                 _gameObjectForMeshInfo[meshId] = objectsForMesh;
-
                 RenderNewMeshes(_renderObject, meshId, meshInfo, objectsForMesh);
             }
             Profiler.EndSample();
         } else {
-            foreach (var meshPair in _meshInfos) {
+            foreach (var meshPair in meshInfos) {
                 var meshInfo = meshPair.Value;
                 var meshId = meshPair.Key;
 
@@ -445,14 +449,12 @@ if(rems.length>0) {
                 } else {
                     var objectsForMesh = new List<GameObject>();
                     _gameObjectForMeshInfo[meshId] = objectsForMesh;
-
-                    RenderNewMeshes(_renderObject, meshId, meshInfo, objectsForMesh);
                 }
             }
         }
     }
 
-    private void UpdateMeshes(GameObject container, int meshId, MeshInfo<T> meshInfo, List<GameObject> objectsForMesh) {
+    private static void UpdateMeshes(GameObject container, int meshId, MeshInfo<T> meshInfo, List<GameObject> objectsForMesh) {
         var verticesArray = meshInfo.vertices.ToArray();
         var normalsArray = meshInfo.normals.ToArray();
         var uvsArray = meshInfo.uvs.ToArray();
@@ -758,4 +760,27 @@ if(rems.length>0) {
     public bool ItemsBelongInSameMesh(T a, T b) {
         return GetItemMeshId(a) == GetItemMeshId(b);
     }
+
+    public Octree<T> GetOrCreateNeighbour(NeighbourSide side) {
+        Octree<T> neighbour;
+        if (_neighbourTrees.TryGetValue(side, out neighbour)) {
+            return neighbour;
+        }
+
+        neighbour = CreateNeighbour(side);
+        neighbour._meshInfos = _meshInfos;
+        neighbour._root.RemoveItem();
+
+        neighbour._isCreatedByAnotherTree = true;
+
+        _neighbourTrees.Add(side, neighbour);
+
+        // TODO relink other neighbours.
+
+        neighbour._neighbourTrees.Add(OctreeNode.GetOpposite(side), this);
+
+        return neighbour;
+    }
+
+    protected abstract Octree<T> CreateNeighbour(NeighbourSide side);
 }

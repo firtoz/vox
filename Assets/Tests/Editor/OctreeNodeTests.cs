@@ -18,6 +18,10 @@ namespace OctreeTest
             protected override Material GetMeshMaterial(int meshId) {
                 return new Material(Shader.Find("Standard"));
             }
+
+            protected override Octree<T> CreateNeighbour(NeighbourSide side) {
+                throw new NotImplementedException();
+            }
         }
 
         [Test]
@@ -57,18 +61,18 @@ namespace OctreeTest
 
             Assert.IsTrue(root.IsLeafNode());
 
-            var firstChild = root.AddChild(OctreeNode.ChildIndex.TopFwdRight);
-            Assert.AreEqual(firstChild, root.GetChild(OctreeNode.ChildIndex.TopFwdRight));
+            var firstChild = root.AddChild(OctreeNode.ChildIndex.AboveBackLeft);
+            Assert.AreEqual(firstChild, root.GetChild(OctreeNode.ChildIndex.AboveBackLeft));
 
             Assert.IsFalse(root.IsLeafNode());
             Assert.IsTrue(firstChild.IsLeafNode());
             Assert.AreEqual(0, firstChild.GetChildCount());
             Assert.AreEqual(1, root.GetChildCount());
-            //TopFwdRight , 1, 1, 1
+            //AboveBackLeft , 1, 1, 1
 
             Assert.Throws<ArgumentException>(() =>
             {
-                root.AddChild(OctreeNode.ChildIndex.TopFwdRight);
+                root.AddChild(OctreeNode.ChildIndex.AboveBackLeft);
             });
 
             for (var i = 0; i < 8; i++)
@@ -98,7 +102,7 @@ namespace OctreeTest
             Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), firstChildCoords.GetCoord(0));
 
 
-            var grandChild = firstChild.AddChild(OctreeNode.ChildIndex.TopBackLeft);
+            var grandChild = firstChild.AddChild(OctreeNode.ChildIndex.AboveForwardRight);
 
             Assert.AreEqual(1, root.GetChildCount());
             Assert.AreEqual(1, firstChild.GetChildCount());
@@ -106,21 +110,21 @@ namespace OctreeTest
             Assert.IsFalse(root.IsLeafNode());
             Assert.IsFalse(firstChild.IsLeafNode());
             Assert.IsTrue(grandChild.IsLeafNode());
-            //TopBackLeft = 0, 1, 0
+            //AboveForwardRight = 0, 1, 0
 
             var grandChildCoords = grandChild.GetCoords();
             Assert.AreEqual(2, grandChildCoords.Length);
             Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), grandChildCoords.GetCoord(0));
             Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), grandChildCoords.GetCoord(1));
 
-            var rootCoords = new OctreeNodeCoordinates();
+            var rootCoords = new OctreeNodeCoordinates<int>(null);
 
             Assert.AreEqual(root, root.GetChildAtCoords(rootCoords));
             Assert.AreEqual(firstChild, root.GetChildAtCoords(firstChild.GetCoords()));
             Assert.AreEqual(grandChild, root.GetChildAtCoords(grandChild.GetCoords()));
 
             var inexistentNodeCoords =
-                new OctreeNodeCoordinates(new[]
+                new OctreeNodeCoordinates<int>(null, new[]
                 {
                     new OctreeChildCoordinates(1, 1, 1),
                     new OctreeChildCoordinates(1, 1, 1),
@@ -139,7 +143,7 @@ namespace OctreeTest
 
             Assert.IsTrue(grandChild.IsDeleted());
 
-            grandChild = firstChild.AddChild(OctreeNode.ChildIndex.TopBackLeft);
+            grandChild = firstChild.AddChild(OctreeNode.ChildIndex.AboveForwardRight);
 
             Assert.AreEqual(1, firstChild.GetChildCount());
             Assert.IsFalse(firstChild.IsLeafNode());

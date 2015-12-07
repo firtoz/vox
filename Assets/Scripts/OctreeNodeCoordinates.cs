@@ -4,21 +4,23 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Assertions;
 
-public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
+public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
     private readonly OctreeChildCoordinates[] _coords;
     private readonly int _length;
-    private int _hashCode;
     private bool _hasHashCode;
+    private int _hashCode;
+    private readonly Octree<T> _tree;
 
-    public OctreeNodeCoordinates() {
+    public OctreeNodeCoordinates(Octree<T> tree) {
         _coords = new OctreeChildCoordinates[0];
         _hashCode = 0;
         _length = 0;
 
         _hasHashCode = true;
+        _tree = tree;
     }
 
-    public OctreeNodeCoordinates(OctreeNodeCoordinates parentCoordinates,
+    public OctreeNodeCoordinates(Octree<T> tree, OctreeNodeCoordinates<T> parentCoordinates,
         params OctreeChildCoordinates[] furtherChildren) {
         var parentCoords = parentCoordinates._coords;
 
@@ -33,25 +35,13 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
         }
 
         _length = _coords.Length;
+        _tree = tree;
     }
 
-    public OctreeNodeCoordinates(OctreeChildCoordinates[] coords) {
+    public OctreeNodeCoordinates(Octree<T> tree, OctreeChildCoordinates[] coords) {
         _coords = coords;
+        _tree = tree;
         _length = _coords.Length;
-    }
-
-//    public OctreeNodeCoordinates(IEnumerable<OctreeChildCoordinates> coords) {
-//        _coords = coords.ToArray();
-//        _length = _coords.Length;
-//    }
-
-    public OctreeNodeCoordinates GetParentCoordinates() {
-        Assert.IsTrue(_coords.Length > 0, "Cannot get the parent of empty coords");
-
-        var newCoords = new OctreeChildCoordinates[_coords.Length - 1];
-        Array.Copy(_coords, newCoords, _coords.Length - 1);
-
-        return new OctreeNodeCoordinates(newCoords);
     }
 
     public int Length {
@@ -66,7 +56,21 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
         return _coords.AsEnumerable().GetEnumerator();
     }
 
-    protected bool Equals(OctreeNodeCoordinates other) {
+//    public OctreeNodeCoordinates(IEnumerable<OctreeChildCoordinates> coords) {
+//        _coords = coords.ToArray();
+//        _length = _coords.Length;
+//    }
+
+    public OctreeNodeCoordinates<T> GetParentCoordinates() {
+        Assert.IsTrue(_coords.Length > 0, "Cannot get the parent of empty coords");
+
+        var newCoords = new OctreeChildCoordinates[_coords.Length - 1];
+        Array.Copy(_coords, newCoords, _coords.Length - 1);
+
+        return new OctreeNodeCoordinates<T>(_tree, newCoords);
+    }
+
+    protected bool Equals(OctreeNodeCoordinates<T> other) {
         return other.GetHashCode() == GetHashCode();
     }
 
@@ -76,12 +80,15 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
             return _hashCode;
         }
 
-        unchecked
-        {
+        unchecked {
             _hashCode = _coords.Length;
+
+            if (_tree != null) {
+                _hashCode = _hashCode * 17 + _tree.GetHashCode();
+            }
+
             // ReSharper disable once LoopCanBeConvertedToQuery
-            foreach (var coord in _coords)
-            {
+            foreach (var coord in _coords) {
                 _hashCode = _hashCode * 31 + coord.GetHashCode();
             }
         }
@@ -114,11 +121,13 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
         if (ReferenceEquals(this, obj)) {
             return true;
         }
-        return obj.GetType() == GetType() && Equals((OctreeNodeCoordinates) obj);
+        return obj.GetType() == GetType() && Equals((OctreeNodeCoordinates<T>) obj);
     }
 
-    public OctreeNodeCoordinates GetNeighbourCoords(OctreeNode.NeighbourSide side) {
+    public OctreeNodeCoordinates<T> GetNeighbourCoords(NeighbourSide side) {
         OctreeChildCoordinates[] newCoords;
+
+        var tree = _tree;
 
         if (_coords.Length > 0) {
             newCoords = new OctreeChildCoordinates[_coords.Length];
@@ -127,76 +136,43 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
             var lastCoordX = 0;
             var lastCoordY = 0;
             var lastCoordZ = 0;
-//            var lastCoords = new OctreeChildCoordinates();
 
             for (var i = _coords.Length - 1; i >= 0; --i) {
                 var coord = _coords[i];
 
-                var currentX = coord.x;
+                var currentX = coord.z;
                 var currentY = coord.y;
-                var currentZ = coord.z;
+                var currentZ = coord.x;
 
                 if (hasLastCoords) {
                     //let's check the lower coords, if it's out of that bounds then we need to modify ourselves!
-//                    var lastCoordX = lastCoords.x;
-//                    var lastCoordY = lastCoords.y;
-//                    var lastCoordZ = lastCoords.z;
+                    var lastCoordUpdated = UpdateLastCoord(ref lastCoordX, ref currentX,
+                        ref lastCoordY, ref currentY,
+                        ref lastCoordZ, ref currentZ);
 
-                    var updateLastCoord = false;
-
-                    if (lastCoordX < 0) {
-                        currentX -= 1;
-                        lastCoordX = 1;
-                        updateLastCoord = true;
-                    } else if (lastCoordX > 1) {
-                        currentX += 1;
-                        lastCoordX = 0;
-                        updateLastCoord = true;
-                    }
-
-                    if (lastCoordY < 0) {
-                        currentY -= 1;
-                        lastCoordY = 1;
-                        updateLastCoord = true;
-                    } else if (lastCoordY > 1) {
-                        currentY += 1;
-                        lastCoordY = 0;
-                        updateLastCoord = true;
-                    }
-
-                    if (lastCoordZ < 0) {
-                        currentZ -= 1;
-                        lastCoordZ = 1;
-                        updateLastCoord = true;
-                    } else if (lastCoordZ > 1) {
-                        currentZ += 1;
-                        lastCoordZ = 0;
-                        updateLastCoord = true;
-                    }
-
-                    if (updateLastCoord) {
-                        newCoords[i + 1] = new OctreeChildCoordinates(lastCoordX, lastCoordY, lastCoordZ);
+                    if (lastCoordUpdated) {
+                        newCoords[i + 1] = new OctreeChildCoordinates(lastCoordZ, lastCoordY, lastCoordX);
                     }
                 } else {
                     //final coords!
                     //update coords from the side
                     switch (side) {
-                        case OctreeNode.NeighbourSide.Above:
+                        case NeighbourSide.Above:
                             currentY += 1;
                             break;
-                        case OctreeNode.NeighbourSide.Below:
+                        case NeighbourSide.Below:
                             currentY -= 1;
                             break;
-                        case OctreeNode.NeighbourSide.Left:
+                        case NeighbourSide.Right:
                             currentX -= 1;
                             break;
-                        case OctreeNode.NeighbourSide.Right:
+                        case NeighbourSide.Left:
                             currentX += 1;
                             break;
-                        case OctreeNode.NeighbourSide.Forward:
+                        case NeighbourSide.Back:
                             currentZ += 1;
                             break;
-                        case OctreeNode.NeighbourSide.Back:
+                        case NeighbourSide.Forward:
                             currentZ -= 1;
                             break;
                         default:
@@ -204,7 +180,7 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
                     }
                 }
 
-                var newCoord = new OctreeChildCoordinates(currentX, currentY, currentZ);
+                var newCoord = new OctreeChildCoordinates(currentZ, currentY, currentX);
                 newCoords[i] = newCoord;
 
                 lastCoordX = currentX;
@@ -213,22 +189,78 @@ public class OctreeNodeCoordinates : IEnumerable<OctreeChildCoordinates> {
                 hasLastCoords = true;
             }
 
+            // we're at the end now
+
             if (hasLastCoords) {
                 if (lastCoordX < 0 || lastCoordX > 1 ||
                     lastCoordY < 0 || lastCoordY > 1 ||
                     lastCoordZ < 0 || lastCoordZ > 1) {
-                    //invalid coords
-                    newCoords = null;
+                    //invalid coords, out of bounds, pick neighbour tree
+
+                    var currentX = lastCoordX;
+                    var currentY = lastCoordY;
+                    var currentZ = lastCoordZ;
+
+                    UpdateLastCoord(ref lastCoordX, ref currentX,
+                        ref lastCoordY, ref currentY,
+                        ref lastCoordZ, ref currentZ);
+
+                    newCoords[0] = new OctreeChildCoordinates(lastCoordZ, lastCoordY, lastCoordX);
+                    if (_tree == null) {
+                        tree = null;
+                    } else {
+                        tree = _tree.GetOrCreateNeighbour(side);
+                    }
                 }
             }
         } else {
             newCoords = null;
         }
 
-        return newCoords == null ? null : new OctreeNodeCoordinates(newCoords);
+        return newCoords == null ? null : new OctreeNodeCoordinates<T>(tree, newCoords);
+    }
+
+    private static bool UpdateLastCoord(ref int lastCoordX, ref int currentX, ref int lastCoordY, ref int currentY,
+        ref int lastCoordZ, ref int currentZ) {
+        var updateLastCoord = false;
+
+        if (lastCoordX < 0) {
+            currentX -= 1;
+            lastCoordX = 1;
+            updateLastCoord = true;
+        } else if (lastCoordX > 1) {
+            currentX += 1;
+            lastCoordX = 0;
+            updateLastCoord = true;
+        }
+
+        if (lastCoordY < 0) {
+            currentY -= 1;
+            lastCoordY = 1;
+            updateLastCoord = true;
+        } else if (lastCoordY > 1) {
+            currentY += 1;
+            lastCoordY = 0;
+            updateLastCoord = true;
+        }
+
+        if (lastCoordZ < 0) {
+            currentZ -= 1;
+            lastCoordZ = 1;
+            updateLastCoord = true;
+        } else if (lastCoordZ > 1) {
+            currentZ += 1;
+            lastCoordZ = 0;
+            updateLastCoord = true;
+        }
+        return updateLastCoord;
     }
 
     public OctreeChildCoordinates GetCoord(int i) {
         return _coords[i];
+    }
+
+    public Octree<T> GetTree() {
+        return _tree;
     }
 }
