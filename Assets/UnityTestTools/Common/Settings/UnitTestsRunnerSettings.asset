@@ -11,7 +11,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a24a0b0a24461a4ab99853f8b145e5c, type: 3}
   m_Name: UnitTestsRunnerSettings
   m_EditorClassIdentifier: 
-  runOnRecompilation: 0
+  runOnRecompilation: 1
   horizontalSplit: 1
   autoSaveSceneBeforeRun: 0
   runTestOnANewScene: 0

@@ -783,4 +783,41 @@ if(rems.length>0) {
     }
 
     protected abstract Octree<T> CreateNeighbour(NeighbourSide side);
+
+    protected Bounds GetNeighbourBounds(NeighbourSide side)
+    {
+        var rootBounds = GetRoot().GetBounds();
+
+        var center = rootBounds.center;
+        var size = rootBounds.size;
+
+        switch (side)
+        {
+            case NeighbourSide.Above:
+                center += Vector3.up * size.y;
+                break;
+            case NeighbourSide.Below:
+                center += Vector3.down * size.y;
+                break;
+            case NeighbourSide.Right:
+                center += Vector3.right * size.x;
+                break;
+            case NeighbourSide.Left:
+                center += Vector3.left * size.x;
+                break;
+            case NeighbourSide.Back:
+                center += Vector3.back * size.z;
+                break;
+            case NeighbourSide.Forward:
+                center += Vector3.forward * size.z;
+                break;
+            case NeighbourSide.Invalid:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("side", side, null);
+        }
+
+        var neighbourBounds = new Bounds(center, size);
+        return neighbourBounds;
+    }
 }

@@ -138,38 +138,39 @@ namespace OctreeTest {
             Assert.AreEqual(2, grandChildCoords.Length);
             Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), grandChildCoords.GetCoord(0));
             Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), grandChildCoords.GetCoord(1));
-            var leftOfGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Right);
-
-            Assert.AreEqual(2, leftOfGrandChildCoords.Length);
-
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), leftOfGrandChildCoords.GetCoord(0));
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), leftOfGrandChildCoords.GetCoord(1));
-
-            Assert.NotNull(leftOfGrandChildCoords.GetNeighbourCoords(NeighbourSide.Left));
-
-            Assert.AreNotEqual(leftOfGrandChildCoords.GetNeighbourCoords(NeighbourSide.Left),
-                leftOfGrandChildCoords);
-
-            var furtherLeftCoords = leftOfGrandChildCoords.GetNeighbourCoords(NeighbourSide.Right);
-
-            Assert.AreEqual(2, furtherLeftCoords.Length);
-
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), furtherLeftCoords.GetCoord(0));
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), furtherLeftCoords.GetCoord(1));
-
-            furtherLeftCoords = furtherLeftCoords.GetNeighbourCoords(NeighbourSide.Right);
-
-            Assert.IsNotNull(furtherLeftCoords, "furtherLeftCoords"); // not null because it will just look at another tree instead
-
-            var rightOfGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Left);
-
-            Assert.AreEqual(rightOfGrandChildCoords.GetNeighbourCoords(NeighbourSide.Right), grandChildCoords);
-
+            var rightOfGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Right);
 
             Assert.AreEqual(2, rightOfGrandChildCoords.Length);
 
             Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), rightOfGrandChildCoords.GetCoord(0));
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), rightOfGrandChildCoords.GetCoord(1));
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), rightOfGrandChildCoords.GetCoord(1));
+
+            Assert.NotNull(rightOfGrandChildCoords.GetNeighbourCoords(NeighbourSide.Left));
+
+            Assert.AreNotEqual(rightOfGrandChildCoords.GetNeighbourCoords(NeighbourSide.Left),
+                rightOfGrandChildCoords);
+
+            var furtherRightCoords = rightOfGrandChildCoords.GetNeighbourCoords(NeighbourSide.Right);
+
+            // uh oh, we just went out of bounds
+            Assert.AreEqual(2, furtherRightCoords.Length);
+
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), furtherRightCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), furtherRightCoords.GetCoord(1));
+
+            furtherRightCoords = furtherRightCoords.GetNeighbourCoords(NeighbourSide.Right);
+
+            Assert.IsNotNull(furtherRightCoords, "furtherLeftCoords"); // not null because it will just look at another tree instead
+
+            var leftOfGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Left);
+
+            Assert.AreEqual(leftOfGrandChildCoords.GetNeighbourCoords(NeighbourSide.Right), grandChildCoords);
+
+
+            Assert.AreEqual(2, leftOfGrandChildCoords.Length);
+            // and back again
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), leftOfGrandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), leftOfGrandChildCoords.GetCoord(1));
 
             var aboveGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Above);
 
@@ -191,24 +192,26 @@ namespace OctreeTest {
 
             Assert.AreEqual(new OctreeChildCoordinates(1, 0, 1), furterBelowGrandChildCoords.GetCoord(0));
             Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), furterBelowGrandChildCoords.GetCoord(1));
-
-            var behindGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Forward);
-            Assert.AreEqual(behindGrandChildCoords.GetNeighbourCoords(NeighbourSide.Back),
+            
+            // 111, 010, behind, z-1
+            // 110, 011
+            var behindGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Back);
+            Assert.AreEqual(behindGrandChildCoords.GetNeighbourCoords(NeighbourSide.Forward),
                 grandChildCoords);
 
             Assert.AreEqual(2, belowGrandChildCoords.Length);
 
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), behindGrandChildCoords.GetCoord(0));
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), behindGrandChildCoords.GetCoord(1));
+            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), behindGrandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), behindGrandChildCoords.GetCoord(1));
 
-            var inFrontOfGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Back);
-            Assert.AreEqual(inFrontOfGrandChildCoords.GetNeighbourCoords(NeighbourSide.Forward),
+            var inFrontOfGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Forward);
+            Assert.AreEqual(inFrontOfGrandChildCoords.GetNeighbourCoords(NeighbourSide.Back),
                 grandChildCoords);
 
             Assert.AreEqual(2, belowGrandChildCoords.Length);
 
             Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), inFrontOfGrandChildCoords.GetCoord(0));
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 0), inFrontOfGrandChildCoords.GetCoord(1));
+            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 1), inFrontOfGrandChildCoords.GetCoord(1));
 
             const int incorrectSide = 6;
             Assert.Throws<ArgumentOutOfRangeException>(
@@ -241,61 +244,61 @@ namespace OctreeTest {
         [Test]
         public void ToAndFromIndices() {
             var wantedCoords = new OctreeChildCoordinates(1, 1, 0);
-            var actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.AboveBackRight);
+            var actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.RightAboveBack);
             Assert.AreEqual(wantedCoords, actualCoords);
-            Assert.AreEqual(OctreeNode.ChildIndex.AboveBackRight, actualCoords.ToIndex());
+            Assert.AreEqual(OctreeNode.ChildIndex.RightAboveBack, actualCoords.ToIndex());
 
             //right
             wantedCoords = new OctreeChildCoordinates(wantedCoords.x, wantedCoords.y, 1);
-            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.AboveBackLeft);
+            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.RightAboveForward);
             Assert.AreEqual(wantedCoords, actualCoords);
-            Assert.AreEqual(OctreeNode.ChildIndex.AboveBackLeft, actualCoords.ToIndex());
+            Assert.AreEqual(OctreeNode.ChildIndex.RightAboveForward, actualCoords.ToIndex());
 
             //left
             //back
             wantedCoords = new OctreeChildCoordinates(0, wantedCoords.y, 0);
 
-            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.AboveForwardRight);
+            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftAboveBack);
             Assert.AreEqual(wantedCoords, actualCoords);
-            Assert.AreEqual(OctreeNode.ChildIndex.AboveForwardRight, actualCoords.ToIndex());
+            Assert.AreEqual(OctreeNode.ChildIndex.LeftAboveBack, actualCoords.ToIndex());
 
             //right
             wantedCoords = new OctreeChildCoordinates(wantedCoords.x, wantedCoords.y, 1);
 
-            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.AboveForwardLeft);
+            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftAboveForward);
             Assert.AreEqual(wantedCoords, actualCoords);
-            Assert.AreEqual(OctreeNode.ChildIndex.AboveForwardLeft, actualCoords.ToIndex());
+            Assert.AreEqual(OctreeNode.ChildIndex.LeftAboveForward, actualCoords.ToIndex());
 
             //bot
             //left
             //fwd
             wantedCoords = new OctreeChildCoordinates(1, 0, 0);
 
-            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.BelowBackRight);
+            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.RightBelowBack);
             Assert.AreEqual(wantedCoords, actualCoords);
-            Assert.AreEqual(OctreeNode.ChildIndex.BelowBackRight, actualCoords.ToIndex());
+            Assert.AreEqual(OctreeNode.ChildIndex.RightBelowBack, actualCoords.ToIndex());
 
             //right
             wantedCoords = new OctreeChildCoordinates(wantedCoords.x, wantedCoords.y, 1);
 
-            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.BelowBackLeft);
+            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.RightBelowForward);
             Assert.AreEqual(wantedCoords, actualCoords);
-            Assert.AreEqual(OctreeNode.ChildIndex.BelowBackLeft, actualCoords.ToIndex());
+            Assert.AreEqual(OctreeNode.ChildIndex.RightBelowForward, actualCoords.ToIndex());
 
             //left
             //back
             wantedCoords = new OctreeChildCoordinates(0, wantedCoords.y, 0);
 
-            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.BelowForwardRight);
+            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftBelowBack);
             Assert.AreEqual(wantedCoords, actualCoords);
-            Assert.AreEqual(OctreeNode.ChildIndex.BelowForwardRight, actualCoords.ToIndex());
+            Assert.AreEqual(OctreeNode.ChildIndex.LeftBelowBack, actualCoords.ToIndex());
 
             //right
             wantedCoords = new OctreeChildCoordinates(wantedCoords.x, wantedCoords.y, 1);
 
-            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.BelowForwardLeft);
+            actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftBelowForward);
             Assert.AreEqual(wantedCoords, actualCoords);
-            Assert.AreEqual(OctreeNode.ChildIndex.BelowForwardLeft, actualCoords.ToIndex());
+            Assert.AreEqual(OctreeNode.ChildIndex.LeftBelowForward, actualCoords.ToIndex());
 
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => { actualCoords = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.Invalid); });

@@ -140,18 +140,19 @@ public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
             for (var i = _coords.Length - 1; i >= 0; --i) {
                 var coord = _coords[i];
 
-                var currentX = coord.z;
+                var currentX = coord.x;
                 var currentY = coord.y;
-                var currentZ = coord.x;
+                var currentZ = coord.z;
 
                 if (hasLastCoords) {
                     //let's check the lower coords, if it's out of that bounds then we need to modify ourselves!
-                    var lastCoordUpdated = UpdateLastCoord(ref lastCoordX, ref currentX,
+                    var lastCoordUpdated = UpdateLastCoord(
+                        ref lastCoordX, ref currentX,
                         ref lastCoordY, ref currentY,
                         ref lastCoordZ, ref currentZ);
 
                     if (lastCoordUpdated) {
-                        newCoords[i + 1] = new OctreeChildCoordinates(lastCoordZ, lastCoordY, lastCoordX);
+                        newCoords[i + 1] = new OctreeChildCoordinates(lastCoordX, lastCoordY, lastCoordZ);
                     }
                 } else {
                     //final coords!
@@ -164,23 +165,23 @@ public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
                             currentY -= 1;
                             break;
                         case NeighbourSide.Right:
-                            currentX -= 1;
-                            break;
-                        case NeighbourSide.Left:
                             currentX += 1;
                             break;
+                        case NeighbourSide.Left:
+                            currentX -= 1;
+                            break;
                         case NeighbourSide.Back:
-                            currentZ += 1;
+                            currentZ -= 1;
                             break;
                         case NeighbourSide.Forward:
-                            currentZ -= 1;
+                            currentZ += 1;
                             break;
                         default:
                             throw new ArgumentOutOfRangeException("side", side, null);
                     }
                 }
 
-                var newCoord = new OctreeChildCoordinates(currentZ, currentY, currentX);
+                var newCoord = new OctreeChildCoordinates(currentX, currentY, currentZ);
                 newCoords[i] = newCoord;
 
                 lastCoordX = currentX;
@@ -205,7 +206,7 @@ public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
                         ref lastCoordY, ref currentY,
                         ref lastCoordZ, ref currentZ);
 
-                    newCoords[0] = new OctreeChildCoordinates(lastCoordZ, lastCoordY, lastCoordX);
+                    newCoords[0] = new OctreeChildCoordinates(lastCoordX, lastCoordY, lastCoordZ);
                     if (_tree == null) {
                         tree = null;
                     } else {

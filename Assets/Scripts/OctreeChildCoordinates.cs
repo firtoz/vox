@@ -62,23 +62,24 @@ public struct OctreeChildCoordinates {
     }
 
     public static OctreeChildCoordinates FromIndex(OctreeNode.ChildIndex index) {
-        switch (index) {
-            case OctreeNode.ChildIndex.AboveBackRight:
-                return new OctreeChildCoordinates(1, 1, 0);
-            case OctreeNode.ChildIndex.AboveBackLeft:
-                return new OctreeChildCoordinates(1, 1, 1);
-            case OctreeNode.ChildIndex.AboveForwardRight:
-                return new OctreeChildCoordinates(0, 1, 0);
-            case OctreeNode.ChildIndex.AboveForwardLeft:
-                return new OctreeChildCoordinates(0, 1, 1);
-            case OctreeNode.ChildIndex.BelowBackRight:
-                return new OctreeChildCoordinates(1, 0, 0);
-            case OctreeNode.ChildIndex.BelowBackLeft:
-                return new OctreeChildCoordinates(1, 0, 1);
-            case OctreeNode.ChildIndex.BelowForwardRight:
+        switch (index)
+        {
+            case OctreeNode.ChildIndex.LeftBelowBack:
                 return new OctreeChildCoordinates(0, 0, 0);
-            case OctreeNode.ChildIndex.BelowForwardLeft:
+            case OctreeNode.ChildIndex.LeftBelowForward:
                 return new OctreeChildCoordinates(0, 0, 1);
+            case OctreeNode.ChildIndex.LeftAboveBack:
+                return new OctreeChildCoordinates(0, 1, 0);
+            case OctreeNode.ChildIndex.LeftAboveForward:
+                return new OctreeChildCoordinates(0, 1, 1);
+            case OctreeNode.ChildIndex.RightBelowBack:
+                return new OctreeChildCoordinates(1, 0, 0);
+            case OctreeNode.ChildIndex.RightBelowForward:
+                return new OctreeChildCoordinates(1, 0, 1);
+            case OctreeNode.ChildIndex.RightAboveBack:
+                return new OctreeChildCoordinates(1, 1, 0);
+            case OctreeNode.ChildIndex.RightAboveForward:
+                return new OctreeChildCoordinates(1, 1, 1);
             default:
                 throw new ArgumentOutOfRangeException("index", index, null);
         }

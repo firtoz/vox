@@ -271,7 +271,7 @@ public class RayIntersection<T> {
                     currNode = NewNode(txm, 1, tym, 2, tzm, 4);
                     break;
                 case 1:
-                    //1 = only z
+                    //1 = only x
                     ProcSubtree(txm, ty0, tz0, tx1, tym, tzm, childNode, insideSolidNode, nextDepth, wantedDepth, childCoords);
                     currNode = NewNode(tx1, 8, tym, 3, tzm, 5);
                     break;
@@ -404,7 +404,27 @@ public class RayIntersection<T> {
             _ray.GetPoint(entryDistance) + _transform.TransformDirection(normal) * size, Color.green, 0, false);
 
         var bounds = node.GetBounds();
-        DrawBounds(bounds, Color.red, true);
+        DrawBounds(bounds, Color.cyan, true);
+
+        var childBounds = node.GetChildBounds(new OctreeNodeCoordinates<T>(_octree,
+            new[] {OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftAboveBack)}));
+
+        DrawBounds(childBounds, Color.green, true);
+
+        childBounds = node.GetChildBounds(new OctreeNodeCoordinates<T>(_octree,
+            new[] {OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.RightAboveBack)}));
+
+        DrawBounds(childBounds, Color.green, true);
+
+        childBounds = node.GetChildBounds(new OctreeNodeCoordinates<T>(_octree,
+            new[] {OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.RightAboveForward)}));
+
+        DrawBounds(childBounds, Color.green, true);
+
+        childBounds = node.GetChildBounds(new OctreeNodeCoordinates<T>(_octree,
+            new[] {OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftAboveForward)}));
+
+        DrawBounds(childBounds, Color.green, true);
 
         results.Add(new RayIntersectionResult<T>(node, node.GetCoords(), entryDistance, _ray.GetPoint(entryDistance), normal, GetNeighbourSide(entryPlane)));
     }

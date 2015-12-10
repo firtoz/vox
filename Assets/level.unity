@@ -126,7 +126,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60055bffcf1536843b30133983ed2550, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  size: 10000
+  size: 100
   useDepth: 1
   wantedDepth: 5
   indices: 0400000005000000

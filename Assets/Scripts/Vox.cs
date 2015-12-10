@@ -23,15 +23,15 @@ public class Vox : MonoBehaviour {
         //                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one*0.5f), 6, 8);
         //                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one*0.7f), 7, 8);
 
-        //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.AboveBackRight);
-        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveBackLeft).SetItem(4);
-        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveForwardRight).SetItem(5);
-//        octree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveForwardLeft).SetItem(4);
+        //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.RightAboveBack);
+        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.LeftAboveBack).SetItem(4);
+        voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.RightAboveForward).SetItem(5);
+//        octree.GetRoot().AddChild(OctreeNode.ChildIndex.LeftAboveForward).SetItem(4);
 
 //        topFwdLeft.SetItem(4);
 //        topFwdLeft.SubDivide();
 //
-//        topFwdLeft.RemoveChild(OctreeNode.ChildIndex.AboveBackRight);
+//        topFwdLeft.RemoveChild(OctreeNode.ChildIndex.RightAboveBack);
 
         //                topFwdLeft.SubDivide();
         voxelTree.Render(gameObject);
@@ -47,6 +47,8 @@ public class Vox : MonoBehaviour {
 
     public int materialIndex = 0;
 
+    RayIntersectionResult<int> result;
+
     // Update is called once per frame
     private void Update() {
         if (addBoundsNextFrame) {
@@ -61,8 +63,8 @@ public class Vox : MonoBehaviour {
                     new Vector3(Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f)) * 20.0f,
                     new Vector3(Random.Range(0.1f, 10.0f), Random.Range(0.1f, 10.0f), Random.Range(0.1f, 10.0f))), 7, 8);
 
-            //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.AboveBackRight);
-            //                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.AboveBackRight);
+            //                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.RightAboveBack);
+            //                var topFwdLeft = vox.octree.GetRoot().AddChild(OctreeNode.ChildIndex.RightAboveBack);
             //                topFwdLeft.SetItem(4);
 
             //                topFwdLeft.SubDivide();
@@ -89,7 +91,6 @@ public class Vox : MonoBehaviour {
         }
 
         Profiler.BeginSample("Intersect");
-        RayIntersectionResult<int> result;
 
         if (useDepth) {
             voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out result, wantedDepth);
@@ -100,11 +101,17 @@ public class Vox : MonoBehaviour {
         Profiler.EndSample();
 
         if (result.hit) {
+            var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
+            if (neighbourCoords != null) {
+                DrawBounds(neighbourCoords.GetTree().GetRoot().GetChildBounds(neighbourCoords), Color.green, false);
+            }
+
             if (Press(0)) {
-                var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
                 if (neighbourCoords != null) {
 //                    Debug.Log(neighbourCoords);
                     Profiler.BeginSample("AddRecursive");
+
+                    
                     var final = neighbourCoords.GetTree().GetRoot().AddRecursive(neighbourCoords);
                     final.SetItem(indices[materialIndex], true);
                     Profiler.EndSample();
@@ -156,8 +163,12 @@ public class Vox : MonoBehaviour {
     //        octree.AddBounds(bounds, 8);
     //    }
 
-    private void DrawLocalLine(Vector3 a, Vector3 b) {
-        Gizmos.DrawLine(transform.TransformPoint(a), transform.TransformPoint(b));
+    private void DrawLocalLine(Vector3 a, Vector3 b, bool gizmos = true) {
+        if (gizmos) {
+            Gizmos.DrawLine(transform.TransformPoint(a), transform.TransformPoint(b));
+        } else {
+            Debug.DrawLine(transform.TransformPoint(a), transform.TransformPoint(b));
+        }
     }
 
     public bool showGizmos = false;
@@ -176,28 +187,34 @@ public class Vox : MonoBehaviour {
                 }
                 var bounds = node.GetBounds();
 
-                var min = bounds.min;
-                var max = bounds.max;
-
-                Gizmos.color = color;
-
-                DrawLocalLine(min, new Vector3(min.x, min.y, max.z));
-                DrawLocalLine(min, new Vector3(min.x, max.y, min.z));
-                DrawLocalLine(min, new Vector3(max.x, min.y, min.z));
-
-                DrawLocalLine(new Vector3(max.x, min.y, min.z), new Vector3(max.x, min.y, max.z));
-
-                DrawLocalLine(new Vector3(max.x, min.y, max.z), new Vector3(min.x, min.y, max.z));
-                DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(min.x, max.y, min.z));
-                DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(max.x, min.y, min.z));
-
-                DrawLocalLine(max, new Vector3(max.x, max.y, min.z));
-                DrawLocalLine(max, new Vector3(max.x, min.y, max.z));
-                DrawLocalLine(max, new Vector3(min.x, max.y, max.z));
-
-                DrawLocalLine(new Vector3(min.x, min.y, max.z), new Vector3(min.x, max.y, max.z));
-                DrawLocalLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z));
+                DrawBounds(bounds, color);
             }
         }
+    }
+
+    private void DrawBounds(Bounds bounds, Color color, bool gizmos = true) {
+        var min = bounds.min;
+        var max = bounds.max;
+
+        if (gizmos) {
+            Gizmos.color = color;
+        }
+
+        DrawLocalLine(min, new Vector3(min.x, min.y, max.z), gizmos);
+        DrawLocalLine(min, new Vector3(min.x, max.y, min.z), gizmos);
+        DrawLocalLine(min, new Vector3(max.x, min.y, min.z), gizmos);
+
+        DrawLocalLine(new Vector3(max.x, min.y, min.z), new Vector3(max.x, min.y, max.z), gizmos);
+
+        DrawLocalLine(new Vector3(max.x, min.y, max.z), new Vector3(min.x, min.y, max.z), gizmos);
+        DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(min.x, max.y, min.z), gizmos);
+        DrawLocalLine(new Vector3(max.x, max.y, min.z), new Vector3(max.x, min.y, min.z), gizmos);
+
+        DrawLocalLine(max, new Vector3(max.x, max.y, min.z), gizmos);
+        DrawLocalLine(max, new Vector3(max.x, min.y, max.z), gizmos);
+        DrawLocalLine(max, new Vector3(min.x, max.y, max.z), gizmos);
+
+        DrawLocalLine(new Vector3(min.x, min.y, max.z), new Vector3(min.x, max.y, max.z), gizmos);
+        DrawLocalLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z), gizmos);
     }
 }
