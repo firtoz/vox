@@ -1,5 +1,4 @@
-﻿#define DISABLE_PROFILER
-//#define USE_ALL_NODES
+﻿//#define USE_ALL_NODES
 
 using System;
 using System.Collections.Generic;
@@ -371,12 +370,6 @@ public class OctreeNode<T> : OctreeNode {
 
     private void AssertNotDeleted() {
         Assert.IsFalse(_deleted, "Node Deleted");
-//        Profiler.BeginSample("Assert not deleted");
-//        if (_deleted)
-//        {
-//            throw new Exception("Node is deleted!");
-//        }
-//        Profiler.EndSample();
     }
 
     public T GetItem() {
@@ -404,16 +397,10 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     public IEnumerable<OctreeNode<T>> GetAllSolidNeighbours(NeighbourSide side) {
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("GetAllSolidNeighbours");
-#endif
         var neighbourCoords = _nodeCoordinates.GetNeighbourCoords(side);
 
         //out of the map!
         if (neighbourCoords == null) {
-#if !DISABLE_PROFILER
-            Profiler.EndSample();
-#endif
             return null;
         }
 
@@ -422,9 +409,6 @@ public class OctreeNode<T> : OctreeNode {
 
         if (_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
             if (neighbourNode.IsSolid()) {
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
                 return new HashSet<OctreeNode<T>> {neighbourNode};
             }
 
@@ -460,16 +444,10 @@ public class OctreeNode<T> : OctreeNode {
 
         foreach (var coord in neighbourCoords) {
             if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
-#if !DISABLE_PROFILER
-                Profiler.EndSample();
-#endif
                 return null;
             }
 
             if (currentNeighbourNode.IsSolid()) {
-#if !DISABLE_PROFILER
-                Profiler.EndSample();
-#endif
                 return new HashSet<OctreeNode<T>> {currentNeighbourNode};
             }
 
@@ -478,16 +456,10 @@ public class OctreeNode<T> : OctreeNode {
 
 //        last currentNode is the actual node at the neighbour coordinates
         if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
-#if !DISABLE_PROFILER
-            Profiler.EndSample();
-#endif
             return null;
         }
 
         if (currentNeighbourNode.IsSolid()) {
-#if !DISABLE_PROFILER
-            Profiler.EndSample();
-#endif
             return new HashSet<OctreeNode<T>> {currentNeighbourNode};
         }
 
@@ -584,31 +556,18 @@ public class OctreeNode<T> : OctreeNode {
 
         var currentNode = neighbourCoords.GetTree().GetRoot();
 
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("Follow neighbour coords");
-#endif
-
         // follow the children until you get to the node
         foreach (var coord in neighbourCoords) {
             if (currentNode == null) {
-#if !DISABLE_PROFILER
-                Profiler.EndSample();
-#endif
                 return SideState.Empty;
             }
 
             if (currentNode.IsLeafNode()) {
-#if !DISABLE_PROFILER
-                Profiler.EndSample();
-#endif
                 return currentNode.HasItem() ? SideState.Full : SideState.Empty;
             }
 
             currentNode = currentNode.GetChild(coord.ToIndex());
         }
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
 
         //last currentNode is the actual node at the neighbour coordinates
 
@@ -622,9 +581,6 @@ public class OctreeNode<T> : OctreeNode {
 
         // not null and not leaf, so it must be partial
         // try to recursively get all nodes on this side
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("Get current node solidity state");
-#endif
         SideState sideState;
         if (currentNode.SideSolid(GetOpposite(side))) {
             // if the opposite side of current node is solid, then this is a partial node.
@@ -632,59 +588,18 @@ public class OctreeNode<T> : OctreeNode {
         } else {
             sideState = SideState.Empty;
         }
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
         return sideState;
 #endif
     }
 
     private bool SideSolid(NeighbourSide side) {
         return _sideSolidCount[side] > 0;
-//
-//        //var solidChildrenList = new List<OctreeNode<T>>();
-//
-//        //GetAllSolidChildrenOnSide(solidChildrenList, side);
-//
-//        //return solidChildrenList.Count > 0;
-//
-//        Profiler.BeginSample("SideSolid");
-//        var childCoords = GetChildCoordsOfSide(side);
-//
-//        Profiler.BeginSample("Get valid children");
-//        var validChildren = childCoords.Select(childCoord => GetChild(childCoord.ToIndex())).Where(childNode => childNode != null && !childNode.IsDeleted());
-//        Profiler.EndSample();
-//
-//        foreach (var childNode in validChildren)
-//        {
-//            if (childNode.IsSolid())
-//            {
-//                Profiler.EndSample();
-//                return true;
-//            }
-//
-//            if (childNode.IsLeafNode()) continue;
-//            if (!childNode.SideSolid(side)) continue;
-//
-//            Profiler.EndSample();
-//            return true;
-//        }
-//
-//        Profiler.EndSample();
-//        return false;
     }
-
 
     public HashSet<OctreeRenderFace> CreateFaces(int meshIndex) {
         AssertNotDeleted();
 
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("New List");
-#endif
         var faces = new HashSet<OctreeRenderFace>();
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
 
         foreach (var side in AllSides) {
             CreateFacesForSideInternal(side, meshIndex, faces);
@@ -694,30 +609,13 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     private void CreateFacesForSideInternal(NeighbourSide side, int meshIndex, ICollection<OctreeRenderFace> faces) {
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("New List");
-#endif
-//        var faces = new HashSet<OctreeRenderFace<T>>();
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
         CreateFacesForSideInternal(faces, side, _bounds, _nodeCoordinates, meshIndex);
     }
 
     private void CreateFacesForSideInternal(ICollection<OctreeRenderFace> faces, NeighbourSide side, Bounds bounds,
         OctreeNodeCoordinates<T> coords, int meshIndex, bool parentPartial = false) {
         AssertNotDeleted();
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("get side state");
-#endif
         var sidestate = GetSideState(coords, side);
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
-
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("Create faces for side: " + side + " state: " + sidestate);
-#endif
 
         switch (sidestate) {
             case SideState.Empty:
@@ -728,28 +626,14 @@ public class OctreeNode<T> : OctreeNode {
             case SideState.Partial:
                 if (!parentPartial) {
                     var childCoords = GetChildCoordsOfSide(side);
-#if !DISABLE_PROFILER
-                var childIndex = 0;
-#endif
 
                     // ReSharper disable once ForCanBeConvertedToForeach
                     for (var i = 0; i < childCoords.Length; i++) {
                         var childCoord = childCoords[i];
-#if !DISABLE_PROFILER
-                    Profiler.BeginSample("Create faces for child " + childIndex);
-                    Profiler.BeginSample("Get bounds and coords");
-#endif
                         var childBounds = GetChildBoundsInternal(bounds, childCoord.ToIndex());
                         var childAbsCoords = new OctreeNodeCoordinates<T>(_tree, coords, childCoord);
-#if !DISABLE_PROFILER
-                    Profiler.EndSample();
-#endif
 
                         CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex, false);
-#if !DISABLE_PROFILER
-                    Profiler.EndSample();
-                    childIndex++;
-#endif
                     }
                 } else {
                     AddFaceToList(faces, side, bounds, meshIndex);
@@ -760,10 +644,6 @@ public class OctreeNode<T> : OctreeNode {
             default:
                 throw new ArgumentOutOfRangeException();
         }
-
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
     }
 
     private static void AddFaceToList(ICollection<OctreeRenderFace> faces, NeighbourSide side, Bounds bounds,
@@ -861,13 +741,7 @@ public class OctreeNode<T> : OctreeNode {
 
         face.normal = n;
 
-#if !DISABLE_PROFILER
-                Profiler.BeginSample("Add face into list");
-#endif
         faces.Add(face);
-#if !DISABLE_PROFILER
-                Profiler.EndSample();
-#endif
     }
 
     [Pure]
@@ -989,9 +863,6 @@ public class OctreeNode<T> : OctreeNode {
             throw new ArgumentOutOfRangeException("index", "Cannot create a child at an invalid index.");
         }
 
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("Add child " + index);
-#endif
         AssertNotDeleted();
 
         if (_children == null) {
@@ -999,16 +870,10 @@ public class OctreeNode<T> : OctreeNode {
         }
 
         if (GetChild(index) != null) {
-#if !DISABLE_PROFILER
-            Profiler.EndSample();
-#endif
             throw new ArgumentException("There is already a child at this index", "index");
         }
 
         _childCount++;
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
         return SetChild(index, new OctreeNode<T>(GetChildBounds(index), this, index, _depth + 1, _tree));
     }
 
@@ -1169,24 +1034,12 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     private void RemoveAllChildren() {
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("Remove All Children");
-#endif
         for (var i = 0; i < 8; i++) {
             if (GetChild((ChildIndex) i) != null) {
-#if !DISABLE_PROFILER
-                Profiler.BeginSample("Remove child " + i);
-#endif
                 // no need to update neighbours
                 RemoveChildInternal((ChildIndex) i, false, false);
-#if !DISABLE_PROFILER
-                Profiler.EndSample();
-#endif
             }
         }
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
     }
 
     public bool HasItem() {
@@ -1194,9 +1047,6 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     public void RemoveItem(bool updateNeighbours = true) {
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("Remove Item");
-#endif
         if (_hasItem) {
             _tree.NodeRemoved(this, updateNeighbours);
 
@@ -1206,9 +1056,6 @@ public class OctreeNode<T> : OctreeNode {
         }
 
         _item = default(T);
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
     }
 
     public Bounds GetBounds() {
@@ -1299,37 +1146,13 @@ public class OctreeNode<T> : OctreeNode {
 
         RemoveItem(false);
 
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("Subdivide");
-
-        Profiler.BeginSample("Add children");
-#endif
         for (var i = 0; i < 8; i++) {
-#if !DISABLE_PROFILER
-            Profiler.BeginSample("Add child " + i);
-#endif
             var newChild = AddChild((ChildIndex) i);
-#if !DISABLE_PROFILER
-            Profiler.EndSample();
-#endif
 
             if (fillChildren) {
-#if !DISABLE_PROFILER
-                Profiler.BeginSample("Set child item " + i);
-#endif
                 newChild.SetItemInternal(item, false, false);
-#if !DISABLE_PROFILER
-                Profiler.EndSample();
-#endif
             }
         }
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
-
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
     }
 
     public bool IsSolid() {
@@ -1394,9 +1217,6 @@ public class OctreeNode<T> : OctreeNode {
 
                 node.SubDivide(false);
 
-#if !DISABLE_PROFILER
-                Profiler.BeginSample("Set items of other children");
-#endif
                 // set the items for all other children manually
                 for (var i = 0; i < 8; ++i) {
                     var childIndex = (ChildIndex) i;
@@ -1406,17 +1226,11 @@ public class OctreeNode<T> : OctreeNode {
                         node.GetChild(childIndex).SetItemInternal(nodeItem, false, false);
                     }
                 }
-#if !DISABLE_PROFILER
-                Profiler.EndSample();
-#endif
 
                 node = node.GetChild(index);
 
                 subdivided = true;
             } else {
-#if !DISABLE_PROFILER
-                Profiler.BeginSample("Create and set items of other children");
-#endif
                 // subdivision of parent happened, from now on we need to add children ourselves
                 // because the current node will not have any children or item defined
 
@@ -1429,23 +1243,14 @@ public class OctreeNode<T> : OctreeNode {
                         newChild.SetItemInternal(nodeItem, false, false);
                     }
                 }
-#if !DISABLE_PROFILER
-                Profiler.EndSample();
-#endif
 
                 node = node.GetChild(index);
             }
         }
 
-#if !DISABLE_PROFILER
-        Profiler.BeginSample("Remove final child");
-#endif
         // remove final child now
         // this will result in an update for the neighbours
         node.GetParent().RemoveChildInternal(node.GetIndexInParent(), cleanup, true);
-#if !DISABLE_PROFILER
-        Profiler.EndSample();
-#endif
     }
 
     private enum SideState {
