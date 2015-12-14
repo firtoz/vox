@@ -317,17 +317,21 @@ if(rems.length>0) {
 
     public void NodeRemoved(OctreeNode<T> octreeNode) {
         Profiler.BeginSample("Node Removed");
-        var drawQueue = GetMeshInfo(octreeNode.GetItem()).drawQueue;
+        if (octreeNode.HasItem()) {
+            var drawQueue = GetMeshInfo(octreeNode.GetItem()).drawQueue;
 
-        var nodeHashCode = octreeNode.GetHashCode();
+            var nodeHashCode = octreeNode.GetHashCode();
 
-        if (_nodeFaces.ContainsKey(nodeHashCode)) {
-            RemoveNodeInternal(nodeHashCode);
-        }
+            if (_nodeFaces.ContainsKey(nodeHashCode))
+            {
+                RemoveNodeInternal(nodeHashCode);
+            }
 
-        if (drawQueue.Contains(octreeNode)) {
-            //if it's about to be drawn, it shouldn't.
-            drawQueue.Remove(octreeNode);
+            if (drawQueue.Contains(octreeNode))
+            {
+                //if it's about to be drawn, it shouldn't.
+                drawQueue.Remove(octreeNode);
+            }
         }
 
         foreach (var neighbourSide in OctreeNode.AllSides) {

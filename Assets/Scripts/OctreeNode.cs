@@ -726,7 +726,7 @@ public class OctreeNode<T> : OctreeNode {
                 AddFaceToList(faces, side, bounds, meshIndex);
                 break;
             case SideState.Partial:
-                if (parentPartial) {
+                if (!parentPartial) {
                     var childCoords = GetChildCoordsOfSide(side);
 #if !DISABLE_PROFILER
                 var childIndex = 0;
@@ -1046,6 +1046,7 @@ public class OctreeNode<T> : OctreeNode {
 #if USE_ALL_NODES
             _allNodes.Remove(octreeNode._nodeCoordinates.GetHashCode());
 #endif
+            _tree.NodeRemoved(octreeNode);
 
             if (octreeNode._hasItem) {
                 octreeNode.RemoveItem();
@@ -1102,7 +1103,11 @@ public class OctreeNode<T> : OctreeNode {
             RemoveAllChildren();
         }
 
-        if (!_hasItem) {
+        if (!_hasItem)
+        {
+            // still let the neighbours know
+            _tree.NodeRemoved(this);
+
             _hasItem = true;
 
             AddSolidNode(ChildIndex.Invalid, true);
@@ -1110,7 +1115,8 @@ public class OctreeNode<T> : OctreeNode {
             _item = item;
             _tree.NodeAdded(this);
         } else if (_tree.ItemsBelongInSameMesh(_item, item)) {
-            //item not changed or belongs in same mesh as the other one
+            // has item
+            // item not changed or belongs in same mesh as the other one
             _item = item;
         } else {
             //remove from the previous item's mesh
