@@ -624,7 +624,7 @@ public class OctreeNode<T> : OctreeNode {
                 AddFaceToList(faces, side, bounds, meshIndex);
                 break;
             case SideState.Partial:
-                if (!parentPartial) {
+                if (parentPartial) {
                     var childCoords = GetChildCoordsOfSide(side);
 
                     // ReSharper disable once ForCanBeConvertedToForeach
@@ -633,7 +633,7 @@ public class OctreeNode<T> : OctreeNode {
                         var childBounds = GetChildBoundsInternal(bounds, childCoord.ToIndex());
                         var childAbsCoords = new OctreeNodeCoordinates<T>(_tree, coords, childCoord);
 
-                        CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex, false);
+                        CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex);
                     }
                 } else {
                     AddFaceToList(faces, side, bounds, meshIndex);
