@@ -63,7 +63,7 @@ public abstract class Octree<T> {
         return meshInfo;
     }
 
-    public void NodeAdded(OctreeNode<T> octreeNode) {
+    public void NodeAdded(OctreeNode<T> octreeNode, bool updateNeighbours) {
         var meshInfo = GetMeshInfo(octreeNode.GetItem());
 
         var drawQueue = meshInfo.drawQueue;
@@ -72,20 +72,27 @@ public abstract class Octree<T> {
             drawQueue.Add(octreeNode);
         }
 
-        foreach (var side in OctreeNode.AllSides) {
-            var neighbours = octreeNode.GetAllSolidNeighbours(side);
+        if (updateNeighbours) {
+            foreach (var side in OctreeNode.AllSides)
+            {
+                var neighbours = octreeNode.GetAllSolidNeighbours(side);
 
-            if (neighbours != null) {
-                foreach (var neighbour in neighbours) {
-                    if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem()) {
-                        continue;
-                    }
+                if (neighbours != null)
+                {
+                    foreach (var neighbour in neighbours)
+                    {
+                        if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem())
+                        {
+                            continue;
+                        }
 
-                    var neighbourTree = neighbour.GetTree();
+                        var neighbourTree = neighbour.GetTree();
 
-                    var neighbourDrawQueue = neighbourTree.GetMeshInfo(neighbour.GetItem()).drawQueue;
-                    if (!neighbourDrawQueue.Contains(neighbour)) {
-                        neighbourDrawQueue.Add(neighbour);
+                        var neighbourDrawQueue = neighbourTree.GetMeshInfo(neighbour.GetItem()).drawQueue;
+                        if (!neighbourDrawQueue.Contains(neighbour))
+                        {
+                            neighbourDrawQueue.Add(neighbour);
+                        }
                     }
                 }
             }
@@ -315,7 +322,7 @@ if(rems.length>0) {
     */
 
 
-    public void NodeRemoved(OctreeNode<T> octreeNode) {
+    public void NodeRemoved(OctreeNode<T> octreeNode, bool updateNeighbours) {
         Profiler.BeginSample("Node Removed");
         if (octreeNode.HasItem()) {
             var drawQueue = GetMeshInfo(octreeNode.GetItem()).drawQueue;
@@ -334,23 +341,31 @@ if(rems.length>0) {
             }
         }
 
+        if (updateNeighbours) {
+            UpdateNeighbours(octreeNode);
+        }
+        Profiler.EndSample();
+    }
+
+    public static void UpdateNeighbours(OctreeNode<T> octreeNode) {
         foreach (var neighbourSide in OctreeNode.AllSides) {
             var neighbours = octreeNode.GetAllSolidNeighbours(neighbourSide);
-            if (neighbours != null) {
-                foreach (var neighbour in neighbours) {
-                    if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem()) {
-                        continue;
-                    }
+            if (neighbours == null) {
+                continue;
+            }
 
-                    var neighbourMeshInfo = neighbour.GetTree().GetMeshInfo(neighbour.GetItem());
-                    var neighbourDrawQueue = neighbourMeshInfo.drawQueue;
-                    if (!neighbourDrawQueue.Contains(neighbour)) {
-                        neighbourDrawQueue.Add(neighbour);
-                    }
+            foreach (var neighbour in neighbours) {
+                if (neighbour == null || neighbour.IsDeleted() || !neighbour.HasItem()) {
+                    continue;
+                }
+
+                var neighbourMeshInfo = neighbour.GetTree().GetMeshInfo(neighbour.GetItem());
+                var neighbourDrawQueue = neighbourMeshInfo.drawQueue;
+                if (!neighbourDrawQueue.Contains(neighbour)) {
+                    neighbourDrawQueue.Add(neighbour);
                 }
             }
         }
-        Profiler.EndSample();
     }
 
     // TODO optimize further!

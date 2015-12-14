@@ -745,7 +745,7 @@ public class OctreeNode<T> : OctreeNode {
                     Profiler.EndSample();
 #endif
 
-                        CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex, true);
+                        CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex, false);
 #if !DISABLE_PROFILER
                     Profiler.EndSample();
                     childIndex++;
@@ -1013,6 +1013,10 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     public void RemoveChild(ChildIndex index, bool cleanup = false) {
+        RemoveChildInternal(index, cleanup, true);
+    }
+
+    private void RemoveChildInternal(ChildIndex index, bool cleanup, bool updateNeighbours) {
         AssertNotDeleted();
         if (_children == null) {
             throw new ArgumentException("The child at that index is already removed!", "index");
@@ -1026,7 +1030,7 @@ public class OctreeNode<T> : OctreeNode {
             throw new ArgumentException("The child at that index is already removed!", "index");
         }
 
-        _children[indexInt].SetDeleted();
+        _children[indexInt].SetDeleted(updateNeighbours);
         _children[indexInt] = null;
 
         if (_childCount != 0) {
@@ -1036,20 +1040,21 @@ public class OctreeNode<T> : OctreeNode {
         _children = null;
 
         if (cleanup && _parent != null) {
-            _parent.RemoveChild(_indexInParent, true);
+            // no need to update parent's neighbours!
+            _parent.RemoveChildInternal(_indexInParent, true, false);
         }
     }
 
-    private void SetDeleted() {
+    private void SetDeleted(bool updateNeighbours) {
         //calling toarray here to force enumeration to flag deleted
         foreach (var octreeNode in BreadthFirst().ToArray()) {
 #if USE_ALL_NODES
             _allNodes.Remove(octreeNode._nodeCoordinates.GetHashCode());
 #endif
-            _tree.NodeRemoved(octreeNode);
+            _tree.NodeRemoved(octreeNode, updateNeighbours);
 
             if (octreeNode._hasItem) {
-                octreeNode.RemoveItem();
+                octreeNode.RemoveItem(updateNeighbours);
             }
             octreeNode._deleted = true;
         }
@@ -1095,49 +1100,71 @@ public class OctreeNode<T> : OctreeNode {
     }
 
     public void SetItem(T item, bool cleanup = false) {
+        SetItemInternal(item, cleanup, true);
+    }
+
+    private void SetItemInternal(T item, bool cleanup, bool updateNeighbours) {
         AssertNotDeleted();
 
         if (!IsLeafNode()) {
             //if it's not a leaf node, we need to remove all children
+            // no need to update neighbours
 
             RemoveAllChildren();
         }
 
-        if (!_hasItem)
-        {
-            // still let the neighbours know
-            _tree.NodeRemoved(this);
+        if (!_hasItem) {
+            // still let the neighbours know if necessary
+//            _tree.NodeRemoved(this, false);
 
             _hasItem = true;
 
             AddSolidNode(ChildIndex.Invalid, true);
 
             _item = item;
-            _tree.NodeAdded(this);
+            _tree.NodeAdded(this, false);
         } else if (_tree.ItemsBelongInSameMesh(_item, item)) {
             // has item
             // item not changed or belongs in same mesh as the other one
             _item = item;
         } else {
-            //remove from the previous item's mesh
-            _tree.NodeRemoved(this);
+            // remove from the previous item's mesh
+            // no need to update neighbours now, will be done below
+            _tree.NodeRemoved(this, false);
             _item = item;
             //add to the next item's mesh!
-            _tree.NodeAdded(this);
+            _tree.NodeAdded(this, false);
         }
 
-        if (cleanup && _parent._childCount == 8) {
+        if (cleanup && _parent != null && _parent._childCount == 8) {
+            // check if all other siblings have the same item.
+            // if they do, then we can just set the parent's item instead
             for (var i = 0; i < 8; i++) {
                 if (i == (int) _indexInParent) {
                     continue;
                 }
                 var sibling = _parent.GetChild((ChildIndex) i);
+
                 if (!Equals(sibling.GetItem(), item)) {
+                    // not all siblings have the same item :(
+                    if (updateNeighbours) {
+                        Octree<T>.UpdateNeighbours(this);
+                    }
+
                     return;
                 }
             }
 
-            _parent.SetItem(item, true);
+            // no need to update parent's neighbours since they will be facing full sides anyway
+            _parent.SetItemInternal(item, true, false);
+        } else {
+            // end of the line, can update neighbours if necessary
+            // it's either not cleanup,
+            // or the parent doesn't exist (reached top),
+            // or the parent doesn't have all eight children
+            if (updateNeighbours) {
+                Octree<T>.UpdateNeighbours(this);
+            }
         }
     }
 
@@ -1150,7 +1177,8 @@ public class OctreeNode<T> : OctreeNode {
 #if !DISABLE_PROFILER
                 Profiler.BeginSample("Remove child " + i);
 #endif
-                RemoveChild((ChildIndex) i);
+                // no need to update neighbours
+                RemoveChildInternal((ChildIndex) i, false, false);
 #if !DISABLE_PROFILER
                 Profiler.EndSample();
 #endif
@@ -1165,12 +1193,12 @@ public class OctreeNode<T> : OctreeNode {
         return _hasItem;
     }
 
-    public void RemoveItem() {
+    public void RemoveItem(bool updateNeighbours = true) {
 #if !DISABLE_PROFILER
         Profiler.BeginSample("Remove Item");
 #endif
         if (_hasItem) {
-            _tree.NodeRemoved(this);
+            _tree.NodeRemoved(this, updateNeighbours);
 
             RemoveSolidNode(ChildIndex.Invalid, true);
 
@@ -1267,6 +1295,10 @@ public class OctreeNode<T> : OctreeNode {
             return;
         }
 
+        var item = _item;
+
+        RemoveItem(false);
+
 #if !DISABLE_PROFILER
         Profiler.BeginSample("Subdivide");
 
@@ -1285,7 +1317,7 @@ public class OctreeNode<T> : OctreeNode {
 #if !DISABLE_PROFILER
                 Profiler.BeginSample("Set child item " + i);
 #endif
-                newChild.SetItem(_item);
+                newChild.SetItemInternal(item, false, false);
 #if !DISABLE_PROFILER
                 Profiler.EndSample();
 #endif
@@ -1295,7 +1327,6 @@ public class OctreeNode<T> : OctreeNode {
         Profiler.EndSample();
 #endif
 
-        RemoveItem();
 #if !DISABLE_PROFILER
         Profiler.EndSample();
 #endif
@@ -1371,7 +1402,8 @@ public class OctreeNode<T> : OctreeNode {
                     var childIndex = (ChildIndex) i;
 
                     if (childIndex != index) {
-                        node.GetChild(childIndex).SetItem(nodeItem);
+                        // do not update neighbours as they will mostly be full
+                        node.GetChild(childIndex).SetItemInternal(nodeItem, false, false);
                     }
                 }
 #if !DISABLE_PROFILER
@@ -1394,7 +1426,7 @@ public class OctreeNode<T> : OctreeNode {
                     var newChild = node.AddChild(childIndex);
 
                     if (childIndex != index) {
-                        newChild.SetItem(nodeItem);
+                        newChild.SetItemInternal(nodeItem, false, false);
                     }
                 }
 #if !DISABLE_PROFILER
@@ -1408,7 +1440,9 @@ public class OctreeNode<T> : OctreeNode {
 #if !DISABLE_PROFILER
         Profiler.BeginSample("Remove final child");
 #endif
-        node.GetParent().RemoveChild(node.GetIndexInParent(), cleanup);
+        // remove final child now
+        // this will result in an update for the neighbours
+        node.GetParent().RemoveChildInternal(node.GetIndexInParent(), cleanup, true);
 #if !DISABLE_PROFILER
         Profiler.EndSample();
 #endif
