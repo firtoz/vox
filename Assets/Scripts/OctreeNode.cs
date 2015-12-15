@@ -209,47 +209,53 @@ public abstract class OctreeNode {
     }
 }
 
-public class OctreeNode<T> : OctreeNode {
+public class OctreeNode<T, TSelf> : OctreeNode where TSelf : OctreeNode<T, TSelf> {
+    protected readonly TSelf _parent;
+    protected bool _deleted;
+    protected readonly Bounds _bounds;
 #if USE_ALL_NODES
-    private readonly Dictionary<int, OctreeNode<T>> _allNodes;
+    private readonly Dictionary<int, TSelf> _allNodes;
 #endif
-    private readonly Bounds _bounds;
-//    private readonly OctreeChildCoordinates[] _coords;
-    private readonly int _depth;
-    private readonly ChildIndex _indexInParent;
-    private readonly OctreeNodeCoordinates<T> _nodeCoordinates;
-    private readonly OctreeNode<T> _parent;
+    //    private readonly OctreeChildCoordinates[] _coords;
+    protected readonly int _depth;
+    protected readonly ChildIndex _indexInParent;
+    protected readonly OctreeNodeCoordinates<T> _nodeCoordinates;
 
-    private OctreeNode<T> GetRoot() {
+    protected OctreeNode<T> GetRoot()
+    {
         return _tree.GetRoot();
     }
 
-    private readonly Dictionary<NeighbourSide, HashSet<OctreeNode<T>>> _sideSolidChildren =
+    protected readonly Dictionary<NeighbourSide, HashSet<OctreeNode<T>>> _sideSolidChildren =
         new Dictionary<NeighbourSide, HashSet<OctreeNode<T>>>();
 
-    private readonly Dictionary<NeighbourSide, int> _sideSolidCount = new Dictionary<NeighbourSide, int>();
-    private readonly Octree<T> _tree;
-    private int _childCount;
-    private OctreeNode<T>[] _children;
-    private bool _deleted;
-    private bool _hasItem;
+    protected readonly Dictionary<NeighbourSide, int> _sideSolidCount = new Dictionary<NeighbourSide, int>();
+    protected readonly Octree<T> _tree;
+    protected int _childCount;
+    protected OctreeNode<T>[] _children;
+    protected bool _hasItem;
 
-    private T _item;
-    private int _solidNodeCount;
-    public OctreeNode(Bounds bounds, Octree<T> tree) : this(bounds, null, ChildIndex.Invalid, 0, tree) {}
+    protected T _item;
+    protected int _solidNodeCount;
 
-    public OctreeNode(Bounds bounds, OctreeNode<T> parent, ChildIndex indexInParent, int depth, Octree<T> tree) {
+    public OctreeNode(Bounds bounds, Octree<T> tree) : this(bounds, null, ChildIndex.Invalid, 0, tree) { }
+
+    public OctreeNode(Bounds bounds, TSelf parent, ChildIndex indexInParent, int depth, Octree<T> tree)
+    {
         _deleted = false;
         _bounds = bounds;
         _parent = parent;
-        if (parent == null) {
+        if (parent == null)
+        {
             _nodeCoordinates = new OctreeNodeCoordinates<T>(tree);
 #if USE_ALL_NODES
     // ReSharper disable once UseObjectOrCollectionInitializer
             _allNodes = new Dictionary<int, OctreeNode<T>>();
             _allNodes[_nodeCoordinates.GetHashCode()] = this;
 #endif
-        } else {
+        }
+        else
+        {
 #if USE_ALL_NODES
             _allNodes = _root._allNodes;
 #endif
@@ -277,6 +283,11 @@ public class OctreeNode<T> : OctreeNode {
         _sideSolidChildren[NeighbourSide.Forward] = new HashSet<OctreeNode<T>>();
         _sideSolidChildren[NeighbourSide.Back] = new HashSet<OctreeNode<T>>();
     }
+}
+
+public class OctreeNode<T> : OctreeNode<T, OctreeNode<T>>  {
+
+    
 
 //    private List<OctreeNode<T>> _actuallySolidChildren = new List<OctreeNode<T>>(); 
 
@@ -1262,4 +1273,7 @@ public class OctreeNode<T> : OctreeNode {
     public Octree<T> GetTree() {
         return _tree;
     }
+
+    public OctreeNode(Bounds bounds, Octree<T> tree) : base(bounds, tree) {}
+    public OctreeNode(Bounds bounds, OctreeNode<T> parent, ChildIndex indexInParent, int depth, Octree<T> tree) : base(bounds, parent, indexInParent, depth, tree) {}
 }
