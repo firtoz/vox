@@ -222,7 +222,7 @@ public class OctreeNode<T> : OctreeNode<T, OctreeNode<T>>  {
 public abstract class OctreeNodeBase<TItem, TTree, TSelf> : OctreeNode
     where TTree : OctreeBase<TItem, TSelf, TTree>
     where TSelf : OctreeNodeBase<TItem, TTree, TSelf> {
-    private readonly TTree _tree;
+    protected readonly TTree _tree;
     private readonly Bounds _bounds;
     protected readonly TSelf _parent;
 
@@ -302,7 +302,7 @@ public abstract class OctreeNodeBase<TItem, TTree, TSelf> : OctreeNode
 
     //    private List<OctreeNode<T>> _actuallySolidChildren = new List<OctreeNode<T>>(); 
 
-    private void AddSolidNode(ChildIndex childIndex, bool actuallySolid)
+    protected void AddSolidNode(ChildIndex childIndex, bool actuallySolid)
     {
         NeighbourSide verticalSide, depthSide, horizontalSide;
 
@@ -410,7 +410,7 @@ public abstract class OctreeNodeBase<TItem, TTree, TSelf> : OctreeNode
         }
     }
 
-    private void AssertNotDeleted()
+    protected void AssertNotDeleted()
     {
         Assert.IsFalse(_deleted, "Node Deleted");
     }
@@ -1088,87 +1088,11 @@ public abstract class OctreeNodeBase<TItem, TTree, TSelf> : OctreeNode
         SetItemInternal(item, cleanup, true);
     }
 
-    private void SetItemInternal(TItem item, bool cleanup, bool updateNeighbours)
+    protected virtual void SetItemInternal(TItem item, bool cleanup, bool updateNeighbours)
     {
-        AssertNotDeleted();
-
-        if (!IsLeafNode())
-        {
-            //if it's not a leaf node, we need to remove all children
-            // no need to update neighbours
-
-            RemoveAllChildren();
-        }
-
-        if (!_hasItem)
-        {
-            // still let the neighbours know if necessary
-            //            _tree.NodeRemoved(this, false);
-
-            _hasItem = true;
-
-            AddSolidNode(ChildIndex.Invalid, true);
-
-            _item = item;
-            _tree.NodeAdded((TSelf)this, false);
-        }
-        else if (_tree.ItemsBelongInSameMesh(_item, item))
-        {
-            // has item
-            // item not changed or belongs in same mesh as the other one
-            _item = item;
-        }
-        else
-        {
-            // remove from the previous item's mesh
-            // no need to update neighbours now, will be done below
-            _tree.NodeRemoved((TSelf)this, false);
-            _item = item;
-            //add to the next item's mesh!
-            _tree.NodeAdded((TSelf)this, false);
-        }
-
-        if (cleanup && _parent != null && _parent._childCount == 8)
-        {
-            // check if all other siblings have the same item.
-            // if they do, then we can just set the parent's item instead
-            for (var i = 0; i < 8; i++)
-            {
-                if (i == (int)_indexInParent)
-                {
-                    continue;
-                }
-                var sibling = _parent.GetChild((ChildIndex)i);
-
-                if (!Equals(sibling.GetItem(), item))
-                {
-                    // not all siblings have the same item :(
-                    if (updateNeighbours)
-                    {
-                        _tree.UpdateNeighbours((TSelf)this);
-                    }
-
-                    return;
-                }
-            }
-
-            // no need to update parent's neighbours since they will be facing full sides anyway
-            _parent.SetItemInternal(item, true, false);
-        }
-        else
-        {
-            // end of the line, can update neighbours if necessary
-            // it's either not cleanup,
-            // or the parent doesn't exist (reached top),
-            // or the parent doesn't have all eight children
-            if (updateNeighbours)
-            {
-                _tree.UpdateNeighbours((TSelf)this);
-            }
-        }
     }
 
-    private void RemoveAllChildren()
+    protected void RemoveAllChildren()
     {
         for (var i = 0; i < 8; i++)
         {
@@ -1452,5 +1376,85 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode>
     public VoxelNode(Bounds bounds, VoxelNode parent, ChildIndex indexInParent, int depth, VoxelTree tree)
         : base(bounds, parent, indexInParent, depth, tree) {
         
+    }
+
+    protected override void SetItemInternal(int item, bool cleanup, bool updateNeighbours)
+    {
+        AssertNotDeleted();
+
+        if (!IsLeafNode())
+        {
+            //if it's not a leaf node, we need to remove all children
+            // no need to update neighbours
+
+            RemoveAllChildren();
+        }
+
+        if (!_hasItem)
+        {
+            // still let the neighbours know if necessary
+            //            _tree.NodeRemoved(this, false);
+
+            _hasItem = true;
+
+            AddSolidNode(ChildIndex.Invalid, true);
+
+            _item = item;
+            _tree.NodeAdded(this, false);
+        }
+        else if (_tree.ItemsBelongInSameMesh(_item, item))
+        {
+            // has item
+            // item not changed or belongs in same mesh as the other one
+            _item = item;
+        }
+        else
+        {
+            // remove from the previous item's mesh
+            // no need to update neighbours now, will be done below
+            _tree.NodeRemoved(this, false);
+            _item = item;
+            //add to the next item's mesh!
+            _tree.NodeAdded(this, false);
+        }
+
+        if (cleanup && _parent != null && _parent._childCount == 8)
+        {
+            // check if all other siblings have the same item.
+            // if they do, then we can just set the parent's item instead
+            for (var i = 0; i < 8; i++)
+            {
+                if (i == (int)_indexInParent)
+                {
+                    continue;
+                }
+                var sibling = _parent.GetChild((ChildIndex)i);
+
+                if (!Equals(sibling.GetItem(), item))
+                {
+                    // not all siblings have the same item :(
+                    if (updateNeighbours)
+                    {
+                        _tree.UpdateNeighbours(this);
+                    }
+
+                    return;
+                }
+            }
+
+            // no need to update parent's neighbours since they will be facing full sides anyway
+            _parent.SetItemInternal(item, true, false);
+        }
+        else
+        {
+            // end of the line, can update neighbours if necessary
+            // it's either not cleanup,
+            // or the parent doesn't exist (reached top),
+            // or the parent doesn't have all eight children
+            if (updateNeighbours)
+            {
+                _tree.UpdateNeighbours(this);
+            }
+        }
     }
 }

@@ -31,16 +31,6 @@ namespace OctreeTest {
                 return new TestOctreeNode<T>(bounds, parent, indexInParent, depth, this);
             }
 
-            protected override int GetItemMeshId(T item)
-            {
-                return 0;
-            }
-
-            protected override Material GetMeshMaterial(int meshId)
-            {
-                return new Material(Shader.Find("Standard"));
-            }
-
             protected override TestOctree<T> CreateNeighbour(NeighbourSide side)
             {
                 var neighbourBounds = GetNeighbourBounds(side);
