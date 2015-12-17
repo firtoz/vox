@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-internal class MeshInfo<T> {
+internal class MeshInfo<TNode> {
     public readonly List<OctreeRenderFace> allFaces = new List<OctreeRenderFace>();
 
-    public readonly HashSet<OctreeNode<T>> drawQueue = new HashSet<OctreeNode<T>>();
+    public readonly HashSet<TNode> drawQueue = new HashSet<TNode>();
     public readonly List<int> indices = new List<int>();
 
     public readonly Material material;

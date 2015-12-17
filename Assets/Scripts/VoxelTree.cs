@@ -1,12 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Assets.Scripts
 {
-    public class VoxelTree : Octree<int> {
-        public VoxelTree(Vector3 center, Vector3 size) : base(new Bounds(center, size)) {
+    public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
+        public VoxelTree(Vector3 center, Vector3 size) : base(RootConstructor, new Bounds(center, size)) {
             
+        }
+
+        private static VoxelNode RootConstructor(VoxelTree self, Bounds bounds) {
+            return new VoxelNode(bounds, self);
+        }
+
+        public override VoxelNode ConstructNode(Bounds bounds, VoxelNode parent, OctreeNode.ChildIndex indexInParent, int depth) {
+            return new VoxelNode( bounds, parent, indexInParent, depth, this);
         }
 
         protected override int GetItemMeshId(int item) {
@@ -25,7 +32,7 @@ namespace Assets.Scripts
             };
         }
 
-        protected override Octree<int> CreateNeighbour(NeighbourSide side) {
+        protected override VoxelTree CreateNeighbour(NeighbourSide side) {
             var neighbourBounds = GetNeighbourBounds(side);
 
             var neighbour = new VoxelTree(neighbourBounds.center, neighbourBounds.size);

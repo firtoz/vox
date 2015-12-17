@@ -1,14 +1,15 @@
 using UnityEngine;
 
-public struct RayIntersectionResult<T>
-{
-    public readonly OctreeNode<T> node;
+public struct RayIntersectionResult<TItem, TNode, TTree> 
+    where TNode : OctreeNodeBase<TItem, TTree, TNode> 
+    where TTree : OctreeBase<TItem, TNode, TTree> {
+    public readonly TNode node;
     public readonly float entryDistance;
     public readonly Vector3 position;
     public readonly Vector3 normal;
     public readonly NeighbourSide neighbourSide;
     public readonly bool hit;
-    public readonly OctreeNodeCoordinates<T> coordinates;
+    public readonly OctreeNodeCoordinates<TItem, TNode, TTree> coordinates;
 
     public RayIntersectionResult(bool hit) {
         this.hit = hit;
@@ -20,8 +21,8 @@ public struct RayIntersectionResult<T>
         neighbourSide = NeighbourSide.Invalid;
     }
 
-    public RayIntersectionResult(OctreeNode<T> node, 
-        OctreeNodeCoordinates<T> coordinates, 
+    public RayIntersectionResult(TNode node, 
+        OctreeNodeCoordinates<TItem, TNode, TTree> coordinates, 
         float entryDistance, 
         Vector3 position, 
         Vector3 normal, NeighbourSide neighbourSide) {

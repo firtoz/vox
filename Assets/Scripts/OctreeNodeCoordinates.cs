@@ -4,14 +4,16 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Assertions;
 
-public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
+public class OctreeNodeCoordinates<TItem, TNode, TTree> : IEnumerable<OctreeChildCoordinates>
+    where TTree : OctreeBase<TItem, TNode, TTree> 
+    where TNode : OctreeNodeBase<TItem, TTree, TNode> {
     private readonly OctreeChildCoordinates[] _coords;
     private readonly int _length;
     private bool _hasHashCode;
     private int _hashCode;
-    private readonly Octree<T> _tree;
+    private readonly TTree _tree;
 
-    public OctreeNodeCoordinates(Octree<T> tree) {
+    public OctreeNodeCoordinates(TTree tree) {
         _coords = new OctreeChildCoordinates[0];
         _hashCode = 0;
         _length = 0;
@@ -20,7 +22,7 @@ public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
         _tree = tree;
     }
 
-    public OctreeNodeCoordinates(Octree<T> tree, OctreeNodeCoordinates<T> parentCoordinates,
+    public OctreeNodeCoordinates(TTree tree, OctreeNodeCoordinates<TItem, TNode, TTree> parentCoordinates,
         params OctreeChildCoordinates[] furtherChildren) {
         var parentCoords = parentCoordinates._coords;
 
@@ -38,7 +40,7 @@ public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
         _tree = tree;
     }
 
-    public OctreeNodeCoordinates(Octree<T> tree, OctreeChildCoordinates[] coords) {
+    public OctreeNodeCoordinates(TTree tree, OctreeChildCoordinates[] coords) {
         _coords = coords;
         _tree = tree;
         _length = _coords.Length;
@@ -61,16 +63,16 @@ public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
 //        _length = _coords.Length;
 //    }
 
-    public OctreeNodeCoordinates<T> GetParentCoordinates() {
+    public OctreeNodeCoordinates<TItem, TNode, TTree> GetParentCoordinates() {
         Assert.IsTrue(_coords.Length > 0, "Cannot get the parent of empty coords");
 
         var newCoords = new OctreeChildCoordinates[_coords.Length - 1];
         Array.Copy(_coords, newCoords, _coords.Length - 1);
 
-        return new OctreeNodeCoordinates<T>(_tree, newCoords);
+        return new OctreeNodeCoordinates<TItem, TNode, TTree>(_tree, newCoords);
     }
 
-    protected bool Equals(OctreeNodeCoordinates<T> other) {
+    protected bool Equals(OctreeNodeCoordinates<TItem, TNode, TTree> other) {
         return other.GetHashCode() == GetHashCode();
     }
 
@@ -121,10 +123,10 @@ public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
         if (ReferenceEquals(this, obj)) {
             return true;
         }
-        return obj.GetType() == GetType() && Equals((OctreeNodeCoordinates<T>) obj);
+        return obj.GetType() == GetType() && Equals((OctreeNodeCoordinates< TItem, TNode, TTree>) obj);
     }
 
-    public OctreeNodeCoordinates<T> GetNeighbourCoords(NeighbourSide side) {
+    public OctreeNodeCoordinates<TItem, TNode, TTree> GetNeighbourCoords(NeighbourSide side) {
         OctreeChildCoordinates[] newCoords;
 
         var tree = _tree;
@@ -218,7 +220,7 @@ public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
             newCoords = null;
         }
 
-        return newCoords == null ? null : new OctreeNodeCoordinates<T>(tree, newCoords);
+        return newCoords == null ? null : new OctreeNodeCoordinates<TItem, TNode, TTree>(tree, newCoords);
     }
 
     private static bool UpdateLastCoord(ref int lastCoordX, ref int currentX, ref int lastCoordY, ref int currentY,
@@ -261,7 +263,7 @@ public class OctreeNodeCoordinates<T> : IEnumerable<OctreeChildCoordinates> {
         return _coords[i];
     }
 
-    public Octree<T> GetTree() {
+    public TTree GetTree() {
         return _tree;
     }
 }
