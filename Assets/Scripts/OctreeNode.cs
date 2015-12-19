@@ -210,15 +210,6 @@ public abstract class OctreeNode {
     }
 }
 
-public class OctreeNode<T, TSelf> : OctreeNode where TSelf : OctreeNode<T, TSelf> {
-    
-}
-
-public class OctreeNode<T> : OctreeNode<T, OctreeNode<T>>  {
-
-    
-}
-
 public abstract class OctreeNodeBase<TItem, TTree, TSelf> : OctreeNode
     where TTree : OctreeBase<TItem, TSelf, TTree>
     where TSelf : OctreeNodeBase<TItem, TTree, TSelf> {
