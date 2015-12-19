@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
-public abstract class OctreeBase<TItem, TNode, TSelf>
+public abstract partial class OctreeBase<TItem, TNode, TSelf>
     where TSelf : OctreeBase<TItem, TNode, TSelf>
     where TNode : OctreeNodeBase<TItem, TSelf, TNode> {
     private readonly TNode _root;
@@ -27,7 +25,7 @@ public abstract class OctreeBase<TItem, TNode, TSelf>
     protected bool _isCreatedByAnotherTree;
 
 
-    //    protected OctreeBase(Bounds _bounds) : base(_bounds, (self, bounds) => new TNode(bounds, self))
+    //    protected OctreeBase(Bounds bounds) : base(bounds, (self, bounds) => new TNode(bounds, self))
     //    {
     //                _root = new OctreeNode<T>(bounds, this);
     //    }
@@ -106,14 +104,13 @@ if(rems.length>0) {
     {
     }
 
-
     public bool Intersect(Transform transform, Ray ray, int? wantedDepth = null)
     {
-        return new RayIntersection<TItem, TNode, TSelf>(transform, (TSelf)this, ray, false, wantedDepth).results.Count > 0;
+        return new RayIntersection(transform, (TSelf)this, ray, false, wantedDepth).results.Count > 0;
     }
 
     private bool _intersecting = false;
-    public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult<TItem, TNode, TSelf> result, int? wantedDepth = null)
+    public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth = null)
     {
         _intersecting = true;
         if (wantedDepth != null && wantedDepth < 0)
@@ -121,7 +118,7 @@ if(rems.length>0) {
             throw new ArgumentOutOfRangeException("wantedDepth", "Wanted depth should not be less than zero.");
         }
 
-        var results = new RayIntersection<TItem, TNode, TSelf>(transform, (TSelf)this, ray, false, wantedDepth).results;
+        var results = new RayIntersection(transform, (TSelf)this, ray, false, wantedDepth).results;
 
         if (results.Count > 0)
         {
@@ -141,7 +138,7 @@ if(rems.length>0) {
             return true;
         }
 
-        result = new RayIntersectionResult<TItem, TNode, TSelf>(false);
+        result = new RayIntersectionResult(false);
         _intersecting = false;
         return false;
     }

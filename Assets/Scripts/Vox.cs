@@ -47,7 +47,7 @@ public class Vox : MonoBehaviour {
 
     public int materialIndex = 0;
 
-    RayIntersectionResult<int, VoxelNode, VoxelTree> result;
+    VoxelTree.RayIntersectionResult result;
 
     // Update is called once per frame
     private void Update() {
