@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using Assets.Scripts;
 using UnityEngine;
 
-public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
+public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode, VoxelCoordinates> {
     private readonly Dictionary<NeighbourSide, HashSet<VoxelNode>> _sideSolidChildren =
         new Dictionary<NeighbourSide, HashSet<VoxelNode>>();
 
-    protected readonly Dictionary<NeighbourSide, int> _sideSolidCount = new Dictionary<NeighbourSide, int>();
+    private readonly Dictionary<NeighbourSide, int> _sideSolidCount = new Dictionary<NeighbourSide, int>();
 
     private int _solidNodeCount;
 
@@ -35,7 +35,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
         return _sideSolidCount[side] > 0;
     }
 
-    private SideState GetSideState(OctreeNodeCoordinates<int, VoxelNode, VoxelTree> coords, NeighbourSide side) {
+    private SideState GetSideState(VoxelCoordinates coords, NeighbourSide side) {
         AssertNotDeleted();
         var neighbourCoords = coords.GetNeighbourCoords(side);
 
@@ -231,7 +231,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
         if (!hasItem) {
             // still let the neighbours know if necessary
-            //            tree.NodeRemoved(this, false);
+            //            voxelTree.NodeRemoved(this, false);
 
             hasItem = true;
 
@@ -402,8 +402,9 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
     }
 
 
-    private void CreateFacesForSideInternal(ICollection<OctreeRenderFace> faces, NeighbourSide side, Bounds bounds,
-        OctreeNodeCoordinates<int, VoxelNode, VoxelTree> coords, int meshIndex, bool parentPartial = false) {
+    private void CreateFacesForSideInternal(ICollection<OctreeRenderFace> faces, NeighbourSide side,
+        Bounds currentBounds,
+        VoxelCoordinates coords, int meshIndex, bool parentPartial = false) {
         AssertNotDeleted();
         var sidestate = GetSideState(coords, side);
 
@@ -411,7 +412,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
             case SideState.Empty:
                 //            case SideState.Partial:
 
-                AddFaceToList(faces, side, bounds, meshIndex);
+                AddFaceToList(faces, side, currentBounds, meshIndex);
                 break;
             case SideState.Partial:
                 if (parentPartial) {
@@ -420,8 +421,8 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
                     // ReSharper disable once ForCanBeConvertedToForeach
                     for (var i = 0; i < childCoords.Length; i++) {
                         var childCoord = childCoords[i];
-                        var childBounds = GetChildBoundsInternal(bounds, childCoord.ToIndex());
-                        var childAbsCoords = new OctreeNodeCoordinates<int, VoxelNode, VoxelTree>(tree, coords,
+                        var childBounds = GetChildBoundsInternal(currentBounds, childCoord.ToIndex());
+                        var childAbsCoords = new VoxelCoordinates(tree, coords,
                             childCoord);
 
 //                        var coords = new Coordinates();
@@ -429,7 +430,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
                         CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex);
                     }
                 } else {
-                    AddFaceToList(faces, side, bounds, meshIndex);
+                    AddFaceToList(faces, side, currentBounds, meshIndex);
                 }
                 break;
             case SideState.Full:

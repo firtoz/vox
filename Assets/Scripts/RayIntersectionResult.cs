@@ -1,8 +1,9 @@
 using UnityEngine;
 
-public abstract partial class OctreeBase<TItem, TNode, TSelf>
-    where TSelf : OctreeBase<TItem, TNode, TSelf>
-    where TNode : OctreeNodeBase<TItem, TSelf, TNode> {
+public abstract partial class OctreeBase<TItem, TNode, TTree, TCoords>
+    where TTree : OctreeBase<TItem, TNode, TTree, TCoords>
+    where TNode : OctreeNodeBase<TItem, TTree, TNode, TCoords>
+    where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() {
     public struct RayIntersectionResult {
         public readonly TNode node;
         public readonly float entryDistance;
@@ -10,7 +11,7 @@ public abstract partial class OctreeBase<TItem, TNode, TSelf>
         public readonly Vector3 normal;
         public readonly NeighbourSide neighbourSide;
         public readonly bool hit;
-        public readonly OctreeNodeCoordinates<TItem, TNode, TSelf> coordinates;
+        public readonly TCoords coordinates;
 
         public RayIntersectionResult(bool hit) {
             this.hit = hit;
@@ -23,7 +24,7 @@ public abstract partial class OctreeBase<TItem, TNode, TSelf>
         }
 
         public RayIntersectionResult(TNode node,
-            OctreeNodeCoordinates<TItem, TNode, TSelf> coordinates,
+            TCoords coordinates,
             float entryDistance,
             Vector3 position,
             Vector3 normal, NeighbourSide neighbourSide) {

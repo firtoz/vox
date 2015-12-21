@@ -1,48 +1,74 @@
 ﻿using System;
-using Assets.Scripts;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace OctreeTest {
+namespace OctreeTest
+{
+    internal class TestOctreeCoords : TestCoords<int>
+    {
+        public TestOctreeCoords() { }
+        public TestOctreeCoords(TestOctree<int> tree) : base(tree) { }
+        public TestOctreeCoords(TestOctree<int> tree, TestCoords<int> parentCoordinates, params OctreeChildCoordinates[] furtherChildren) : base(tree, parentCoordinates, furtherChildren) { }
+        public TestOctreeCoords(TestOctree<int> tree, OctreeChildCoordinates[] coords) : base(tree, coords) { }
+    }
+
+    internal class TestCoords<T> : TestOctreeNode<T>.Coordinates
+    {
+        public TestCoords() { }
+        protected TestCoords(TestOctree<T> tree) : base(tree) { }
+        protected TestCoords(TestOctree<T> tree, TestCoords<T> parentCoordinates, params OctreeChildCoordinates[] furtherChildren) : base(tree, parentCoordinates, furtherChildren) { }
+        protected TestCoords(TestOctree<T> tree, OctreeChildCoordinates[] coords) : base(tree, coords) { }
+
+        public override TestCoords<T> Construct(TestOctree<T> tree) {
+            return new TestCoords<T>(tree);
+        }
+
+        public override TestCoords<T> Construct(TestOctree<T> tree, OctreeChildCoordinates[] newCoords)
+        {
+            return new TestCoords<T>(tree, newCoords);
+        }
+
+        public override TestCoords<T> Construct(TestOctree<T> tree, TestCoords<T> nodeCoordinates, OctreeChildCoordinates octreeChildCoordinates)
+        {
+            return new TestCoords<T>(tree, nodeCoordinates, octreeChildCoordinates);
+        }
+    }
+
+    internal class TestOctreeNode<T> : OctreeNodeBase<T, TestOctree<T>, TestOctreeNode<T>, TestCoords<T>>
+    {
+
+        public TestOctreeNode(Bounds bounds, TestOctree<T> tree) : base(bounds, tree) { }
+        public TestOctreeNode(Bounds bounds, TestOctreeNode<T> parent, ChildIndex indexInParent, int depth, TestOctree<T> tree) : base(bounds, parent, indexInParent, depth, tree) { }
+    }
+
+    internal class TestOctree<T> : OctreeBase<T, TestOctreeNode<T>, TestOctree<T>, TestCoords<T>>
+    {
+        internal TestOctree(Bounds bounds) : base(CreateRootNode, bounds) { }
+
+        //            protected override 
+
+        private static TestOctreeNode<T> CreateRootNode(TestOctree<T> self, Bounds bounds)
+        {
+            return new TestOctreeNode<T>(bounds, self);
+        }
+
+        public override TestOctreeNode<T> ConstructNode(Bounds bounds, TestOctreeNode<T> parent,
+            OctreeNode.ChildIndex indexInParent, int depth)
+        {
+            return new TestOctreeNode<T>(bounds, parent, indexInParent, depth, this);
+        }
+
+        protected override TestOctree<T> CreateNeighbour(NeighbourSide side)
+        {
+            var neighbourBounds = GetNeighbourBounds(side);
+            return new TestOctree<T>(neighbourBounds);
+        }
+    }
 
     [TestFixture]
     [Category("Octree Tests")]
     internal class CoordinateTests {
 
-        private class TestOctreeNode<T> : OctreeNodeBase<T, TestOctree<T>, TestOctreeNode<T>>
-        {
-            public TestOctreeNode(Bounds bounds, TestOctree<T> tree) : base(bounds, tree) { }
-            public TestOctreeNode(Bounds bounds, TestOctreeNode<T> parent, ChildIndex indexInParent, int depth, TestOctree<T> tree) : base(bounds, parent, indexInParent, depth, tree) { }
-        }
-
-        private class TestOctree<T> : OctreeBase<T, TestOctreeNode<T>, TestOctree<T>>
-        {
-            public TestOctree(Bounds bounds) : base(CreateRootNode, bounds) { }
-
-//            protected override 
-
-            private static TestOctreeNode<T> CreateRootNode(TestOctree<T> self, Bounds bounds)
-            {
-                return new TestOctreeNode<T>(bounds, self);
-            }
-
-            public override TestOctreeNode<T> ConstructNode(Bounds bounds, TestOctreeNode<T> parent, 
-                OctreeNode.ChildIndex indexInParent, int depth) {
-                return new TestOctreeNode<T>(bounds, parent, indexInParent, depth, this);
-            }
-
-            protected override TestOctree<T> CreateNeighbour(NeighbourSide side)
-            {
-                var neighbourBounds = GetNeighbourBounds(side);
-                return new TestOctree<T>(neighbourBounds);
-            }
-        }
-
-        private class TestOctreeCoords : OctreeNodeCoordinates<int, TestOctreeNode<int>, TestOctree<int>> {
-            public TestOctreeCoords(TestOctree<int> tree) : base(tree) {}
-            public TestOctreeCoords(TestOctree<int> tree, OctreeNodeCoordinates<int, TestOctreeNode<int>, TestOctree<int>> parentCoordinates, params OctreeChildCoordinates[] furtherChildren) : base(tree, parentCoordinates, furtherChildren) {}
-            public TestOctreeCoords(TestOctree<int> tree, OctreeChildCoordinates[] coords) : base(tree, coords) {}
-        }
 
         [Test]
         public void Equality() {
@@ -168,7 +194,7 @@ namespace OctreeTest {
 
         [Test]
         public void NeighboursTest() {
-            var grandChildCoords = new TestOctreeCoords(null, new[] {
+            var grandChildCoords = new VoxelCoordinates(null, new[] {
                 new OctreeChildCoordinates(1, 1, 1),
                 new OctreeChildCoordinates(0, 1, 0)
             });
@@ -198,7 +224,7 @@ namespace OctreeTest {
 
             furtherRightCoords = furtherRightCoords.GetNeighbourCoords(NeighbourSide.Right);
 
-            Assert.IsNotNull(furtherRightCoords, "furtherLeftCoords"); // not null because it will just look at another tree instead
+            Assert.IsNotNull(furtherRightCoords, "furtherLeftCoords"); // not null because it will just look at another voxelTree instead
 
             var leftOfGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Left);
 
@@ -212,7 +238,7 @@ namespace OctreeTest {
 
             var aboveGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Above);
 
-            Assert.IsNotNull(aboveGrandChildCoords); // not null, just another tree!
+            Assert.IsNotNull(aboveGrandChildCoords); // not null, just another voxelTree!
 
             var belowGrandChildCoords = grandChildCoords.GetNeighbourCoords(NeighbourSide.Below);
             Assert.AreEqual(belowGrandChildCoords.GetNeighbourCoords(NeighbourSide.Above), grandChildCoords);
@@ -257,7 +283,7 @@ namespace OctreeTest {
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => grandChildCoords.GetNeighbourCoords((NeighbourSide) incorrectSide + 1));
 
-            var rootCoords = new TestOctreeCoords(null);
+            var rootCoords = new VoxelCoordinates(null);
 
             Assert.IsNull(rootCoords.GetNeighbourCoords(NeighbourSide.Above));
             Assert.IsNull(rootCoords.GetNeighbourCoords(NeighbourSide.Below));

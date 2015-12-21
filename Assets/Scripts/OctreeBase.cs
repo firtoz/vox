@@ -2,13 +2,20 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract partial class OctreeBase<TItem, TNode, TSelf>
-    where TSelf : OctreeBase<TItem, TNode, TSelf>
-    where TNode : OctreeNodeBase<TItem, TSelf, TNode> {
+public abstract partial class OctreeBase<TItem, TNode, TTree, TCoords>
+    where TTree : OctreeBase<TItem, TNode, TTree, TCoords>
+    where TNode : OctreeNodeBase<TItem, TTree, TNode, TCoords> 
+    where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() {
+    private readonly Dictionary<NeighbourSide, TTree> _neighbourTrees = new Dictionary<NeighbourSide, TTree>();
     private readonly TNode _root;
 
-    protected OctreeBase(Func<TSelf, Bounds, TNode> nodeConstructor, Bounds bounds) {
-        _root = nodeConstructor((TSelf) this, bounds);
+    private bool _intersecting;
+
+
+    protected bool _isCreatedByAnotherTree;
+
+    protected OctreeBase(Func<TTree, Bounds, TNode> nodeConstructor, Bounds bounds) {
+        _root = nodeConstructor((TTree) this, bounds);
     }
 
 
@@ -19,12 +26,6 @@ public abstract partial class OctreeBase<TItem, TNode, TSelf>
     public abstract TNode ConstructNode(Bounds bounds, TNode parent, OctreeNode.ChildIndex indexInParent, int depth);
 
 
-    private readonly Dictionary<NeighbourSide, TSelf> _neighbourTrees = new Dictionary<NeighbourSide, TSelf>();
-
-
-    protected bool _isCreatedByAnotherTree;
-
-
     //    protected OctreeBase(Bounds bounds) : base(bounds, (self, bounds) => new TNode(bounds, self))
     //    {
     //                _root = new OctreeNode<T>(bounds, this);
@@ -33,28 +34,21 @@ public abstract partial class OctreeBase<TItem, TNode, TSelf>
 
     // https://en.wikipedia.org/wiki/Breadth-first_search#Pseudocode
 
-    public IEnumerable<TNode> BreadthFirst()
-    {
+    public IEnumerable<TNode> BreadthFirst() {
         return _root.BreadthFirst();
     }
 
     // https://en.wikipedia.org/wiki/Depth-first_search#Pseudocode
-    public IEnumerable<TNode> DepthFirst()
-    {
+    public IEnumerable<TNode> DepthFirst() {
         return _root.DepthFirst();
     }
 
-    public void AddBounds(Bounds bounds, TItem item, int i)
-    {
+    public void AddBounds(Bounds bounds, TItem item, int i) {
         _root.AddBounds(bounds, item, i);
     }
 
 
-    public virtual void NodeAdded(TNode octreeNode, bool updateNeighbours) {
-        
-    }
-
-
+    public virtual void NodeAdded(TNode octreeNode, bool updateNeighbours) {}
 
 
     /*
@@ -100,37 +94,28 @@ if(rems.length>0) {
     */
 
 
-    public virtual void NodeRemoved(TNode octreeNode, bool updateNeighbours)
-    {
+    public virtual void NodeRemoved(TNode octreeNode, bool updateNeighbours) {}
+
+    public bool Intersect(Transform transform, Ray ray, int? wantedDepth = null) {
+        return new RayIntersection(transform, (TTree) this, ray, false, wantedDepth).results.Count > 0;
     }
 
-    public bool Intersect(Transform transform, Ray ray, int? wantedDepth = null)
-    {
-        return new RayIntersection(transform, (TSelf)this, ray, false, wantedDepth).results.Count > 0;
-    }
-
-    private bool _intersecting = false;
-    public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth = null)
-    {
+    public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth = null) {
         _intersecting = true;
-        if (wantedDepth != null && wantedDepth < 0)
-        {
+        if (wantedDepth != null && wantedDepth < 0) {
             throw new ArgumentOutOfRangeException("wantedDepth", "Wanted depth should not be less than zero.");
         }
 
-        var results = new RayIntersection(transform, (TSelf)this, ray, false, wantedDepth).results;
+        var results = new RayIntersection(transform, (TTree) this, ray, false, wantedDepth).results;
 
-        if (results.Count > 0)
-        {
+        if (results.Count > 0) {
             result = results[0];
             _intersecting = false;
             return true;
         }
 
-        foreach (var neighbourTree in _neighbourTrees.Values)
-        {
-            if (neighbourTree._intersecting || !neighbourTree.Intersect(transform, ray, out result, wantedDepth))
-            {
+        foreach (var neighbourTree in _neighbourTrees.Values) {
+            if (neighbourTree._intersecting || !neighbourTree.Intersect(transform, ray, out result, wantedDepth)) {
                 continue;
             }
 
@@ -144,13 +129,9 @@ if(rems.length>0) {
     }
 
 
-    
-
-    public TSelf GetOrCreateNeighbour(NeighbourSide side)
-    {
-        TSelf neighbour;
-        if (_neighbourTrees.TryGetValue(side, out neighbour))
-        {
+    public TTree GetOrCreateNeighbour(NeighbourSide side) {
+        TTree neighbour;
+        if (_neighbourTrees.TryGetValue(side, out neighbour)) {
             return neighbour;
         }
 
@@ -163,22 +144,20 @@ if(rems.length>0) {
 
         // TODO relink other neighbours.
 
-        neighbour._neighbourTrees.Add(OctreeNode.GetOpposite(side), (TSelf) this);
+        neighbour._neighbourTrees.Add(OctreeNode.GetOpposite(side), (TTree) this);
 
         return neighbour;
     }
 
-    protected abstract TSelf CreateNeighbour(NeighbourSide side);
+    protected abstract TTree CreateNeighbour(NeighbourSide side);
 
-    protected Bounds GetNeighbourBounds(NeighbourSide side)
-    {
+    protected Bounds GetNeighbourBounds(NeighbourSide side) {
         var rootBounds = GetRoot().GetBounds();
 
         var center = rootBounds.center;
         var size = rootBounds.size;
 
-        switch (side)
-        {
+        switch (side) {
             case NeighbourSide.Above:
                 center += Vector3.up * size.y;
                 break;
@@ -207,7 +186,5 @@ if(rems.length>0) {
         return neighbourBounds;
     }
 
-    public virtual void UpdateNeighbours(VoxelNode octreeNode) {
-        
-    }
+    public virtual void UpdateNeighbours(VoxelNode octreeNode) {}
 }
