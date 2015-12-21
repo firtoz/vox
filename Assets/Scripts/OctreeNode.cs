@@ -213,18 +213,18 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode, TCoords> : Oct
     where TTree : OctreeBase<TItem, TNode, TTree, TCoords>
     where TNode : OctreeNodeBase<TItem, TTree, TNode, TCoords>
 where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() {
-    protected readonly TTree tree;
+    protected readonly TTree ocTree;
     protected readonly Bounds bounds;
     protected readonly TNode parent;
 
     protected OctreeNodeBase(Bounds bounds, TTree tree) : this(bounds, null, ChildIndex.Invalid, 0, tree) {}
 
-    protected OctreeNodeBase(Bounds bounds, TNode parent, ChildIndex indexInParent, int depth, TTree tree) {
+    protected OctreeNodeBase(Bounds bounds, TNode parent, ChildIndex indexInParent, int depth, TTree ocTree) {
         deleted = false;
         this.bounds = bounds;
         this.parent = parent;
         if (parent == null) {
-            nodeCoordinates = StaticCoordsInstance.Construct(tree);
+            nodeCoordinates = StaticCoordsInstance.Construct(ocTree);
 
 #if USE_ALL_NODES
     // ReSharper disable once UseObjectOrCollectionInitializer
@@ -237,29 +237,29 @@ where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() 
             _allNodes = _root._allNodes;
 #endif
 
-            nodeCoordinates = StaticCoordsInstance.Construct(tree, parent.nodeCoordinates, OctreeChildCoordinates.FromIndex(indexInParent));
+            nodeCoordinates = StaticCoordsInstance.Construct(ocTree, parent.nodeCoordinates, OctreeChildCoordinates.FromIndex(indexInParent));
         }
 
         this.indexInParent = indexInParent;
         item = default(TItem);
         this.depth = depth;
-        this.tree = tree;
+        this.ocTree = ocTree;
     }
 
     protected bool deleted;
 #if USE_ALL_NODES
     private readonly Dictionary<int, TSelf> _allNodes;
 #endif
-    //    private readonly OctreeChildCoordinates[] coords;
+    //    private readonly OctreeChildCoordinates[] _coords;
     protected readonly int depth;
     protected readonly ChildIndex indexInParent;
     protected readonly TCoords nodeCoordinates;
 
     protected TNode GetRoot() {
-        return tree.GetRoot();
+        return ocTree.GetRoot();
     }
 
-//    protected readonly Octree<T> tree;
+//    protected readonly Octree<T> _tree;
     protected int childCount;
     protected TNode[] children;
     protected bool hasItem;
@@ -432,7 +432,7 @@ where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() 
         }
 
         childCount++;
-        return SetChild(index, tree.ConstructNode(GetChildBounds(index), (TNode) this, index, depth + 1));
+        return SetChild(index, ocTree.ConstructNode(GetChildBounds(index), (TNode) this, index, depth + 1));
     }
 
     public void RemoveChild(ChildIndex index, bool cleanup = false) {
@@ -474,7 +474,7 @@ where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() 
 #if USE_ALL_NODES
             _allNodes.Remove(octreeNode.nodeCoordinates.GetHashCode());
 #endif
-            tree.NodeRemoved(octreeNode, updateNeighbours);
+            ocTree.NodeRemoved(octreeNode, updateNeighbours);
 
             if (octreeNode.hasItem) {
                 octreeNode.RemoveItemInternal(updateNeighbours);
@@ -547,7 +547,7 @@ where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() 
 
     private void RemoveItemInternal(bool updateNeighbours) {
         if (hasItem) {
-            tree.NodeRemoved((TNode) this, updateNeighbours);
+            ocTree.NodeRemoved((TNode) this, updateNeighbours);
 
             RemoveSolidNode(ChildIndex.Invalid, true);
 
@@ -755,9 +755,9 @@ where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() 
 
 
     public TTree GetTree() {
-        return tree;
+        return ocTree;
     }
 
-//    public OctreeNode(Bounds bounds, Octree<T> tree) : base(bounds, tree) { }
-//    public OctreeNode(Bounds bounds, OctreeNode<T> parent, ChildIndex indexInParent, int depth, Octree<T> tree) : base(bounds, parent, indexInParent, depth, tree) { }
+//    public OctreeNode(Bounds bounds, Octree<T> _tree) : base(bounds, tree) { }
+//    public OctreeNode(Bounds bounds, OctreeNode<T> parent, ChildIndex indexInParent, int depth, Octree<T> _tree) : base(bounds, parent, indexInParent, depth, tree) { }
 }

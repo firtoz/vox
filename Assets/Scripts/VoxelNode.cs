@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Assets.Scripts;
 using UnityEngine;
 
 public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode, VoxelCoordinates> {
@@ -13,8 +12,8 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode, VoxelCoordina
 
     public VoxelNode(Bounds bounds, VoxelTree tree) : this(bounds, null, ChildIndex.Invalid, 0, tree) {}
 
-    public VoxelNode(Bounds bounds, VoxelNode parent, ChildIndex indexInParent, int depth, VoxelTree tree)
-        : base(bounds, parent, indexInParent, depth, tree) {
+    public VoxelNode(Bounds bounds, VoxelNode parent, ChildIndex indexInParent, int depth, VoxelTree ocTree)
+        : base(bounds, parent, indexInParent, depth, ocTree) {
         _sideSolidCount[NeighbourSide.Above] = 0;
         _sideSolidCount[NeighbourSide.Below] = 0;
         _sideSolidCount[NeighbourSide.Right] = 0;
@@ -93,6 +92,10 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode, VoxelCoordina
 
         return SideState.Empty;
 #else
+
+        if (neighbourCoords.GetTree() == null) {
+            return SideState.Empty;
+        }
 
         var currentNode = neighbourCoords.GetTree().GetRoot();
 
@@ -238,18 +241,18 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode, VoxelCoordina
             AddSolidNode(ChildIndex.Invalid, true);
 
             item = newItem;
-            tree.NodeAdded(this, false);
-        } else if (tree.ItemsBelongInSameMesh(item, newItem)) {
+            ocTree.NodeAdded(this, false);
+        } else if (ocTree.ItemsBelongInSameMesh(item, newItem)) {
             // has item
             // item not changed or belongs in same mesh as the other one
             item = newItem;
         } else {
             // remove from the previous item's mesh
             // no need to update neighbours now, will be done below
-            tree.NodeRemoved(this, false);
+            ocTree.NodeRemoved(this, false);
             item = newItem;
             //add to the next item's mesh!
-            tree.NodeAdded(this, false);
+            ocTree.NodeAdded(this, false);
         }
 
         if (cleanup && parent != null && parent.childCount == 8) {
@@ -264,7 +267,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode, VoxelCoordina
                 if (!Equals(sibling.GetItem(), newItem)) {
                     // not all siblings have the same item :(
                     if (updateNeighbours) {
-                        tree.UpdateNeighbours(this);
+                        ocTree.UpdateNeighbours(this);
                     }
 
                     return;
@@ -279,7 +282,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode, VoxelCoordina
             // or the parent doesn't exist (reached top),
             // or the parent doesn't have all eight children
             if (updateNeighbours) {
-                tree.UpdateNeighbours(this);
+                ocTree.UpdateNeighbours(this);
             }
         }
     }
@@ -327,6 +330,10 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode, VoxelCoordina
 
         return null;
 #else
+
+        if (neighbourCoords.GetTree() == null) {
+            return null;
+        }
 
         var currentNeighbourNode = neighbourCoords.GetTree().GetRoot();
 
@@ -422,10 +429,10 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode, VoxelCoordina
                     for (var i = 0; i < childCoords.Length; i++) {
                         var childCoord = childCoords[i];
                         var childBounds = GetChildBoundsInternal(currentBounds, childCoord.ToIndex());
-                        var childAbsCoords = new VoxelCoordinates(tree, coords,
+                        var childAbsCoords = new VoxelCoordinates(ocTree, coords,
                             childCoord);
 
-//                        var coords = new Coordinates();
+//                        var _coords = new Coordinates();
 
                         CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex);
                     }

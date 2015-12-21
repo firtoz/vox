@@ -1,5 +1,4 @@
 ﻿
-using Assets.Scripts;
 using NUnit.Framework;
 using UnityEngine;
 

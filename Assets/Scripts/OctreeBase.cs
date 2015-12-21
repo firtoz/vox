@@ -6,13 +6,7 @@ public abstract partial class OctreeBase<TItem, TNode, TTree, TCoords>
     where TTree : OctreeBase<TItem, TNode, TTree, TCoords>
     where TNode : OctreeNodeBase<TItem, TTree, TNode, TCoords> 
     where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() {
-    private readonly Dictionary<NeighbourSide, TTree> _neighbourTrees = new Dictionary<NeighbourSide, TTree>();
     private readonly TNode _root;
-
-    private bool _intersecting;
-
-
-    protected bool _isCreatedByAnotherTree;
 
     protected OctreeBase(Func<TTree, Bounds, TNode> nodeConstructor, Bounds bounds) {
         _root = nodeConstructor((TTree) this, bounds);
@@ -99,9 +93,8 @@ if(rems.length>0) {
     public bool Intersect(Transform transform, Ray ray, int? wantedDepth = null) {
         return new RayIntersection(transform, (TTree) this, ray, false, wantedDepth).results.Count > 0;
     }
-
-    public bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth = null) {
-        _intersecting = true;
+    
+    public virtual bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth = null) {
         if (wantedDepth != null && wantedDepth < 0) {
             throw new ArgumentOutOfRangeException("wantedDepth", "Wanted depth should not be less than zero.");
         }
@@ -110,46 +103,12 @@ if(rems.length>0) {
 
         if (results.Count > 0) {
             result = results[0];
-            _intersecting = false;
-            return true;
-        }
-
-        foreach (var neighbourTree in _neighbourTrees.Values) {
-            if (neighbourTree._intersecting || !neighbourTree.Intersect(transform, ray, out result, wantedDepth)) {
-                continue;
-            }
-
-            _intersecting = false;
             return true;
         }
 
         result = new RayIntersectionResult(false);
-        _intersecting = false;
         return false;
     }
-
-
-    public TTree GetOrCreateNeighbour(NeighbourSide side) {
-        TTree neighbour;
-        if (_neighbourTrees.TryGetValue(side, out neighbour)) {
-            return neighbour;
-        }
-
-        neighbour = CreateNeighbour(side);
-        neighbour._root.RemoveItem();
-
-        neighbour._isCreatedByAnotherTree = true;
-
-        _neighbourTrees.Add(side, neighbour);
-
-        // TODO relink other neighbours.
-
-        neighbour._neighbourTrees.Add(OctreeNode.GetOpposite(side), (TTree) this);
-
-        return neighbour;
-    }
-
-    protected abstract TTree CreateNeighbour(NeighbourSide side);
 
     protected Bounds GetNeighbourBounds(NeighbourSide side) {
         var rootBounds = GetRoot().GetBounds();

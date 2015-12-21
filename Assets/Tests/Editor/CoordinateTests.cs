@@ -45,8 +45,6 @@ namespace OctreeTest
     {
         internal TestOctree(Bounds bounds) : base(CreateRootNode, bounds) { }
 
-        //            protected override 
-
         private static TestOctreeNode<T> CreateRootNode(TestOctree<T> self, Bounds bounds)
         {
             return new TestOctreeNode<T>(bounds, self);
@@ -56,12 +54,6 @@ namespace OctreeTest
             OctreeNode.ChildIndex indexInParent, int depth)
         {
             return new TestOctreeNode<T>(bounds, parent, indexInParent, depth, this);
-        }
-
-        protected override TestOctree<T> CreateNeighbour(NeighbourSide side)
-        {
-            var neighbourBounds = GetNeighbourBounds(side);
-            return new TestOctree<T>(neighbourBounds);
         }
     }
 
@@ -110,7 +102,7 @@ namespace OctreeTest
                 new OctreeChildCoordinates(0, 1, 0)
             }));
 
-            // construct from parent with no coords
+            // construct from parent with no _coords
             Assert.AreEqual(new TestOctreeCoords(null, new[] {
                 new OctreeChildCoordinates(0, 0, 1),
                 new OctreeChildCoordinates(0, 1, 0)
@@ -118,7 +110,7 @@ namespace OctreeTest
                 new OctreeChildCoordinates(0, 0, 1),
                 new OctreeChildCoordinates(0, 1, 0)));
 
-            // construct from parent with no coords
+            // construct from parent with no _coords
             Assert.AreEqual(new TestOctreeCoords(null, new[] {
                 new OctreeChildCoordinates(0, 0, 1),
                 new OctreeChildCoordinates(0, 1, 0)
@@ -162,7 +154,7 @@ namespace OctreeTest
                 new OctreeChildCoordinates(0, 0, 1)
             }), new OctreeChildCoordinates(0, 1, 0)));
 
-            // construct from parent with two coords
+            // construct from parent with two _coords
             Assert.AreEqual(new TestOctreeCoords(null, new[] {
                 new OctreeChildCoordinates(0, 0, 1),
                 new OctreeChildCoordinates(0, 1, 0)

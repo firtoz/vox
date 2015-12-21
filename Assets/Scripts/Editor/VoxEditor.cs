@@ -1,5 +1,4 @@
-﻿using Assets.Scripts;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof (Vox))]

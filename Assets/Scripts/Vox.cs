@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Assets.Scripts;
 using UnityEngine;
 
 public class Vox : MonoBehaviour {
