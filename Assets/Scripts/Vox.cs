@@ -101,15 +101,14 @@ public class Vox : MonoBehaviour {
 
         if (result.hit) {
             var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
-            if (neighbourCoords != null) {
+            if (neighbourCoords != null && neighbourCoords.GetTree() != null) {
                 DrawBounds(neighbourCoords.GetTree().GetRoot().GetChildBounds(neighbourCoords), Color.green, false);
             }
 
             if (Press(0)) {
-                if (neighbourCoords != null) {
+                if (neighbourCoords != null && neighbourCoords.GetTree() != null) {
 //                    Debug.Log(neighbourCoords);
                     Profiler.BeginSample("AddRecursive");
-
                     
                     var final = neighbourCoords.GetTree().GetRoot().AddRecursive(neighbourCoords);
                     final.SetItem(indices[materialIndex], true);
