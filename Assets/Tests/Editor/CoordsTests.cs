@@ -161,19 +161,19 @@ namespace OctreeTest {
             Assert.AreEqual(2, grandChildCoords.Length);
             Assert.AreEqual(new OctreeChildCoords(1, 1, 1), grandChildCoords.GetCoord(0));
             Assert.AreEqual(new OctreeChildCoords(0, 1, 0), grandChildCoords.GetCoord(1));
-            var rightOfGrandChildCoords = VoxelNode.GetNeighbourCoords(grandChildCoords, NeighbourSide.Right);
+            var rightOfGrandChildCoords = VoxelTree.GetNeighbourCoords(grandChildCoords, NeighbourSide.Right);
 
             Assert.AreEqual(2, rightOfGrandChildCoords.Length);
 
             Assert.AreEqual(new OctreeChildCoords(1, 1, 1), rightOfGrandChildCoords.GetCoord(0));
             Assert.AreEqual(new OctreeChildCoords(1, 1, 0), rightOfGrandChildCoords.GetCoord(1));
 
-            Assert.NotNull(VoxelNode.GetNeighbourCoords(rightOfGrandChildCoords, NeighbourSide.Left));
+            Assert.NotNull(VoxelTree.GetNeighbourCoords(rightOfGrandChildCoords, NeighbourSide.Left));
 
-            Assert.AreNotEqual(VoxelNode.GetNeighbourCoords(rightOfGrandChildCoords, NeighbourSide.Left),
+            Assert.AreNotEqual(VoxelTree.GetNeighbourCoords(rightOfGrandChildCoords, NeighbourSide.Left),
                 rightOfGrandChildCoords);
 
-            var furtherRightCoords = VoxelNode.GetNeighbourCoords(rightOfGrandChildCoords, NeighbourSide.Right);
+            var furtherRightCoords = VoxelTree.GetNeighbourCoords(rightOfGrandChildCoords, NeighbourSide.Right);
 
             // uh oh, we just went out of bounds
 //          Assert.AreEqual(2, furtherRightCoords.Length);
@@ -187,9 +187,9 @@ namespace OctreeTest {
 //            Assert.IsNotNull(furtherRightCoords, "furtherLeftCoords");
                 // not null because it will just look at another voxelTree instead
 
-            var leftOfGrandChildCoords = VoxelNode.GetNeighbourCoords(grandChildCoords, NeighbourSide.Left);
+            var leftOfGrandChildCoords = VoxelTree.GetNeighbourCoords(grandChildCoords, NeighbourSide.Left);
 
-            Assert.AreEqual(VoxelNode.GetNeighbourCoords(leftOfGrandChildCoords, NeighbourSide.Right), grandChildCoords);
+            Assert.AreEqual(VoxelTree.GetNeighbourCoords(leftOfGrandChildCoords, NeighbourSide.Right), grandChildCoords);
 
 
             Assert.AreEqual(2, leftOfGrandChildCoords.Length);
@@ -197,21 +197,21 @@ namespace OctreeTest {
             Assert.AreEqual(new OctreeChildCoords(0, 1, 1), leftOfGrandChildCoords.GetCoord(0));
             Assert.AreEqual(new OctreeChildCoords(1, 1, 0), leftOfGrandChildCoords.GetCoord(1));
 
-            var aboveGrandChildCoords = VoxelNode.GetNeighbourCoords(grandChildCoords, NeighbourSide.Above);
+            var aboveGrandChildCoords = VoxelTree.GetNeighbourCoords(grandChildCoords, NeighbourSide.Above);
 
 //            Assert.IsNotNull(aboveGrandChildCoords); // not null, just another voxelTree!
             Assert.IsNull(aboveGrandChildCoords); // null, oob
 
-            var belowGrandChildCoords = VoxelNode.GetNeighbourCoords(grandChildCoords, NeighbourSide.Below);
-            Assert.AreEqual(VoxelNode.GetNeighbourCoords(belowGrandChildCoords, NeighbourSide.Above), grandChildCoords);
+            var belowGrandChildCoords = VoxelTree.GetNeighbourCoords(grandChildCoords, NeighbourSide.Below);
+            Assert.AreEqual(VoxelTree.GetNeighbourCoords(belowGrandChildCoords, NeighbourSide.Above), grandChildCoords);
 
             Assert.AreEqual(2, belowGrandChildCoords.Length);
 
             Assert.AreEqual(new OctreeChildCoords(1, 1, 1), belowGrandChildCoords.GetCoord(0));
             Assert.AreEqual(new OctreeChildCoords(0, 0, 0), belowGrandChildCoords.GetCoord(1));
 
-            var furterBelowGrandChildCoords = VoxelNode.GetNeighbourCoords(belowGrandChildCoords, NeighbourSide.Below);
-            Assert.AreEqual(VoxelNode.GetNeighbourCoords(furterBelowGrandChildCoords, NeighbourSide.Above),
+            var furterBelowGrandChildCoords = VoxelTree.GetNeighbourCoords(belowGrandChildCoords, NeighbourSide.Below);
+            Assert.AreEqual(VoxelTree.GetNeighbourCoords(furterBelowGrandChildCoords, NeighbourSide.Above),
                 belowGrandChildCoords);
 
             Assert.AreEqual(2, furterBelowGrandChildCoords.Length);
@@ -221,8 +221,8 @@ namespace OctreeTest {
 
             // 111, 010, behind, z-1
             // 110, 011
-            var behindGrandChildCoords = VoxelNode.GetNeighbourCoords(grandChildCoords, NeighbourSide.Back);
-            Assert.AreEqual(VoxelNode.GetNeighbourCoords(behindGrandChildCoords, NeighbourSide.Forward),
+            var behindGrandChildCoords = VoxelTree.GetNeighbourCoords(grandChildCoords, NeighbourSide.Back);
+            Assert.AreEqual(VoxelTree.GetNeighbourCoords(behindGrandChildCoords, NeighbourSide.Forward),
                 grandChildCoords);
 
             Assert.AreEqual(2, belowGrandChildCoords.Length);
@@ -230,8 +230,8 @@ namespace OctreeTest {
             Assert.AreEqual(new OctreeChildCoords(1, 1, 0), behindGrandChildCoords.GetCoord(0));
             Assert.AreEqual(new OctreeChildCoords(0, 1, 1), behindGrandChildCoords.GetCoord(1));
 
-            var inFrontOfGrandChildCoords = VoxelNode.GetNeighbourCoords(grandChildCoords, NeighbourSide.Forward);
-            Assert.AreEqual(VoxelNode.GetNeighbourCoords(inFrontOfGrandChildCoords, NeighbourSide.Back),
+            var inFrontOfGrandChildCoords = VoxelTree.GetNeighbourCoords(grandChildCoords, NeighbourSide.Forward);
+            Assert.AreEqual(VoxelTree.GetNeighbourCoords(inFrontOfGrandChildCoords, NeighbourSide.Back),
                 grandChildCoords);
 
             Assert.AreEqual(2, belowGrandChildCoords.Length);
@@ -241,18 +241,18 @@ namespace OctreeTest {
 
             const int incorrectSide = 6;
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => VoxelNode.GetNeighbourCoords(grandChildCoords, (NeighbourSide) incorrectSide));
+                () => VoxelTree.GetNeighbourCoords(grandChildCoords, (NeighbourSide) incorrectSide));
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => VoxelNode.GetNeighbourCoords(grandChildCoords, (NeighbourSide) incorrectSide + 1));
+                () => VoxelTree.GetNeighbourCoords(grandChildCoords, (NeighbourSide) incorrectSide + 1));
 
             var rootCoords = new Coords();
 
-            Assert.IsNull(VoxelNode.GetNeighbourCoords(rootCoords, NeighbourSide.Above));
-            Assert.IsNull(VoxelNode.GetNeighbourCoords(rootCoords, NeighbourSide.Below));
-            Assert.IsNull(VoxelNode.GetNeighbourCoords(rootCoords, NeighbourSide.Forward));
-            Assert.IsNull(VoxelNode.GetNeighbourCoords(rootCoords, NeighbourSide.Back));
-            Assert.IsNull(VoxelNode.GetNeighbourCoords(rootCoords, NeighbourSide.Right));
-            Assert.IsNull(VoxelNode.GetNeighbourCoords(rootCoords, NeighbourSide.Left));
+            Assert.IsNull(VoxelTree.GetNeighbourCoords(rootCoords, NeighbourSide.Above));
+            Assert.IsNull(VoxelTree.GetNeighbourCoords(rootCoords, NeighbourSide.Below));
+            Assert.IsNull(VoxelTree.GetNeighbourCoords(rootCoords, NeighbourSide.Forward));
+            Assert.IsNull(VoxelTree.GetNeighbourCoords(rootCoords, NeighbourSide.Back));
+            Assert.IsNull(VoxelTree.GetNeighbourCoords(rootCoords, NeighbourSide.Right));
+            Assert.IsNull(VoxelTree.GetNeighbourCoords(rootCoords, NeighbourSide.Left));
         }
 
         [Test]

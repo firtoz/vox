@@ -100,7 +100,7 @@ public class Vox : MonoBehaviour {
         Profiler.EndSample();
 
         if (result.hit) {
-            var neighbourCoords = VoxelNode.GetNeighbourCoords(result.coords, result.neighbourSide);
+            var neighbourCoords = VoxelTree.GetNeighbourCoords(result.coords, result.neighbourSide);
             if (neighbourCoords != null 
 //                && neighbourCoords.GetTree() != null
                 ) {

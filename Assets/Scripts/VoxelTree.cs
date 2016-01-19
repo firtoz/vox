@@ -4,7 +4,6 @@ using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-
 public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
     private const int MAX_VERTICES_FOR_MESH = 65000 - 4 * 100;
     private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
@@ -30,7 +29,8 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 //        _ownerNode = superTree.GetRoot();
     }
 
-    private VoxelTree(Vector3 center, Vector3 size, SuperVoxelTree.Node node) : base(RootConstructor, new Bounds(center, size)) {
+    private VoxelTree(Vector3 center, Vector3 size, SuperVoxelTree.Node node)
+        : base(RootConstructor, new Bounds(center, size)) {
 //        _ownerNode = node;
     } //
 
@@ -73,7 +73,8 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 //    private readonly Dictionary<NeighbourSide, TTree> _neighbourTrees = new Dictionary<NeighbourSide, TTree>();
 
-    public override bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth = null) {
+    public override bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result,
+        int? wantedDepth = null) {
         return base.Intersect(transform, ray, out result, wantedDepth);
 //        result = new RayIntersectionResult(false);
 //        return false;
@@ -779,5 +780,145 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
                 }
             }
         }
+    }
+
+
+    public static Coords GetNeighbourCoords(Coords coords, NeighbourSide side) {
+        //        var voxelTree = GetTree();
+
+        var coordsLength = coords.Length;
+
+        if (coordsLength <= 0) {
+            // get the neighbour tree?
+            return null;
+        }
+
+        var newCoords = new OctreeChildCoords[coordsLength];
+
+        var hasLastCoords = false;
+        var lastCoordX = 0;
+        var lastCoordY = 0;
+        var lastCoordZ = 0;
+
+        for (var i = coordsLength - 1; i >= 0; --i) {
+            var coord = coords.GetCoord(i);
+
+            var currentX = coord.x;
+            var currentY = coord.y;
+            var currentZ = coord.z;
+
+            if (hasLastCoords) {
+                //let's check the lower _coords, if it's out of that bounds then we need to modify ourselves!
+                var lastCoordUpdated = UpdateLastCoord(
+                    ref lastCoordX, ref currentX,
+                    ref lastCoordY, ref currentY,
+                    ref lastCoordZ, ref currentZ);
+
+                if (lastCoordUpdated) {
+                    newCoords[i + 1] = new OctreeChildCoords(lastCoordX, lastCoordY, lastCoordZ);
+                }
+            } else {
+                //final _coords!
+                //update _coords from the side
+                switch (side) {
+                    case NeighbourSide.Above:
+                        currentY += 1;
+                        break;
+                    case NeighbourSide.Below:
+                        currentY -= 1;
+                        break;
+                    case NeighbourSide.Right:
+                        currentX += 1;
+                        break;
+                    case NeighbourSide.Left:
+                        currentX -= 1;
+                        break;
+                    case NeighbourSide.Back:
+                        currentZ -= 1;
+                        break;
+                    case NeighbourSide.Forward:
+                        currentZ += 1;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException("side", side, null);
+                }
+            }
+
+            var newCoord = new OctreeChildCoords(currentX, currentY, currentZ);
+            newCoords[i] = newCoord;
+
+            lastCoordX = currentX;
+            lastCoordY = currentY;
+            lastCoordZ = currentZ;
+            hasLastCoords = true;
+        }
+
+        // we're at the end now
+
+        if (hasLastCoords && (lastCoordX < 0 || lastCoordX > 1 ||
+                              lastCoordY < 0 || lastCoordY > 1 ||
+                              lastCoordZ < 0 || lastCoordZ > 1)) {
+            //invalid _coords, out of bounds, pick neighbour voxelTree
+
+            var currentX = lastCoordX;
+            var currentY = lastCoordY;
+            var currentZ = lastCoordZ;
+
+            UpdateLastCoord(ref lastCoordX, ref currentX,
+                ref lastCoordY, ref currentY,
+                ref lastCoordZ, ref currentZ);
+
+            newCoords[0] = new OctreeChildCoords(lastCoordX, lastCoordY, lastCoordZ);
+            //if (GetTree() == null)
+            //{
+            //    voxelTree = null;
+            //    return null;
+            //}
+            //else {
+            //    Debug.LogError("get new tree");
+            //    voxelTree = GetTree().GetOrCreateNeighbour(side);
+            //    return null;
+            //}
+            return null;
+        }
+
+        return new Coords(newCoords);
+    }
+
+
+    private static bool UpdateLastCoord(ref int lastCoordX, ref int currentX, ref int lastCoordY, ref int currentY,
+        ref int lastCoordZ, ref int currentZ) {
+        var updateLastCoord = false;
+
+        if (lastCoordX < 0) {
+            currentX -= 1;
+            lastCoordX = 1;
+            updateLastCoord = true;
+        } else if (lastCoordX > 1) {
+            currentX += 1;
+            lastCoordX = 0;
+            updateLastCoord = true;
+        }
+
+        if (lastCoordY < 0) {
+            currentY -= 1;
+            lastCoordY = 1;
+            updateLastCoord = true;
+        } else if (lastCoordY > 1) {
+            currentY += 1;
+            lastCoordY = 0;
+            updateLastCoord = true;
+        }
+
+        if (lastCoordZ < 0) {
+            currentZ -= 1;
+            lastCoordZ = 1;
+            updateLastCoord = true;
+        } else if (lastCoordZ > 1) {
+            currentZ += 1;
+            lastCoordZ = 0;
+            updateLastCoord = true;
+        }
+        return updateLastCoord;
     }
 }
