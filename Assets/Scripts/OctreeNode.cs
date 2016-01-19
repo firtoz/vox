@@ -223,7 +223,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
         this.bounds = bounds;
         this.parent = parent;
         if (parent == null) {
-            nodeCoordinates = new OctreeNodeBase.Coordinates();
+            nodeCoordinates = new Coordinates();
 
 #if USE_ALL_NODES
     // ReSharper disable once UseObjectOrCollectionInitializer
@@ -236,7 +236,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
             _allNodes = _root._allNodes;
 #endif
 
-            nodeCoordinates = new OctreeNodeBase.Coordinates(parent.nodeCoordinates, OctreeChildCoordinates.FromIndex(indexInParent));
+            nodeCoordinates = new Coordinates(parent.nodeCoordinates, OctreeChildCoordinates.FromIndex(indexInParent));
         }
 
         this.indexInParent = indexInParent;
@@ -252,7 +252,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
     //    private readonly OctreeChildCoordinates[] _coords;
     protected readonly int depth;
     protected readonly ChildIndex indexInParent;
-    protected readonly OctreeNodeBase.Coordinates nodeCoordinates;
+    protected readonly Coordinates nodeCoordinates;
 
     protected TNode GetRoot() {
         return ocTree.GetRoot();
@@ -369,7 +369,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
 
     //recursive, can be phantom bounds!
     [Pure]
-    public Bounds GetChildBounds(OctreeNodeBase.Coordinates coordinates) {
+    public Bounds GetChildBounds(Coordinates coordinates) {
         AssertNotDeleted();
 
         var result = GetBounds();
@@ -561,7 +561,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
         return bounds;
     }
 
-    public OctreeNodeBase.Coordinates GetCoords() {
+    public Coordinates GetCoords() {
         AssertNotDeleted();
         return nodeCoordinates;
     }
@@ -657,7 +657,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
         return IsLeafNode() && HasItem();
     }
 
-    public TNode AddRecursive(OctreeNodeBase.Coordinates coordinates) {
+    public TNode AddRecursive(Coordinates coordinates) {
         var node = (TNode) this;
 
         foreach (var coordinate in coordinates) {
@@ -684,7 +684,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
         return parent;
     }
 
-    public void RemoveRecursive(OctreeNodeBase.Coordinates coordinates, bool cleanup = false) {
+    public void RemoveRecursive(Coordinates coordinates, bool cleanup = false) {
         if (coordinates.Length == 0) {
             return;
         }

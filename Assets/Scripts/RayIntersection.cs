@@ -169,7 +169,7 @@ public abstract partial class OctreeBase<TItem, TNode, TTree>
 
         private void ProcSubtree(float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, TNode node,
             bool insideSolidNode, int currentDepth, int? wantedDepth,
-            OctreeNodeBase.Coordinates nodeCoordinates) {
+            Coordinates nodeCoordinates) {
             if (!_intersectMultiple && results.Count > 0) {
                 return;
             }
@@ -206,7 +206,7 @@ public abstract partial class OctreeBase<TItem, TNode, TTree>
                             newCoords[i] = nodeCoordinates.GetCoord(i);
                         }
 
-                        ProcessTerminal(new OctreeNodeBase.Coordinates(newCoords), tx0, ty0,
+                        ProcessTerminal(new Coordinates(newCoords), tx0, ty0,
                             tz0);
                     }
                     return;
@@ -239,7 +239,7 @@ public abstract partial class OctreeBase<TItem, TNode, TTree>
                 }
 
                 var nextDepth = currentDepth + 1;
-                var childCoords = new OctreeNodeBase.Coordinates(nodeCoordinates,
+                var childCoords = new Coordinates(nodeCoordinates,
                     OctreeChildCoordinates.FromIndex(childIndex));
 
                 TNode childNode;
@@ -412,22 +412,22 @@ public abstract partial class OctreeBase<TItem, TNode, TTree>
 
             var childBounds =
                 node.GetChildBounds(
-                    new OctreeNodeBase.Coordinates(new[]
+                    new Coordinates(new[]
                     {OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftAboveBack)}));
 
             DrawBounds(childBounds, Color.green, true);
 
-            childBounds = node.GetChildBounds(new OctreeNodeBase.Coordinates(
+            childBounds = node.GetChildBounds(new Coordinates(
                 new[] {OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.RightAboveBack)}));
 
             DrawBounds(childBounds, Color.green, true);
 
-            childBounds = node.GetChildBounds(new OctreeNodeBase.Coordinates(
+            childBounds = node.GetChildBounds(new Coordinates(
                 new[] {OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.RightAboveForward)}));
 
             DrawBounds(childBounds, Color.green, true);
 
-            childBounds = node.GetChildBounds(new OctreeNodeBase.Coordinates(
+            childBounds = node.GetChildBounds(new Coordinates(
                 new[] {OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftAboveForward)}));
 
             DrawBounds(childBounds, Color.green, true);
@@ -436,7 +436,7 @@ public abstract partial class OctreeBase<TItem, TNode, TTree>
                 normal, GetNeighbourSide(entryPlane)));
         }
 
-        private void ProcessTerminal(OctreeNodeBase.Coordinates nodeCoordinates, float tx0, float ty0,
+        private void ProcessTerminal(Coordinates nodeCoordinates, float tx0, float ty0,
             float tz0) {
             var entryDistance = Mathf.Max(tx0, ty0, tz0);
 

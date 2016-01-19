@@ -34,7 +34,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
         return _sideSolidCount[side] > 0;
     }
 
-    public static OctreeNodeBase.Coordinates GetNeighbourCoords(OctreeNodeBase.Coordinates coords, NeighbourSide side)
+    public static Coordinates GetNeighbourCoords(Coordinates coords, NeighbourSide side)
     {
 //        var voxelTree = GetTree();
 
@@ -141,7 +141,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
             return null;
         }
 
-        return new OctreeNodeBase.Coordinates(newCoords);
+        return new Coordinates(newCoords);
     }
 
 
@@ -191,7 +191,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
         return updateLastCoord;
     }
 
-    private SideState GetSideState(OctreeNodeBase.Coordinates coords, NeighbourSide side) {
+    private SideState GetSideState(Coordinates coords, NeighbourSide side) {
         AssertNotDeleted();
         var neighbourCoords = GetNeighbourCoords(coords, side);
 
@@ -568,7 +568,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
     private void CreateFacesForSideInternal(ICollection<OctreeRenderFace> faces, NeighbourSide side,
         Bounds currentBounds,
-        OctreeNodeBase.Coordinates coords, int meshIndex, bool parentPartial = false) {
+        Coordinates coords, int meshIndex, bool parentPartial = false) {
         AssertNotDeleted();
         var sidestate = GetSideState(coords, side);
 
@@ -586,7 +586,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
                     for (var i = 0; i < childCoords.Length; i++) {
                         var childCoord = childCoords[i];
                         var childBounds = GetChildBoundsInternal(currentBounds, childCoord.ToIndex());
-                        var childAbsCoords = new OctreeNodeBase.Coordinates(coords,
+                        var childAbsCoords = new Coordinates(coords,
                             childCoord);
 
 //                        var _coords = new Coordinates();

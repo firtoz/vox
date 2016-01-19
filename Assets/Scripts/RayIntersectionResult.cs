@@ -10,7 +10,7 @@ public abstract partial class OctreeBase<TItem, TNode, TTree>
         public readonly Vector3 normal;
         public readonly NeighbourSide neighbourSide;
         public readonly bool hit;
-        public readonly OctreeNodeBase.Coordinates coordinates;
+        public readonly Coordinates coordinates;
 
         public RayIntersectionResult(bool hit) {
             this.hit = hit;
@@ -23,7 +23,7 @@ public abstract partial class OctreeBase<TItem, TNode, TTree>
         }
 
         public RayIntersectionResult(TNode node,
-            OctreeNodeBase.Coordinates coordinates,
+            Coordinates coordinates,
             float entryDistance,
             Vector3 position,
             Vector3 normal, NeighbourSide neighbourSide) {
