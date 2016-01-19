@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Generic;
 
-public struct OctreeChildCoordinates {
-    private static readonly Dictionary<int, OctreeNode.ChildIndex> CoordinateToChildIndices =
+public struct OctreeChildCoords {
+    private static readonly Dictionary<int, OctreeNode.ChildIndex> CoordsToChildIndices =
         new Dictionary<int, OctreeNode.ChildIndex>();
 
-    static OctreeChildCoordinates() {
+    static OctreeChildCoords() {
         for (var i = 0; i < 8; i++) {
             var index = (OctreeNode.ChildIndex) i;
-            CoordinateToChildIndices[FromIndex(index).GetHashCode()] = index;
+            CoordsToChildIndices[FromIndex(index).GetHashCode()] = index;
         }
     }
 
-    public bool Equals(OctreeChildCoordinates other) {
+    public bool Equals(OctreeChildCoords other) {
         return z == other.z && y == other.y && x == other.x;
     }
 
@@ -29,13 +29,13 @@ public struct OctreeChildCoordinates {
     public readonly int y;
     public readonly int x;
 
-    public OctreeChildCoordinates(int x, int y, int z) {
+    public OctreeChildCoords(int x, int y, int z) {
         this.x = x;
         this.y = y;
         this.z = z;
     }
 
-    public OctreeChildCoordinates(OctreeChildCoordinates other) {
+    public OctreeChildCoords(OctreeChildCoords other) {
         x = other.x;
         y = other.y;
         z = other.z;
@@ -50,36 +50,36 @@ public struct OctreeChildCoordinates {
         if (ReferenceEquals(null, obj)) {
             return false;
         }
-        return obj is OctreeChildCoordinates && Equals((OctreeChildCoordinates) obj);
+        return obj is OctreeChildCoords && Equals((OctreeChildCoords) obj);
     }
 
     public OctreeNode.ChildIndex ToIndex() {
         OctreeNode.ChildIndex index;
-        if (!CoordinateToChildIndices.TryGetValue(GetHashCode(), out index)) {
+        if (!CoordsToChildIndices.TryGetValue(GetHashCode(), out index)) {
             index = OctreeNode.ChildIndex.Invalid;
         }
         return index;
     }
 
-    public static OctreeChildCoordinates FromIndex(OctreeNode.ChildIndex index) {
+    public static OctreeChildCoords FromIndex(OctreeNode.ChildIndex index) {
         switch (index)
         {
             case OctreeNode.ChildIndex.LeftBelowBack:
-                return new OctreeChildCoordinates(0, 0, 0);
+                return new OctreeChildCoords(0, 0, 0);
             case OctreeNode.ChildIndex.LeftBelowForward:
-                return new OctreeChildCoordinates(0, 0, 1);
+                return new OctreeChildCoords(0, 0, 1);
             case OctreeNode.ChildIndex.LeftAboveBack:
-                return new OctreeChildCoordinates(0, 1, 0);
+                return new OctreeChildCoords(0, 1, 0);
             case OctreeNode.ChildIndex.LeftAboveForward:
-                return new OctreeChildCoordinates(0, 1, 1);
+                return new OctreeChildCoords(0, 1, 1);
             case OctreeNode.ChildIndex.RightBelowBack:
-                return new OctreeChildCoordinates(1, 0, 0);
+                return new OctreeChildCoords(1, 0, 0);
             case OctreeNode.ChildIndex.RightBelowForward:
-                return new OctreeChildCoordinates(1, 0, 1);
+                return new OctreeChildCoords(1, 0, 1);
             case OctreeNode.ChildIndex.RightAboveBack:
-                return new OctreeChildCoordinates(1, 1, 0);
+                return new OctreeChildCoords(1, 1, 0);
             case OctreeNode.ChildIndex.RightAboveForward:
-                return new OctreeChildCoordinates(1, 1, 1);
+                return new OctreeChildCoords(1, 1, 1);
             default:
                 throw new ArgumentOutOfRangeException("index", index, null);
         }

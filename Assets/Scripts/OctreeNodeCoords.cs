@@ -4,28 +4,28 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Assertions;
 
-public sealed class Coordinates : IEnumerable<OctreeChildCoordinates> {
-    private readonly OctreeChildCoordinates[] _coords;
+public sealed class Coords : IEnumerable<OctreeChildCoords> {
+    private readonly OctreeChildCoords[] _coords;
     private readonly int _length;
 
     private bool _hasHashCode;
     private int _hashCode;
 
-    public Coordinates() {
-        _coords = new OctreeChildCoordinates[0];
+    public Coords() {
+        _coords = new OctreeChildCoords[0];
         _hashCode = 0;
         _length = 0;
 
         _hasHashCode = true;
     }
 
-    public Coordinates(Coordinates parentCoordinates,
-        params OctreeChildCoordinates[] furtherChildren) {
-        var parentCoords = parentCoordinates._coords;
+    public Coords(Coords parentCoords,
+        params OctreeChildCoords[] furtherChildren) {
+        var parentLength = parentCoords.Length;
 
-        _coords = new OctreeChildCoordinates[parentCoords.Length + furtherChildren.Length];
+        _coords = new OctreeChildCoords[parentLength + furtherChildren.Length];
 
-        for (var i = 0; i < parentCoords.Length; ++i) {
+        for (var i = 0; i < parentLength; ++i) {
             _coords[i] = parentCoords[i];
         }
 
@@ -36,9 +36,13 @@ public sealed class Coordinates : IEnumerable<OctreeChildCoordinates> {
         _length = _coords.Length;
     }
 
-    public Coordinates(OctreeChildCoordinates[] coords) {
+    public Coords(OctreeChildCoords[] coords) {
         _coords = coords;
         _length = _coords.Length;
+    }
+
+    private OctreeChildCoords this[int i] {
+        get { return _coords[i]; }
     }
 
     public int Length {
@@ -49,25 +53,25 @@ public sealed class Coordinates : IEnumerable<OctreeChildCoordinates> {
         return GetEnumerator();
     }
 
-    public IEnumerator<OctreeChildCoordinates> GetEnumerator() {
+    public IEnumerator<OctreeChildCoords> GetEnumerator() {
         return _coords.AsEnumerable().GetEnumerator();
     }
 
-    //    public OctreeNodeCoordinates(IEnumerable<OctreeChildCoordinates> _coords) {
+    //    public OctreeNodeCoordinates(IEnumerable<OctreeChildCoords> _coords) {
     //        _coords = _coords.ToArray();
     //        _length = _coords.Length;
     //    }
 
-    public Coordinates GetParentCoordinates() {
+    public Coords GetParentCoords() {
         Assert.IsTrue(_coords.Length > 0, "Cannot get the parent of empty _coords");
 
-        var newCoords = new OctreeChildCoordinates[_coords.Length - 1];
+        var newCoords = new OctreeChildCoords[_coords.Length - 1];
         Array.Copy(_coords, newCoords, _coords.Length - 1);
 
-        return new Coordinates(newCoords);
+        return new Coords(newCoords);
     }
 
-    public bool Equals(Coordinates other) {
+    public bool Equals(Coords other) {
         return other != null && other.GetHashCode() == GetHashCode();
     }
 
@@ -114,10 +118,10 @@ public sealed class Coordinates : IEnumerable<OctreeChildCoordinates> {
         if (ReferenceEquals(this, obj)) {
             return true;
         }
-        return obj.GetType() == GetType() && Equals((Coordinates) obj);
+        return obj.GetType() == GetType() && Equals((Coords) obj);
     }
 
-    public OctreeChildCoordinates GetCoord(int i) {
+    public OctreeChildCoords GetCoord(int i) {
         return _coords[i];
     }
 }

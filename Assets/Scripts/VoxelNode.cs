@@ -34,7 +34,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
         return _sideSolidCount[side] > 0;
     }
 
-    public static Coordinates GetNeighbourCoords(Coordinates coords, NeighbourSide side)
+    public static Coords GetNeighbourCoords(Coords coords, NeighbourSide side)
     {
 //        var voxelTree = GetTree();
 
@@ -46,7 +46,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
             return null;
         }
 
-        var newCoords = new OctreeChildCoordinates[coordsLength];
+        var newCoords = new OctreeChildCoords[coordsLength];
 
         var hasLastCoords = false;
         var lastCoordX = 0;
@@ -71,7 +71,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
                 if (lastCoordUpdated)
                 {
-                    newCoords[i + 1] = new OctreeChildCoordinates(lastCoordX, lastCoordY, lastCoordZ);
+                    newCoords[i + 1] = new OctreeChildCoords(lastCoordX, lastCoordY, lastCoordZ);
                 }
             }
             else {
@@ -102,7 +102,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
                 }
             }
 
-            var newCoord = new OctreeChildCoordinates(currentX, currentY, currentZ);
+            var newCoord = new OctreeChildCoords(currentX, currentY, currentZ);
             newCoords[i] = newCoord;
 
             lastCoordX = currentX;
@@ -127,7 +127,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
                 ref lastCoordY, ref currentY,
                 ref lastCoordZ, ref currentZ);
 
-            newCoords[0] = new OctreeChildCoordinates(lastCoordX, lastCoordY, lastCoordZ);
+            newCoords[0] = new OctreeChildCoords(lastCoordX, lastCoordY, lastCoordZ);
             //if (GetTree() == null)
             //{
             //    voxelTree = null;
@@ -141,7 +141,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
             return null;
         }
 
-        return new Coordinates(newCoords);
+        return new Coords(newCoords);
     }
 
 
@@ -191,7 +191,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
         return updateLastCoord;
     }
 
-    private SideState GetSideState(Coordinates coords, NeighbourSide side) {
+    private SideState GetSideState(Coords coords, NeighbourSide side) {
         AssertNotDeleted();
         var neighbourCoords = GetNeighbourCoords(coords, side);
 
@@ -226,7 +226,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
         //let's check the parents
         while (neighbourCoords.Length > 0) {
             // get the next parent
-            neighbourCoords = neighbourCoords.GetParentCoordinates();
+            neighbourCoords = neighbourCoords.GetParentCoords();
 
             //does the next parent exist?
             if (!_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
@@ -269,7 +269,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
             currentNode = currentNode.GetChild(coord.ToIndex());
         }
 
-        //last currentNode is the actual node at the neighbour coordinates
+        //last currentNode is the actual node at the neighbour Coords
 
         if (currentNode == null) {
             return SideState.Empty;
@@ -445,7 +445,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
     }
 
     public IEnumerable<VoxelNode> GetAllSolidNeighbours(NeighbourSide side) {
-        var neighbourCoords = GetNeighbourCoords(nodeCoordinates, side);
+        var neighbourCoords = GetNeighbourCoords(nodeCoords, side);
 
         //out of the map!
         if (neighbourCoords == null) {
@@ -468,7 +468,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
         //let's check the parents
         while (neighbourCoords.Length > 0) {
             // get the next parent
-            neighbourCoords = neighbourCoords.GetParentCoordinates();
+            neighbourCoords = neighbourCoords.GetParentCoords();
 
             //does the next parent exist?
             if (!_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
@@ -506,7 +506,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
             currentNeighbourNode = currentNeighbourNode.GetChild(coord.ToIndex());
         }
 
-        //        last currentNode is the actual node at the neighbour coordinates
+        //        last currentNode is the actual node at the neighbour Coords
         if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
             return null;
         }
@@ -533,12 +533,12 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
     }
 
     private void CreateFacesForSideInternal(NeighbourSide side, int meshIndex, ICollection<OctreeRenderFace> faces) {
-        CreateFacesForSideInternal(faces, side, bounds, nodeCoordinates, meshIndex);
+        CreateFacesForSideInternal(faces, side, bounds, nodeCoords, meshIndex);
     }
 
 
-    private static OctreeChildCoordinates[] GetChildCoordsOfSide(NeighbourSide side) {
-        OctreeChildCoordinates[] childCoords;
+    private static OctreeChildCoords[] GetChildCoordsOfSide(NeighbourSide side) {
+        OctreeChildCoords[] childCoords;
 
         switch (side) {
             case NeighbourSide.Above:
@@ -568,7 +568,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
     private void CreateFacesForSideInternal(ICollection<OctreeRenderFace> faces, NeighbourSide side,
         Bounds currentBounds,
-        Coordinates coords, int meshIndex, bool parentPartial = false) {
+        Coords coords, int meshIndex, bool parentPartial = false) {
         AssertNotDeleted();
         var sidestate = GetSideState(coords, side);
 
@@ -586,10 +586,10 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
                     for (var i = 0; i < childCoords.Length; i++) {
                         var childCoord = childCoords[i];
                         var childBounds = GetChildBoundsInternal(currentBounds, childCoord.ToIndex());
-                        var childAbsCoords = new Coordinates(coords,
+                        var childAbsCoords = new Coords(coords,
                             childCoord);
 
-//                        var _coords = new Coordinates();
+//                        var _coords = new Coords();
 
                         CreateFacesForSideInternal(faces, side, childBounds, childAbsCoords, meshIndex);
                     }

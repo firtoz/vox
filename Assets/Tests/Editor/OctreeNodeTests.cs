@@ -20,8 +20,8 @@ namespace OctreeTest {
             Assert.AreEqual(Vector3.one * 5, rootSize);
             Assert.AreNotEqual(Vector3.one * 4, rootSize); // just to confirm vector equality
 
-            var aboveBackLeft = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftAboveBack);
-            var childBounds = root.GetChildBounds(new Coordinates(
+            var aboveBackLeft = OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.LeftAboveBack);
+            var childBounds = root.GetChildBounds(new Coords(
                 new[] {aboveBackLeft}));
 
             var count = 1; // 0.5 by def already
@@ -50,7 +50,7 @@ namespace OctreeTest {
                 childBounds.size
                 );
 
-            childBounds = root.GetChildBounds(new Coordinates(
+            childBounds = root.GetChildBounds(new Coords(
                 new[] {
                     aboveBackLeft,
                     aboveBackLeft
@@ -86,9 +86,9 @@ namespace OctreeTest {
                 rootSize * 0.25f
                 );
 
-            var aboveBackRight = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.RightAboveBack);
+            var aboveBackRight = OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.RightAboveBack);
 
-            childBounds = root.GetChildBounds(new Coordinates(
+            childBounds = root.GetChildBounds(new Coords(
                 new[] {
                     aboveBackLeft,
                     aboveBackLeft,
@@ -127,9 +127,9 @@ namespace OctreeTest {
                 rootSize * 0.125f
                 );
 
-            var belowForwardLeft = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftBelowForward);
+            var belowForwardLeft = OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.LeftBelowForward);
 
-            childBounds = root.GetChildBounds(new Coordinates(
+            childBounds = root.GetChildBounds(new Coords(
                 new[] {
                     aboveBackLeft,
                     aboveBackLeft,
@@ -174,7 +174,7 @@ namespace OctreeTest {
         }
 
         [Test]
-        public void CoordinateTests() {
+        public void NodeCoordsTests() {
             var testOctree = new TestOctree<int>(new Bounds(Vector3.zero, Vector3.one));
             var root = testOctree.GetRoot();
 
@@ -234,7 +234,7 @@ namespace OctreeTest {
 
             var firstChildCoords = firstChild.GetCoords();
             Assert.AreEqual(1, firstChildCoords.Length);
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), firstChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoords(0, 1, 0), firstChildCoords.GetCoord(0));
 
 
             var grandChild = firstChild.AddChild(OctreeNode.ChildIndex.RightAboveForward);
@@ -249,20 +249,20 @@ namespace OctreeTest {
 
             var grandChildCoords = grandChild.GetCoords();
             Assert.AreEqual(2, grandChildCoords.Length);
-            Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), grandChildCoords.GetCoord(0));
-            Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), grandChildCoords.GetCoord(1));
+            Assert.AreEqual(new OctreeChildCoords(0, 1, 0), grandChildCoords.GetCoord(0));
+            Assert.AreEqual(new OctreeChildCoords(1, 1, 1), grandChildCoords.GetCoord(1));
 
-            var rootCoords = new Coordinates();
+            var rootCoords = new Coords();
 
             Assert.AreEqual(root, root.GetChildAtCoords(rootCoords));
             Assert.AreEqual(firstChild, root.GetChildAtCoords(firstChild.GetCoords()));
             Assert.AreEqual(grandChild, root.GetChildAtCoords(grandChild.GetCoords()));
 
             var inexistentNodeCoords =
-                new Coordinates(new[] {
-                    new OctreeChildCoordinates(1, 1, 1),
-                    new OctreeChildCoordinates(1, 1, 1),
-                    new OctreeChildCoordinates(1, 1, 1)
+                new Coords(new[] {
+                    new OctreeChildCoords(1, 1, 1),
+                    new OctreeChildCoords(1, 1, 1),
+                    new OctreeChildCoords(1, 1, 1)
                 });
 
             Assert.IsNull(root.GetChildAtCoords(inexistentNodeCoords));

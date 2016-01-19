@@ -100,7 +100,7 @@ public class Vox : MonoBehaviour {
         Profiler.EndSample();
 
         if (result.hit) {
-            var neighbourCoords = VoxelNode.GetNeighbourCoords(result.coordinates, result.neighbourSide);
+            var neighbourCoords = VoxelNode.GetNeighbourCoords(result.coords, result.neighbourSide);
             if (neighbourCoords != null 
 //                && neighbourCoords.GetTree() != null
                 ) {
@@ -126,7 +126,7 @@ public class Vox : MonoBehaviour {
             if (Press(1))
             {
                 Profiler.BeginSample("RemoveRecursive");
-                voxelTree.GetRoot().RemoveRecursive(result.coordinates, true);
+                voxelTree.GetRoot().RemoveRecursive(result.coords, true);
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Render");
@@ -134,7 +134,7 @@ public class Vox : MonoBehaviour {
                 Profiler.EndSample();
             }
             if (Press(2)) {
-                Debug.Log(result.coordinates + " : " + result.neighbourSide);
+                Debug.Log(result.coords + " : " + result.neighbourSide);
             }
         }
     }
