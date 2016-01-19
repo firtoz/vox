@@ -100,17 +100,21 @@ public class Vox : MonoBehaviour {
         Profiler.EndSample();
 
         if (result.hit) {
-            var neighbourCoords = result.coordinates.GetNeighbourCoords(result.neighbourSide);
-            if (neighbourCoords != null && neighbourCoords.GetTree() != null) {
-                DrawBounds(neighbourCoords.GetTree().GetRoot().GetChildBounds(neighbourCoords), Color.green, false);
+            var neighbourCoords = VoxelNode.GetNeighbourCoords(result.coordinates, result.neighbourSide);
+            if (neighbourCoords != null 
+//                && neighbourCoords.GetTree() != null
+                ) {
+                DrawBounds(voxelTree.GetRoot().GetChildBounds(neighbourCoords), Color.green, false);
             }
 
             if (Press(0)) {
-                if (neighbourCoords != null && neighbourCoords.GetTree() != null) {
+                if (neighbourCoords != null 
+//                    && neighbourCoords.GetTree() != null
+                    ) {
 //                    Debug.Log(neighbourCoords);
                     Profiler.BeginSample("AddRecursive");
                     
-                    var final = neighbourCoords.GetTree().GetRoot().AddRecursive(neighbourCoords);
+                    var final = voxelTree.GetRoot().AddRecursive(neighbourCoords);
                     final.SetItem(indices[materialIndex], true);
                     Profiler.EndSample();
 

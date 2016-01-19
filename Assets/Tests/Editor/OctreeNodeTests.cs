@@ -6,7 +6,6 @@ namespace OctreeTest {
     [TestFixture]
     [Category("Octree Tests")]
     internal class OctreeNodeTests {
-
         [Test]
         public void Bounds() {
             var testOctree = new TestOctree<int>(new Bounds(Vector3.zero, Vector3.one * 5));
@@ -22,7 +21,7 @@ namespace OctreeTest {
             Assert.AreNotEqual(Vector3.one * 4, rootSize); // just to confirm vector equality
 
             var aboveBackLeft = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftAboveBack);
-            var childBounds = root.GetChildBounds(new TestOctreeCoords(testOctree,
+            var childBounds = root.GetChildBounds(new OctreeNodeBase.Coordinates(
                 new[] {aboveBackLeft}));
 
             var count = 1; // 0.5 by def already
@@ -47,11 +46,11 @@ namespace OctreeTest {
                  Vector3.forward * (rootSize.z * forward)) / Mathf.Pow(2, count)
                 );
 
-            Assert.AreEqual(rootSize * 0.5f, 
+            Assert.AreEqual(rootSize * 0.5f,
                 childBounds.size
                 );
 
-            childBounds = root.GetChildBounds(new TestOctreeCoords(testOctree,
+            childBounds = root.GetChildBounds(new OctreeNodeBase.Coordinates(
                 new[] {
                     aboveBackLeft,
                     aboveBackLeft
@@ -89,7 +88,7 @@ namespace OctreeTest {
 
             var aboveBackRight = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.RightAboveBack);
 
-            childBounds = root.GetChildBounds(new TestOctreeCoords(testOctree,
+            childBounds = root.GetChildBounds(new OctreeNodeBase.Coordinates(
                 new[] {
                     aboveBackLeft,
                     aboveBackLeft,
@@ -130,7 +129,7 @@ namespace OctreeTest {
 
             var belowForwardLeft = OctreeChildCoordinates.FromIndex(OctreeNode.ChildIndex.LeftBelowForward);
 
-            childBounds = root.GetChildBounds(new TestOctreeCoords(testOctree,
+            childBounds = root.GetChildBounds(new OctreeNodeBase.Coordinates(
                 new[] {
                     aboveBackLeft,
                     aboveBackLeft,
@@ -253,14 +252,14 @@ namespace OctreeTest {
             Assert.AreEqual(new OctreeChildCoordinates(0, 1, 0), grandChildCoords.GetCoord(0));
             Assert.AreEqual(new OctreeChildCoordinates(1, 1, 1), grandChildCoords.GetCoord(1));
 
-            var rootCoords = new TestOctreeCoords(null);
+            var rootCoords = new OctreeNodeBase.Coordinates();
 
             Assert.AreEqual(root, root.GetChildAtCoords(rootCoords));
             Assert.AreEqual(firstChild, root.GetChildAtCoords(firstChild.GetCoords()));
             Assert.AreEqual(grandChild, root.GetChildAtCoords(grandChild.GetCoords()));
 
             var inexistentNodeCoords =
-                new TestOctreeCoords(null, new[] {
+                new OctreeNodeBase.Coordinates(new[] {
                     new OctreeChildCoordinates(1, 1, 1),
                     new OctreeChildCoordinates(1, 1, 1),
                     new OctreeChildCoordinates(1, 1, 1)

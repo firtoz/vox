@@ -2,10 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract partial class OctreeBase<TItem, TNode, TTree, TCoords>
-    where TTree : OctreeBase<TItem, TNode, TTree, TCoords>
-    where TNode : OctreeNodeBase<TItem, TTree, TNode, TCoords> 
-    where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() {
+public abstract partial class OctreeBase<TItem, TNode, TTree>
+    where TTree : OctreeBase<TItem, TNode, TTree>
+    where TNode : OctreeNodeBase<TItem, TTree, TNode> {
     private readonly TNode _root;
 
     protected OctreeBase(Func<TTree, Bounds, TNode> nodeConstructor, Bounds bounds) {

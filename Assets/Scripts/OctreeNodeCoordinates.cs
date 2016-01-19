@@ -4,32 +4,23 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Assertions;
 
-public abstract partial class OctreeNodeBase<TItem, TTree, TNode, TCoords>
-    where TTree : OctreeBase<TItem, TNode, TTree, TCoords>
-    where TNode : OctreeNodeBase<TItem, TTree, TNode, TCoords>
-    where TCoords : OctreeNodeBase<TItem, TTree, TNode, TCoords>.Coordinates, new() {
-    private static readonly TCoords StaticCoordsInstance = new TCoords();
-
-    public abstract class Coordinates : IEnumerable<OctreeChildCoordinates> {
+public abstract class OctreeNodeBase {
+    public sealed class Coordinates : IEnumerable<OctreeChildCoordinates> {
+        private readonly OctreeChildCoordinates[] _coords;
         private readonly int _length;
-        protected readonly OctreeChildCoordinates[] _coords;
-        protected readonly TTree _tree;
 
         private bool _hasHashCode;
         private int _hashCode;
 
-        protected Coordinates() {}
-
-        protected Coordinates(TTree tree) {
+        public Coordinates() {
             _coords = new OctreeChildCoordinates[0];
             _hashCode = 0;
             _length = 0;
 
             _hasHashCode = true;
-            _tree = tree;
         }
 
-        protected Coordinates(TTree tree, TCoords parentCoordinates,
+        public Coordinates(Coordinates parentCoordinates,
             params OctreeChildCoordinates[] furtherChildren) {
             var parentCoords = parentCoordinates._coords;
 
@@ -44,12 +35,10 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode, TCoords>
             }
 
             _length = _coords.Length;
-            _tree = tree;
         }
 
-        protected Coordinates(TTree tree, OctreeChildCoordinates[] coords) {
+        public Coordinates(OctreeChildCoordinates[] coords) {
             _coords = coords;
-            _tree = tree;
             _length = _coords.Length;
         }
 
@@ -70,23 +59,17 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode, TCoords>
         //        _length = _coords.Length;
         //    }
 
-        public TCoords GetParentCoordinates() {
+        public Coordinates GetParentCoordinates() {
             Assert.IsTrue(_coords.Length > 0, "Cannot get the parent of empty _coords");
 
             var newCoords = new OctreeChildCoordinates[_coords.Length - 1];
             Array.Copy(_coords, newCoords, _coords.Length - 1);
 
-            return Construct(_tree, newCoords);
+            return new Coordinates(newCoords);
         }
 
-        public abstract TCoords Construct(TTree tree);
-        public abstract TCoords Construct(TTree tree, OctreeChildCoordinates[] newCoords);
-
-        public abstract TCoords Construct(TTree tree, TCoords nodeCoordinates,
-            OctreeChildCoordinates octreeChildCoordinates);
-
-        protected bool Equals(TCoords other) {
-            return other.GetHashCode() == GetHashCode();
+        public bool Equals(Coordinates other) {
+            return other != null && other.GetHashCode() == GetHashCode();
         }
 
         public override int GetHashCode() {
@@ -97,10 +80,6 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode, TCoords>
 
             unchecked {
                 _hashCode = _coords.Length;
-
-                if (_tree != null) {
-                    _hashCode = _hashCode * 17 + _tree.GetHashCode();
-                }
 
                 // ReSharper disable once LoopCanBeConvertedToQuery
                 foreach (var coord in _coords) {
@@ -136,15 +115,11 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode, TCoords>
             if (ReferenceEquals(this, obj)) {
                 return true;
             }
-            return obj.GetType() == GetType() && Equals((TCoords) obj);
+            return obj.GetType() == GetType() && Equals((Coordinates) obj);
         }
 
         public OctreeChildCoordinates GetCoord(int i) {
             return _coords[i];
-        }
-
-        public TTree GetTree() {
-            return _tree;
         }
     }
 }

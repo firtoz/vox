@@ -5,7 +5,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 
-public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree, VoxelCoordinates> {
+public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
     private const int MAX_VERTICES_FOR_MESH = 65000 - 4 * 100;
     private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
     private const int MAX_INDICES_FOR_MESH = MAX_FACES_FOR_MESH * 6;
