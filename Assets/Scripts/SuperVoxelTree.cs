@@ -9,8 +9,18 @@ public class SuperVoxelItem {
 
 public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, SuperVoxelTree> {
     private OctreeNode.ChildIndex _indexInParent;
-    private SuperVoxelTree _parent;
+    private SuperVoxelTree _parentTree;
 
+    public SuperVoxelTree(Func<SuperVoxelTree, Bounds, Node> nodeConstructor, Bounds bounds)
+        : base(nodeConstructor, bounds) {
+        GetRoot().SetItem(new SuperVoxelItem
+        {
+            childTree = this,
+            voxelTree = null
+        });
+
+        _parentTree = null;
+    }
 
     public SuperVoxelTree(Bounds bounds, VoxelTree voxelTree) : base(CreateRootNode, bounds) {
         if (voxelTree == null) {
@@ -22,7 +32,7 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
             voxelTree = voxelTree
         });
 
-        _parent = null;
+        _parentTree = null;
     }
 
     private SuperVoxelTree(Bounds bounds) : base(CreateRootNode, bounds) {
@@ -31,7 +41,7 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
             voxelTree = null
         });
 
-        _parent = null;
+        _parentTree = null;
     }
 
     public override Node ConstructNode(Bounds bounds, Node parent, OctreeNode.ChildIndex indexInParent, int depth) {
@@ -43,13 +53,14 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
     }
 
     public SuperVoxelTree GetOrCreateNeighbour(NeighbourSide side, bool readOnly) {
-        if (_parent == null) {
+        if (_parentTree == null) {
             if (readOnly) {
                 return null;
             }
             AssignIndexInParent(side);
 
-            _parent = new SuperVoxelTree(CreateParentBounds());
+            _parentTree = new SuperVoxelTree(CreateParentBounds());
+            _parentTree.GetRoot().AddChild(_indexInParent).SetItem(GetRoot().GetItem());
         }
 
 //        var neighbourCoords =
@@ -63,13 +74,13 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
         // not at edge, if parent was null, we get neighbour coords result.
         // at edge: ??
 
-        var neighbourCoordsResult = GetNeighbourCoordsInfinite(_parent,
+        var neighbourCoordsResult = GetNeighbourCoordsInfinite(_parentTree,
             new Coords(new[] {OctreeChildCoords.FromIndex(_indexInParent)}), side, GetOrCreateParentNeighbour);
 
-        var neighbourParent = neighbourCoordsResult.tree;
+        var neighbourParentTree = neighbourCoordsResult.tree;
         var neighbourCoords = neighbourCoordsResult.coordsResult;
 
-        var parentRoot = neighbourParent.GetRoot();
+        var parentRoot = neighbourParentTree.GetRoot();
 
         var neighbour = parentRoot.GetChildAtCoords(neighbourCoords);
 
@@ -78,7 +89,7 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
                 return null;
             }
 
-            neighbour = parentRoot.AddRecursive(neighbourCoords);
+            neighbour = parentRoot.AddRecursive(neighbourCoords, false);
             CreateNewNeighbourSuperVoxelTree(neighbour);
         }
 
@@ -86,16 +97,16 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
 
         //        }
 
-        //        var neighbour = _parent.GetRoot().GetChildAtCoords(neighbourCoords) ??
-        //                        _parent.GetRoot().AddRecursive(neighbourCoords);
+        //        var neighbour = _parentTree.GetRoot().GetChildAtCoords(neighbourCoords) ??
+        //                        _parentTree.GetRoot().AddRecursive(neighbourCoords);
 
         //        return neighbour.GetItem().childTree;
     }
 
     private SuperVoxelTree GetOrCreateParentNeighbour(NeighbourSide side, bool readOnly) {
-        Assert.IsNotNull(_parent, "Trying to get a neighbour for a parent that does not exist");
+        Assert.IsNotNull(_parentTree, "Trying to get a neighbour for a parent that does not exist");
 
-        return _parent.GetOrCreateNeighbour(side, readOnly);
+        return _parentTree.GetOrCreateNeighbour(side, readOnly);
     }
 
     private void CreateNewNeighbourSuperVoxelTree(Node ownerNode) {
@@ -116,10 +127,11 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
             var newNeighbourSuperVoxelTree = new SuperVoxelTree(neighbourBounds,
                 new VoxelTree(neighbourBounds.center, neighbourBounds.size, false)) {
                     _indexInParent = ownerNode.GetIndexInParent(),
-                    _parent = ownerNode.GetTree()
+                    _parentTree = ownerNode.GetTree()
                 };
 
-            neighbourSuperVoxelItem = newNeighbourSuperVoxelTree.GetRoot().GetItem();
+            var neighbourRoot = newNeighbourSuperVoxelTree.GetRoot();
+            neighbourSuperVoxelItem = neighbourRoot.GetItem();
 
             var newGameObject = new GameObject();
 
@@ -130,16 +142,15 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
             newGameObject.transform.localScale = originalGameObject.transform.lossyScale;
 
             var neighbourVoxelTree = neighbourSuperVoxelItem.voxelTree;
-            neighbourVoxelTree.SetOwnerNode(ownerNode);
+            neighbourVoxelTree.SetOwnerNode(neighbourRoot);
 
             neighbourVoxelTree.SetGameObject(newGameObject);
 
             neighbourVoxelTree.CopyMaterialsFrom(myVoxelTree);
-
         } else {
             var newNeighbourSuperVoxelTree = new SuperVoxelTree(neighbourBounds) {
                 _indexInParent = ownerNode.GetIndexInParent(),
-                _parent = ownerNode.GetTree()
+                _parentTree = ownerNode.GetTree()
             };
 
             neighbourSuperVoxelItem = newNeighbourSuperVoxelTree.GetRoot().GetItem();
@@ -182,7 +193,11 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
 
 
     public VoxelTree GetVoxelTree() {
-        return GetRoot().GetItem().voxelTree;
+        var root = GetRoot();
+        Assert.IsNotNull(root, "Root should not be null");
+        var rootItem = root.GetItem();
+        Assert.IsNotNull(rootItem, "Root item should not be null");
+        return rootItem.voxelTree;
     }
 
     public class Node : OctreeNodeBase<SuperVoxelItem, SuperVoxelTree, Node> {

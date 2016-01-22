@@ -123,10 +123,7 @@ public class Vox : MonoBehaviour {
                     Profiler.EndSample();
 
                     Profiler.BeginSample("Render");
-                    voxelTree.Render();
-                    if (neighbourTree != voxelTree) {
-                         neighbourTree.Render();
-                    }
+                    neighbourTree.Render();
                     Profiler.EndSample();
                 }
             }

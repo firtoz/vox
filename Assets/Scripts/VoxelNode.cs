@@ -98,7 +98,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 //            return SideState.Empty;
 //        }
 
-        var currentNode = neighbourCoordsResult.tree.GetRoot();// neighbourCoords.GetTree().GetRoot();
+        var currentNode = neighbourCoordsResult.tree.GetRoot(); // neighbourCoords.GetTree().GetRoot();
 
         // follow the children until you get to the node
         foreach (var coord in neighbourCoordsResult.coordsResult) {
@@ -136,7 +136,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 #endif
     }
 
-    protected override void AddSolidNode(ChildIndex childIndex, bool actuallySolid) {
+    private void AddSolidNode(ChildIndex childIndex, bool actuallySolid) {
         NeighbourSide verticalSide, depthSide, horizontalSide;
 
         if (childIndex != ChildIndex.Invalid) {
@@ -179,7 +179,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
         }
     }
 
-    protected override void RemoveSolidNode(ChildIndex childIndex, bool wasActuallySolid) {
+    private void RemoveSolidNode(ChildIndex childIndex, bool wasActuallySolid) {
         NeighbourSide verticalSide, depthSide, horizontalSide;
 
         if (childIndex != ChildIndex.Invalid) {
@@ -286,6 +286,16 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
                 ocTree.UpdateNeighbours(this);
             }
         }
+    }
+
+    protected override void RemoveItemInternal(bool updateNeighbours) {
+        if (hasItem) {
+            ocTree.NodeRemoved(this, updateNeighbours);
+
+            RemoveSolidNode(ChildIndex.Invalid, true);
+        }
+
+        base.RemoveItemInternal(updateNeighbours);
     }
 
     public IEnumerable<VoxelNode> GetAllSolidNeighbours(NeighbourSide side) {

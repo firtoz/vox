@@ -209,8 +209,7 @@ public abstract class OctreeNode {
     }
 }
 
-public interface INode
-{
+public interface INode {
     Bounds GetBounds();
     Coords GetCoords();
     bool IsSolid();
@@ -218,7 +217,7 @@ public interface INode
     INode GetChild(OctreeNode.ChildIndex childIndex);
 }
 
-public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
+public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
     where TTree : OctreeBase<TItem, TNode, TTree>
     where TNode : OctreeNodeBase<TItem, TTree, TNode> {
     protected readonly TTree ocTree;
@@ -239,8 +238,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, 
             _allNodes = new Dictionary<int, OctreeNode<T>>();
             _allNodes[nodeCoords.GetHashCode()] = this;
 #endif
-        }
-        else {
+        } else {
 #if USE_ALL_NODES
             _allNodes = _root._allNodes;
 #endif
@@ -273,13 +271,6 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, 
     protected bool hasItem;
 
     protected TItem item;
-
-
-    //    private List<OctreeNode<T>> _actuallySolidChildren = new List<OctreeNode<T>>(); 
-
-    protected virtual void AddSolidNode(ChildIndex childIndex, bool actuallySolid) {}
-
-    protected virtual void RemoveSolidNode(ChildIndex childIndex, bool wasActuallySolid) {}
 
     protected void AssertNotDeleted() {
         Assert.IsFalse(deleted, "Node Deleted");
@@ -536,6 +527,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, 
 
     protected virtual void SetItemInternal(TItem newItem, bool cleanup, bool updateNeighbours) {
         item = newItem;
+        hasItem = true;
     }
 
     protected void RemoveAllChildren() {
@@ -555,14 +547,8 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, 
         RemoveItemInternal(true);
     }
 
-    private void RemoveItemInternal(bool updateNeighbours) {
-        if (hasItem) {
-            ocTree.NodeRemoved((TNode) this, updateNeighbours);
-
-            RemoveSolidNode(ChildIndex.Invalid, true);
-
-            hasItem = false;
-        }
+    protected virtual void RemoveItemInternal(bool updateNeighbours) {
+        hasItem = false;
 
         item = default(TItem);
     }
@@ -668,7 +654,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, 
         return IsLeafNode() && HasItem();
     }
 
-    public TNode AddRecursive(Coords coords) {
+    public TNode AddRecursive(Coords coords, bool subdivide = true) {
         var node = (TNode) this;
 
         foreach (var coordinate in coords) {
@@ -678,7 +664,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, 
             if (child != null) {
                 node = child;
             } else {
-                if (node.HasItem()) {
+                if (subdivide && node.HasItem()) {
                     node.SubDivide();
                     node = node.GetChild(index);
                 } else {

@@ -26,6 +26,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
     private SuperVoxelTree.Node _ownerNode;
 
     private GameObject _renderObject;
+    private readonly HashSet<VoxelTree> _dirtyTrees = new HashSet<VoxelTree>();
 
     public VoxelTree(Vector3 center, Vector3 size, bool setOwnerTree = true) : base(RootConstructor, new Bounds(center, size)) {
         if (setOwnerTree) {
@@ -450,6 +451,12 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
     }
 
     public void Render() {
+        foreach (var dirtyTree in _dirtyTrees) {
+            dirtyTree.Render();
+        }
+
+        _dirtyTrees.Clear();
+
         Profiler.BeginSample("Process draw queue");
         ProcessDrawQueue();
         Profiler.EndSample();
@@ -738,6 +745,10 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
                         var neighbourDrawQueue = neighbourTree.GetMeshInfo(neighbour.GetItem()).drawQueue;
                         if (!neighbourDrawQueue.Contains(neighbour)) {
                             neighbourDrawQueue.Add(neighbour);
+
+                            if (neighbourTree != this) {
+                                _dirtyTrees.Add(neighbourTree);
+                            }
                         }
                     }
                 }
@@ -781,10 +792,16 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
                     continue;
                 }
 
-                var neighbourMeshInfo = neighbour.GetTree().GetMeshInfo(neighbour.GetItem());
+                var neighbourTree = neighbour.GetTree();
+                var neighbourMeshInfo = neighbourTree.GetMeshInfo(neighbour.GetItem());
                 var neighbourDrawQueue = neighbourMeshInfo.drawQueue;
                 if (!neighbourDrawQueue.Contains(neighbour)) {
                     neighbourDrawQueue.Add(neighbour);
+
+                    if (neighbourTree != this)
+                    {
+                        _dirtyTrees.Add(neighbourTree);
+                    }
                 }
             }
         }
@@ -793,10 +810,6 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
     public NeighbourCoordsResult GetNeighbourCoordsInfinite(Coords coords, NeighbourSide side, bool readOnly = false) {
         return GetNeighbourCoordsInfinite(this, coords, side, GetOrCreateNeighbour, readOnly);
     }
-
-    //public new Coords GetNeighbourCoords(Coords coords, NeighbourSide side) {
-    //    return GetNeighbourCoordsInfinite(coords, side, true).coordsResult;
-    //}
 
     public Bounds GetNeighbourBoundsForChild(Coords coords, NeighbourSide neighbourSide) {
         var childBounds = GetRoot().GetChildBounds(coords);
