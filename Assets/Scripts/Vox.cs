@@ -9,7 +9,7 @@ public class Vox : MonoBehaviour {
     public int materialIndex;
     public List<Material> materials = new List<Material>();
 
-    private OctreeBase<int, VoxelNode, VoxelTree>.RayIntersectionResult result;
+    private RayIntersectionResult _result;
 
     public bool showGizmos = false;
     public float size = 100.0f;
@@ -18,9 +18,6 @@ public class Vox : MonoBehaviour {
 
     public VoxelTree voxelTree = new VoxelTree(Vector3.zero, Vector3.one * 100);
     public int wantedDepth = 5;
-
-    // Use this for initialization
-    private void Start() {}
 
     public void OnEnable() {
         voxelTree = new VoxelTree(Vector3.zero, Vector3.one * size);
@@ -54,7 +51,7 @@ public class Vox : MonoBehaviour {
     }
 
     // Update is called once per frame
-    private void Update() {
+    public void Update() {
         if (addBoundsNextFrame) {
             addBoundsNextFrame = false;
 
@@ -96,18 +93,18 @@ public class Vox : MonoBehaviour {
         Profiler.BeginSample("Intersect");
 
         if (useDepth) {
-            voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out result, wantedDepth);
+            voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out _result, wantedDepth);
         } else {
-            voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out result);
+            voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out _result);
         }
 
         Profiler.EndSample();
 
-        if (result.hit) {
-            DrawBounds(voxelTree.GetNeighbourBoundsForChild(result.coords, result.neighbourSide), Color.yellow, false);
+        if (_result.hit) {
+            DrawBounds(voxelTree.GetNeighbourBoundsForChild(_result.coords, _result.neighbourSide), Color.yellow, false);
 
             if (Press(0)) {
-                var neighbourCoordsResult = voxelTree.GetNeighbourCoordsInfinite(result.coords, result.neighbourSide);
+                var neighbourCoordsResult = voxelTree.GetNeighbourCoordsInfinite(_result.coords, _result.neighbourSide);
 
                 DrawBounds(neighbourCoordsResult.tree.GetRoot().GetChildBounds(neighbourCoordsResult.coordsResult), Color.green, false);
 
@@ -135,7 +132,7 @@ public class Vox : MonoBehaviour {
             }
             if (Press(1)) {
                 Profiler.BeginSample("RemoveRecursive");
-                voxelTree.GetRoot().RemoveRecursive(result.coords, true);
+                voxelTree.GetRoot().RemoveRecursive(_result.coords, true);
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Render");
@@ -143,7 +140,7 @@ public class Vox : MonoBehaviour {
                 Profiler.EndSample();
             }
             if (Press(2)) {
-                Debug.Log(result.coords + " : " + result.neighbourSide);
+                Debug.Log(_result.coords + " : " + _result.neighbourSide);
             }
         }
     }

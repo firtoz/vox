@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-public abstract partial class OctreeBase<TItem, TNode, TTree>
+public interface IOctree {
+    INode GetRoot();
+}
+
+public abstract partial class OctreeBase<TItem, TNode, TTree> : IOctree
     where TTree : OctreeBase<TItem, TNode, TTree> where TNode : OctreeNodeBase<TItem, TTree, TNode> {
     private readonly TNode _root;
 
@@ -14,6 +18,10 @@ public abstract partial class OctreeBase<TItem, TNode, TTree>
 
     public TNode GetRoot() {
         return _root;
+    }
+
+    INode IOctree.GetRoot() {
+        return GetRoot();
     }
 
     public abstract TNode ConstructNode(Bounds bounds, TNode parent, OctreeNode.ChildIndex indexInParent, int depth);

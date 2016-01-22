@@ -209,7 +209,16 @@ public abstract class OctreeNode {
     }
 }
 
-public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
+public interface INode
+{
+    Bounds GetBounds();
+    Coords GetCoords();
+    bool IsSolid();
+    Bounds GetChildBounds(Coords nodeCoords);
+    INode GetChild(OctreeNode.ChildIndex childIndex);
+}
+
+public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
     where TTree : OctreeBase<TItem, TNode, TTree>
     where TNode : OctreeNodeBase<TItem, TTree, TNode> {
     protected readonly TTree ocTree;
@@ -254,7 +263,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
     protected readonly ChildIndex indexInParent;
     protected readonly Coords nodeCoords;
 
-    protected TNode GetRoot() {
+    protected INode GetRoot() {
         return ocTree.GetRoot();
     }
 
@@ -589,7 +598,7 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
         var queue = new Queue<TNode>();
         queue.Enqueue((TNode) this);
 
-        var discovered = new HashSet<TNode> {GetRoot()};
+        var discovered = new HashSet<INode> {GetRoot()};
 
         while (queue.Count > 0) {
             var node = queue.Dequeue();
@@ -759,6 +768,10 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
         return ocTree;
     }
 
-//    public OctreeNode(Bounds bounds, Octree<T> _tree) : base(bounds, tree) { }
-//    public OctreeNode(Bounds bounds, OctreeNode<T> parent, ChildIndex indexInParent, int depth, Octree<T> _tree) : base(bounds, parent, indexInParent, depth, tree) { }
+    INode INode.GetChild(ChildIndex childIndex) {
+        return GetChild(childIndex);
+    }
+
+    //    public OctreeNode(Bounds bounds, Octree<T> _tree) : base(bounds, tree) { }
+    //    public OctreeNode(Bounds bounds, OctreeNode<T> parent, ChildIndex indexInParent, int depth, Octree<T> _tree) : base(bounds, parent, indexInParent, depth, tree) { }
 }
