@@ -1,8 +1,7 @@
 using UnityEngine;
 
 public abstract partial class OctreeBase<TItem, TNode, TTree>
-    where TTree : OctreeBase<TItem, TNode, TTree>
-    where TNode : OctreeNodeBase<TItem, TTree, TNode> {
+    where TTree : OctreeBase<TItem, TNode, TTree> where TNode : OctreeNodeBase<TItem, TTree, TNode> {
     public struct RayIntersectionResult {
         public readonly TNode node;
         public readonly float entryDistance;

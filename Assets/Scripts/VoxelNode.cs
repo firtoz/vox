@@ -37,10 +37,10 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
     private SideState GetSideState(Coords coords, NeighbourSide side) {
         AssertNotDeleted();
-        var neighbourCoords = VoxelTree.GetNeighbourCoords(coords, side);
+        var neighbourCoordsResult = GetTree().GetNeighbourCoordsInfinite(coords, side, true);
 
         //out of the boundaries
-        if (neighbourCoords == null) {
+        if (neighbourCoordsResult == null) {
             return SideState.Empty;
         }
 
@@ -98,10 +98,10 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 //            return SideState.Empty;
 //        }
 
-        var currentNode = GetRoot();// neighbourCoords.GetTree().GetRoot();
+        var currentNode = neighbourCoordsResult.tree.GetRoot();// neighbourCoords.GetTree().GetRoot();
 
         // follow the children until you get to the node
-        foreach (var coord in neighbourCoords) {
+        foreach (var coord in neighbourCoordsResult.coordsResult) {
             if (currentNode == null) {
                 return SideState.Empty;
             }
@@ -289,10 +289,10 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
     }
 
     public IEnumerable<VoxelNode> GetAllSolidNeighbours(NeighbourSide side) {
-        var neighbourCoords = VoxelTree.GetNeighbourCoords(nodeCoords, side);
+        var neighbourCoordsResult = GetTree().GetNeighbourCoordsInfinite(nodeCoords, side, true);
 
         //out of the map!
-        if (neighbourCoords == null) {
+        if (neighbourCoordsResult == null) {
             return null;
         }
 
@@ -336,9 +336,9 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 //            return null;
 //        }
 
-        var currentNeighbourNode = GetRoot();
+        var currentNeighbourNode = neighbourCoordsResult.tree.GetRoot();
 
-        foreach (var coord in neighbourCoords) {
+        foreach (var coord in neighbourCoordsResult.coordsResult) {
             if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
                 return null;
             }

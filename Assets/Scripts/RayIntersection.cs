@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public abstract partial class OctreeBase<TItem, TNode, TTree>
-    where TTree : OctreeBase<TItem, TNode, TTree>
-    where TNode : OctreeNodeBase<TItem, TTree, TNode> {
+    where TTree : OctreeBase<TItem, TNode, TTree> where TNode : OctreeNodeBase<TItem, TTree, TNode> {
     public class RayIntersection {
         private readonly byte _a;
         private readonly bool _debug;

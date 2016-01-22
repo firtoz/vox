@@ -30,7 +30,7 @@ public class VoxEditor : Editor {
 //                using (new MeshModification(sharedMesh, "Modify")) {
 
             Undo.RegisterCompleteObjectUndo(vox.gameObject, "Modify");
-            vox.voxelTree.Render(vox.gameObject);
+            vox.voxelTree.Render();
             EditorUtility.SetDirty(vox.gameObject);
         }
 //            if (GUILayout.Button("CreateFaces")) {
@@ -63,7 +63,7 @@ public class VoxEditor : Editor {
             //                topFwdLeft.SubDivide();
 
             Undo.RegisterCompleteObjectUndo(vox.gameObject, "Modify");
-            vox.voxelTree.Render(vox.gameObject);
+            vox.voxelTree.Render();
             EditorUtility.SetDirty(vox.gameObject);
         }
         if (GUILayout.Button("Add Random Bounds")) {

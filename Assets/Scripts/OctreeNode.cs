@@ -98,7 +98,7 @@ public abstract class OctreeNode {
         new OctreeChildCoords(1, 1, 1)
     };
 
-    protected static Vector3 GetChildDirection(ChildIndex childIndex) {
+    public static Vector3 GetChildDirection(ChildIndex childIndex) {
         Vector3 childDirection;
 
         switch (childIndex) {
@@ -525,7 +525,9 @@ public abstract partial class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode
         SetItemInternal(newItem, cleanup, true);
     }
 
-    protected virtual void SetItemInternal(TItem newItem, bool cleanup, bool updateNeighbours) {}
+    protected virtual void SetItemInternal(TItem newItem, bool cleanup, bool updateNeighbours) {
+        item = newItem;
+    }
 
     protected void RemoveAllChildren() {
         for (var i = 0; i < 8; i++) {

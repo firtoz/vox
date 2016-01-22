@@ -17,22 +17,23 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
     private readonly Dictionary<int, HashSet<OctreeRenderFace>> _nodeFaces =
         new Dictionary<int, HashSet<OctreeRenderFace>>();
 
+    private GameObject _gameObject;
+
     //    private readonly List<Mesh> _meshes = new List<Mesh>();
 
     private Dictionary<int, MeshInfo<VoxelNode>> _meshInfos = new Dictionary<int, MeshInfo<VoxelNode>>();
 
+    private SuperVoxelTree.Node _ownerNode;
+
     private GameObject _renderObject;
 
-    public VoxelTree(Vector3 center, Vector3 size) : base(RootConstructor, new Bounds(center, size)) {
-//        var superTree = new SuperVoxelTree(new Bounds(center, size));
+    public VoxelTree(Vector3 center, Vector3 size, bool setOwnerTree = true) : base(RootConstructor, new Bounds(center, size)) {
+        if (setOwnerTree) {
+            var superTree = new SuperVoxelTree(new Bounds(center, size), this);
 
-//        _ownerNode = superTree.GetRoot();
+            _ownerNode = superTree.GetRoot();
+        }
     }
-
-    private VoxelTree(Vector3 center, Vector3 size, SuperVoxelTree.Node node)
-        : base(RootConstructor, new Bounds(center, size)) {
-//        _ownerNode = node;
-    } //
 
     private static VoxelNode RootConstructor(VoxelTree self, Bounds bounds) {
         return new VoxelNode(bounds, self);
@@ -57,19 +58,19 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
         };
     }
 
-    protected VoxelTree CreateNeighbour(NeighbourSide side) {
-        var neighbourBounds = GetNeighbourBounds(side);
-
-        var neighbour = new VoxelTree(neighbourBounds.center, neighbourBounds.size);
-
-        foreach (var material in _materials) {
-            neighbour.SetMaterial(material.Key, material.Value);
-        }
-
-        neighbour._meshInfos = _meshInfos;
-
-        return neighbour;
-    }
+//    public VoxelTree CreateNeighbour(NeighbourSide side) {
+//        var neighbourBounds = GetNeighbourBounds(side);
+//
+//        var neighbour = new VoxelTree(neighbourBounds.center, neighbourBounds.size);
+//
+//        foreach (var material in _materials) {
+//            neighbour.SetMaterial(material.Key, material.Value);
+//        }
+//
+//        neighbour._meshInfos = _meshInfos;
+//
+//        return neighbour;
+//    }
 
 //    private readonly Dictionary<NeighbourSide, TTree> _neighbourTrees = new Dictionary<NeighbourSide, TTree>();
 
@@ -109,8 +110,15 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 //        return false;
     }
 
-    public VoxelTree GetOrCreateNeighbour(NeighbourSide side) {
-        return null;
+    private VoxelTree GetOrCreateNeighbour(NeighbourSide side, bool readOnly) {
+        var ownerNeighbour = _ownerNode.GetTree().GetOrCreateNeighbour(side, readOnly);
+
+        if (ownerNeighbour == null) {
+            return null;
+        }
+
+        return ownerNeighbour.GetVoxelTree();
+//        return null;
 //        VoxelTree neighbour;
 //        if (_neighbourTrees.TryGetValue(side, out neighbour))
 //        {
@@ -441,18 +449,18 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
         return GetItemMeshId(a) == GetItemMeshId(b);
     }
 
-    public void Render(GameObject gameObject) {
+    public void Render() {
         Profiler.BeginSample("Process draw queue");
         ProcessDrawQueue();
         Profiler.EndSample();
 
         var meshInfos = _meshInfos;
-        if (_renderObject != gameObject) {
-            var numChildren = gameObject.transform.childCount;
+        if (_renderObject != _gameObject) {
+            var numChildren = _gameObject.transform.childCount;
 
             Profiler.BeginSample("Destroy children");
             for (var i = numChildren - 1; i >= 0; i--) {
-                var child = gameObject.transform.GetChild(i).gameObject;
+                var child = _gameObject.transform.GetChild(i).gameObject;
                 if (Application.isPlaying) {
                     Object.Destroy(child);
                 } else {
@@ -462,7 +470,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
             Profiler.EndSample();
 
             //recreate meshes
-            _renderObject = gameObject;
+            _renderObject = _gameObject;
 
             Profiler.BeginSample("Recreate meshes");
             foreach (var meshPair in meshInfos) {
@@ -782,143 +790,69 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
         }
     }
 
-
-    public static Coords GetNeighbourCoords(Coords coords, NeighbourSide side) {
-        //        var voxelTree = GetTree();
-
-        var coordsLength = coords.Length;
-
-        if (coordsLength <= 0) {
-            // get the neighbour tree?
-            return null;
-        }
-
-        var newCoords = new OctreeChildCoords[coordsLength];
-
-        var hasLastCoords = false;
-        var lastCoordX = 0;
-        var lastCoordY = 0;
-        var lastCoordZ = 0;
-
-        for (var i = coordsLength - 1; i >= 0; --i) {
-            var coord = coords.GetCoord(i);
-
-            var currentX = coord.x;
-            var currentY = coord.y;
-            var currentZ = coord.z;
-
-            if (hasLastCoords) {
-                //let's check the lower _coords, if it's out of that bounds then we need to modify ourselves!
-                var lastCoordUpdated = UpdateLastCoord(
-                    ref lastCoordX, ref currentX,
-                    ref lastCoordY, ref currentY,
-                    ref lastCoordZ, ref currentZ);
-
-                if (lastCoordUpdated) {
-                    newCoords[i + 1] = new OctreeChildCoords(lastCoordX, lastCoordY, lastCoordZ);
-                }
-            } else {
-                //final _coords!
-                //update _coords from the side
-                switch (side) {
-                    case NeighbourSide.Above:
-                        currentY += 1;
-                        break;
-                    case NeighbourSide.Below:
-                        currentY -= 1;
-                        break;
-                    case NeighbourSide.Right:
-                        currentX += 1;
-                        break;
-                    case NeighbourSide.Left:
-                        currentX -= 1;
-                        break;
-                    case NeighbourSide.Back:
-                        currentZ -= 1;
-                        break;
-                    case NeighbourSide.Forward:
-                        currentZ += 1;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException("side", side, null);
-                }
-            }
-
-            var newCoord = new OctreeChildCoords(currentX, currentY, currentZ);
-            newCoords[i] = newCoord;
-
-            lastCoordX = currentX;
-            lastCoordY = currentY;
-            lastCoordZ = currentZ;
-            hasLastCoords = true;
-        }
-
-        // we're at the end now
-
-        if (hasLastCoords && (lastCoordX < 0 || lastCoordX > 1 ||
-                              lastCoordY < 0 || lastCoordY > 1 ||
-                              lastCoordZ < 0 || lastCoordZ > 1)) {
-            //invalid _coords, out of bounds, pick neighbour voxelTree
-
-            var currentX = lastCoordX;
-            var currentY = lastCoordY;
-            var currentZ = lastCoordZ;
-
-            UpdateLastCoord(ref lastCoordX, ref currentX,
-                ref lastCoordY, ref currentY,
-                ref lastCoordZ, ref currentZ);
-
-            newCoords[0] = new OctreeChildCoords(lastCoordX, lastCoordY, lastCoordZ);
-            //if (GetTree() == null)
-            //{
-            //    voxelTree = null;
-            //    return null;
-            //}
-            //else {
-            //    Debug.LogError("get new tree");
-            //    voxelTree = GetTree().GetOrCreateNeighbour(side);
-            //    return null;
-            //}
-            return null;
-        }
-
-        return new Coords(newCoords);
+    public NeighbourCoordsResult GetNeighbourCoordsInfinite(Coords coords, NeighbourSide side, bool readOnly = false) {
+        return GetNeighbourCoordsInfinite(this, coords, side, GetOrCreateNeighbour, readOnly);
     }
 
+    //public new Coords GetNeighbourCoords(Coords coords, NeighbourSide side) {
+    //    return GetNeighbourCoordsInfinite(coords, side, true).coordsResult;
+    //}
 
-    private static bool UpdateLastCoord(ref int lastCoordX, ref int currentX, ref int lastCoordY, ref int currentY,
-        ref int lastCoordZ, ref int currentZ) {
-        var updateLastCoord = false;
+    public Bounds GetNeighbourBoundsForChild(Coords coords, NeighbourSide neighbourSide) {
+        var childBounds = GetRoot().GetChildBounds(coords);
 
-        if (lastCoordX < 0) {
-            currentX -= 1;
-            lastCoordX = 1;
-            updateLastCoord = true;
-        } else if (lastCoordX > 1) {
-            currentX += 1;
-            lastCoordX = 0;
-            updateLastCoord = true;
+        Vector3 sideDirection;
+
+        switch (neighbourSide) {
+            case NeighbourSide.Above:
+                sideDirection = Vector3.up;
+                break;
+            case NeighbourSide.Below:
+                sideDirection = Vector3.down;
+                break;
+            case NeighbourSide.Right:
+                sideDirection = Vector3.right;
+                break;
+            case NeighbourSide.Left:
+                sideDirection = Vector3.left;
+                break;
+            case NeighbourSide.Back:
+                sideDirection = Vector3.back;
+                break;
+            case NeighbourSide.Forward:
+                sideDirection = Vector3.forward;
+                break;
+            case NeighbourSide.Invalid:
+                throw new ArgumentOutOfRangeException("neighbourSide", neighbourSide, null);
+            default:
+                throw new ArgumentOutOfRangeException("neighbourSide", neighbourSide, null);
         }
 
-        if (lastCoordY < 0) {
-            currentY -= 1;
-            lastCoordY = 1;
-            updateLastCoord = true;
-        } else if (lastCoordY > 1) {
-            currentY += 1;
-            lastCoordY = 0;
-            updateLastCoord = true;
+        return new Bounds(childBounds.center + Vector3.Scale(sideDirection, childBounds.size), childBounds.size);
+    }
+
+    public void SetGameObject(GameObject gameObject) {
+        _gameObject = gameObject;
+    }
+
+    public void SetOwnerNode(SuperVoxelTree.Node ownerNode) {
+        _ownerNode = ownerNode;
+    }
+
+    public GameObject GetGameObject() {
+        return _gameObject;
+    }
+
+    public SuperVoxelTree.Node GetOwnerNode() {
+        return _ownerNode;
+    }
+
+    public void CopyMaterialsFrom(VoxelTree myVoxelTree) {
+        foreach (var material in myVoxelTree._materials)
+        {
+            SetMaterial(material.Key, material.Value);
         }
 
-        if (lastCoordZ < 0) {
-            currentZ -= 1;
-            lastCoordZ = 1;
-            updateLastCoord = true;
-        } else if (lastCoordZ > 1) {
-            currentZ += 1;
-            lastCoordZ = 0;
-            updateLastCoord = true;
-        }
-        return updateLastCoord;
+//        _meshInfos = myVoxelTree._meshInfos;
     }
 }
