@@ -6,8 +6,8 @@ namespace OctreeTest {
     internal class TestOctreeNode<T> : OctreeNodeBase<T, TestOctree<T>, TestOctreeNode<T>> {
         public TestOctreeNode(Bounds bounds, TestOctree<T> tree) : base(bounds, tree) {}
 
-        public TestOctreeNode(Bounds bounds, TestOctreeNode<T> parent, ChildIndex indexInParent, int depth,
-            TestOctree<T> tree) : base(bounds, parent, indexInParent, depth, tree) {}
+        public TestOctreeNode(Bounds bounds, TestOctreeNode<T> parent, ChildIndex indexInParent,
+            TestOctree<T> tree) : base(bounds, parent, indexInParent, tree) {}
     }
 
     internal class TestOctree<T> : OctreeBase<T, TestOctreeNode<T>, TestOctree<T>> {
@@ -18,8 +18,8 @@ namespace OctreeTest {
         }
 
         public override TestOctreeNode<T> ConstructNode(Bounds bounds, TestOctreeNode<T> parent,
-            OctreeNode.ChildIndex indexInParent, int depth) {
-            return new TestOctreeNode<T>(bounds, parent, indexInParent, depth, this);
+            OctreeNode.ChildIndex indexInParent) {
+            return new TestOctreeNode<T>(bounds, parent, indexInParent, this);
         }
     }
 

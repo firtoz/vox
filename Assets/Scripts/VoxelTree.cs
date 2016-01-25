@@ -40,9 +40,8 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
         return new VoxelNode(bounds, self);
     }
 
-    public override VoxelNode ConstructNode(Bounds bounds, VoxelNode parent, OctreeNode.ChildIndex indexInParent,
-        int depth) {
-        return new VoxelNode(bounds, parent, indexInParent, depth, this);
+    public override VoxelNode ConstructNode(Bounds bounds, VoxelNode parent, OctreeNode.ChildIndex indexInParent) {
+        return new VoxelNode(bounds, parent, indexInParent, this);
     }
 
     protected int GetItemMeshId(int item) {

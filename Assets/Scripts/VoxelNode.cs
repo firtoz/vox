@@ -10,10 +10,10 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
     private int _solidNodeCount;
 
-    public VoxelNode(Bounds bounds, VoxelTree tree) : this(bounds, null, ChildIndex.Invalid, 0, tree) {}
+    public VoxelNode(Bounds bounds, VoxelTree tree) : this(bounds, null, ChildIndex.Invalid, tree) {}
 
-    public VoxelNode(Bounds bounds, VoxelNode parent, ChildIndex indexInParent, int depth, VoxelTree ocTree)
-        : base(bounds, parent, indexInParent, depth, ocTree) {
+    public VoxelNode(Bounds bounds, VoxelNode parent, ChildIndex indexInParent, VoxelTree ocTree)
+        : base(bounds, parent, indexInParent, ocTree) {
         _sideSolidCount[NeighbourSide.Above] = 0;
         _sideSolidCount[NeighbourSide.Below] = 0;
         _sideSolidCount[NeighbourSide.Right] = 0;
@@ -299,7 +299,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
     }
 
     public IEnumerable<VoxelNode> GetAllSolidNeighbours(NeighbourSide side) {
-        var neighbourCoordsResult = GetTree().GetNeighbourCoordsInfinite(nodeCoords, side, true);
+        var neighbourCoordsResult = GetTree().GetNeighbourCoordsInfinite(GetCoords(), side, true);
 
         //out of the map!
         if (neighbourCoordsResult == null) {
@@ -387,7 +387,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
     }
 
     private void CreateFacesForSideInternal(NeighbourSide side, int meshIndex, ICollection<OctreeRenderFace> faces) {
-        CreateFacesForSideInternal(faces, side, bounds, nodeCoords, meshIndex);
+        CreateFacesForSideInternal(faces, side, bounds, GetCoords(), meshIndex);
     }
 
 

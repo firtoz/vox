@@ -224,15 +224,13 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
     protected readonly Bounds bounds;
     protected readonly TNode parent;
 
-    protected OctreeNodeBase(Bounds bounds, TTree tree) : this(bounds, null, ChildIndex.Invalid, 0, tree) {}
+    protected OctreeNodeBase(Bounds bounds, TTree tree) : this(bounds, null, ChildIndex.Invalid, tree) {}
 
-    protected OctreeNodeBase(Bounds bounds, TNode parent, ChildIndex indexInParent, int depth, TTree ocTree) {
+    protected OctreeNodeBase(Bounds bounds, TNode parent, ChildIndex indexInParent, TTree ocTree) {
         deleted = false;
         this.bounds = bounds;
         this.parent = parent;
         if (parent == null) {
-            nodeCoords = new Coords();
-
 #if USE_ALL_NODES
     // ReSharper disable once UseObjectOrCollectionInitializer
             _allNodes = new Dictionary<int, OctreeNode<T>>();
@@ -242,13 +240,10 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
 #if USE_ALL_NODES
             _allNodes = _root._allNodes;
 #endif
-
-            nodeCoords = new Coords(parent.nodeCoords, OctreeChildCoords.FromIndex(indexInParent));
         }
 
         this.indexInParent = indexInParent;
         item = default(TItem);
-        this.depth = depth;
         this.ocTree = ocTree;
     }
 
@@ -257,9 +252,7 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
     private readonly Dictionary<int, TSelf> _allNodes;
 #endif
     //    private readonly OctreeChildCoords[] _coords;
-    protected readonly int depth;
     protected readonly ChildIndex indexInParent;
-    protected readonly Coords nodeCoords;
 
     protected INode GetRoot() {
         return ocTree.GetRoot();
@@ -431,7 +424,7 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
         }
 
         childCount++;
-        return SetChild(index, ocTree.ConstructNode(GetChildBounds(index), (TNode) this, index, depth + 1));
+        return SetChild(index, ocTree.ConstructNode(GetChildBounds(index), (TNode) this, index));
     }
 
     public void RemoveChild(ChildIndex index, bool cleanup = false) {
@@ -560,7 +553,24 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
 
     public Coords GetCoords() {
         AssertNotDeleted();
-        return nodeCoords;
+
+        if (parent == null) {
+            return new Coords();
+        }
+
+        var coords = new List<OctreeChildCoords> {OctreeChildCoords.FromIndex(indexInParent)};
+
+        var currentParent = parent;
+        while (currentParent != null) {
+            if (currentParent.parent != null) {
+                coords.Add(OctreeChildCoords.FromIndex(currentParent.indexInParent));
+            }
+            currentParent = currentParent.parent;
+        }
+
+        coords.Reverse();
+
+        return new Coords(coords.ToArray());
     }
 
     // https://en.wikipedia.org/wiki/Breadth-first_search#Pseudocode

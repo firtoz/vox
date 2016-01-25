@@ -24,7 +24,7 @@ public abstract partial class OctreeBase<TItem, TNode, TTree> : IOctree
         return GetRoot();
     }
 
-    public abstract TNode ConstructNode(Bounds bounds, TNode parent, OctreeNode.ChildIndex indexInParent, int depth);
+    public abstract TNode ConstructNode(Bounds bounds, TNode parent, OctreeNode.ChildIndex indexInParent);
 
 
     //    protected OctreeBase(Bounds bounds) : base(bounds, (self, bounds) => new TNode(bounds, self))

@@ -44,8 +44,8 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
         _parentTree = null;
     }
 
-    public override Node ConstructNode(Bounds bounds, Node parent, OctreeNode.ChildIndex indexInParent, int depth) {
-        return new Node(bounds, parent, indexInParent, depth, this);
+    public override Node ConstructNode(Bounds bounds, Node parent, OctreeNode.ChildIndex indexInParent) {
+        return new Node(bounds, parent, indexInParent, this);
     }
 
     private static Node CreateRootNode(SuperVoxelTree self, Bounds bounds) {
@@ -203,7 +203,7 @@ public class SuperVoxelTree : OctreeBase<SuperVoxelItem, SuperVoxelTree.Node, Su
     public class Node : OctreeNodeBase<SuperVoxelItem, SuperVoxelTree, Node> {
         public Node(Bounds bounds, SuperVoxelTree tree) : base(bounds, tree) {}
 
-        public Node(Bounds bounds, Node parent, ChildIndex indexInParent, int depth, SuperVoxelTree ocTree)
-            : base(bounds, parent, indexInParent, depth, ocTree) {}
+        public Node(Bounds bounds, Node parent, ChildIndex indexInParent, SuperVoxelTree ocTree)
+            : base(bounds, parent, indexInParent, ocTree) {}
     }
 }
