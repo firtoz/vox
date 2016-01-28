@@ -222,7 +222,7 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
     where TNode : OctreeNodeBase<TItem, TTree, TNode> {
     protected readonly TTree ocTree;
     protected readonly Bounds bounds;
-    protected readonly TNode parent;
+    protected TNode parent;
 
     protected OctreeNodeBase(Bounds bounds, TTree tree) : this(bounds, null, ChildIndex.Invalid, tree) {}
 
@@ -252,9 +252,9 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
     private readonly Dictionary<int, TSelf> _allNodes;
 #endif
     //    private readonly OctreeChildCoords[] _coords;
-    protected readonly ChildIndex indexInParent;
+    protected ChildIndex indexInParent;
 
-    protected INode GetRoot() {
+    protected TNode GetRoot() {
         return ocTree.GetRoot();
     }
 
@@ -322,7 +322,7 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
         return children[(int) index];
     }
 
-    private TNode SetChild(ChildIndex index, TNode child) {
+    protected TNode SetChild(ChildIndex index, TNode child) {
         AssertNotDeleted();
 #if USE_ALL_NODES
         child.AssertNotDeleted();
@@ -439,11 +439,11 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
 
         var indexInt = (int) index;
 
-        if (children[indexInt] != null) {
-            childCount--;
-        } else {
+        if (children[indexInt] == null) {
             throw new ArgumentException("The child at that index is already removed!", "index");
         }
+
+        childCount--;
 
         children[indexInt].SetDeleted(updateNeighbours);
         children[indexInt] = null;

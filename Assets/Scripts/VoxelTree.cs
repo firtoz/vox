@@ -9,6 +9,11 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
     private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
     private const int MAX_INDICES_FOR_MESH = MAX_FACES_FOR_MESH * 6;
 
+
+    private static readonly Vector3[] VerticesArrayForMesh = new Vector3[MAX_VERTICES_FOR_MESH];
+    private static readonly Vector3[] NormalsArrayForMesh = new Vector3[MAX_VERTICES_FOR_MESH];
+    private static readonly Vector2[] UvsArrayForMesh = new Vector2[MAX_VERTICES_FOR_MESH];
+
     //    private readonly List<GameObject> _meshObjects = new List<GameObject>();
     private readonly Dictionary<int, List<GameObject>> _gameObjectForMeshInfo = new Dictionary<int, List<GameObject>>();
 
@@ -111,13 +116,13 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
     }
 
     private VoxelTree GetOrCreateNeighbour(NeighbourSide side, bool readOnly) {
-        var ownerNeighbour = _ownerNode.GetTree().GetOrCreateNeighbour(side, readOnly);
+        var ownerNeighbour = _ownerNode.GetOrCreateNeighbour(side, readOnly);
 
         if (ownerNeighbour == null) {
             return null;
         }
 
-        return ownerNeighbour.GetVoxelTree();
+        return ownerNeighbour.GetItem();
 //        return null;
 //        VoxelTree neighbour;
 //        if (_neighbourTrees.TryGetValue(side, out neighbour))
@@ -244,6 +249,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
                 meshCollider.enabled = true;
             }
         } else {
+
             for (var i = 0; i < numMeshObjects; ++i) {
                 Profiler.BeginSample("Create mesh " + i);
                 {
@@ -256,8 +262,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
                     var vertexCount = Mathf.Min(vertexStart + MAX_VERTICES_FOR_MESH, verticesCount) - vertexStart;
 
                     Profiler.BeginSample("Get vertices range");
-                    var verticesArrayForMesh = new Vector3[vertexCount];
-                    Array.Copy(verticesArray, vertexStart, verticesArrayForMesh, 0, vertexCount);
+                    Array.Copy(verticesArray, vertexStart, VerticesArrayForMesh, 0, vertexCount);
                     Profiler.EndSample();
 
                     {
@@ -265,19 +270,17 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
                         {
                             Profiler.BeginSample("Set mesh vertices");
-                            newMesh.vertices = verticesArrayForMesh;
+                            newMesh.vertices = VerticesArrayForMesh;
                             Profiler.EndSample();
 
                             Profiler.BeginSample("Set mesh normals");
-                            var normalsArrayForMesh = new Vector3[vertexCount];
-                            Array.Copy(normalsArray, vertexStart, normalsArrayForMesh, 0, vertexCount);
-                            newMesh.normals = normalsArrayForMesh;
+                            Array.Copy(normalsArray, vertexStart, NormalsArrayForMesh, 0, vertexCount);
+                            newMesh.normals = NormalsArrayForMesh;
                             Profiler.EndSample();
 
                             Profiler.BeginSample("Set mesh uvs");
-                            var uvsArrayForMesh = new Vector2[vertexCount];
-                            Array.Copy(uvsArray, vertexStart, uvsArrayForMesh, 0, vertexCount);
-                            newMesh.uv = uvsArrayForMesh;
+                            Array.Copy(uvsArray, vertexStart, UvsArrayForMesh, 0, vertexCount);
+                            newMesh.uv = UvsArrayForMesh;
                             Profiler.EndSample();
                         }
 
@@ -381,26 +384,23 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
                 var vertexCount = Mathf.Min(vertexStart + MAX_VERTICES_FOR_MESH, verticesCount) - vertexStart;
 
                 Profiler.BeginSample("Get vertices range");
-                var verticesArrayForMesh = new Vector3[vertexCount];
-                Array.Copy(verticesArray, vertexStart, verticesArrayForMesh, 0, vertexCount);
+                Array.Copy(verticesArray, vertexStart, VerticesArrayForMesh, 0, vertexCount);
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Set mesh properties");
 
                 Profiler.BeginSample("Set mesh vertices");
-                newMesh.vertices = verticesArrayForMesh;
+                newMesh.vertices = VerticesArrayForMesh;
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Set mesh normals");
-                var normalsArrayForMesh = new Vector3[vertexCount];
-                Array.Copy(normalsArray, vertexStart, normalsArrayForMesh, 0, vertexCount);
-                newMesh.normals = normalsArrayForMesh;
+                Array.Copy(normalsArray, vertexStart, NormalsArrayForMesh, 0, vertexCount);
+                newMesh.normals = NormalsArrayForMesh;
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Set mesh uvs");
-                var uvsArrayForMesh = new Vector2[vertexCount];
-                Array.Copy(uvsArray, vertexStart, uvsArrayForMesh, 0, vertexCount);
-                newMesh.uv = uvsArrayForMesh;
+                Array.Copy(uvsArray, vertexStart, UvsArrayForMesh, 0, vertexCount);
+                newMesh.uv = UvsArrayForMesh;
                 Profiler.EndSample();
 
                 Profiler.EndSample(); // mesh properties

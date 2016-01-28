@@ -9,7 +9,7 @@ public interface IOctree {
 
 public abstract partial class OctreeBase<TItem, TNode, TTree> : IOctree
     where TTree : OctreeBase<TItem, TNode, TTree> where TNode : OctreeNodeBase<TItem, TTree, TNode> {
-    private readonly TNode _root;
+    private TNode _root;
 
     protected OctreeBase(Func<TTree, Bounds, TNode> nodeConstructor, Bounds bounds) {
         _root = nodeConstructor((TTree) this, bounds);
@@ -18,6 +18,10 @@ public abstract partial class OctreeBase<TItem, TNode, TTree> : IOctree
 
     public TNode GetRoot() {
         return _root;
+    }
+
+    protected void SetRoot(TNode newRoot) {
+        _root = newRoot;
     }
 
     INode IOctree.GetRoot() {

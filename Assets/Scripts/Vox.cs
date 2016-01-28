@@ -191,6 +191,25 @@ public class Vox : MonoBehaviour {
 
                 DrawBounds(bounds, color);
             }
+
+            var superVoxelTree = voxelTree.GetOwnerNode().GetTree();
+
+            foreach (var node in superVoxelTree.DepthFirst())
+            {
+                Color color;
+
+                if (node.IsLeafNode())
+                {
+                    color = Color.green;
+                }
+                else {
+                    //                    continue;
+                    color = Color.blue;
+                }
+                var bounds = node.GetBounds();
+
+                DrawBounds(bounds, color);
+            }
         }
     }
 
