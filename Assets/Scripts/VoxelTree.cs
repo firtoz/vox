@@ -79,41 +79,47 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 //    private readonly Dictionary<NeighbourSide, TTree> _neighbourTrees = new Dictionary<NeighbourSide, TTree>();
 
+    private bool IntersectInternal(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth = null) {
+        return base.Intersect(transform, ray, out result, wantedDepth);
+    }
+
+
     public override bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result,
         int? wantedDepth = null) {
-        return base.Intersect(transform, ray, out result, wantedDepth);
-//        result = new RayIntersectionResult(false);
-//        return false;
-//        _intersecting = true;
-//        if (wantedDepth != null && wantedDepth < 0)
-//        {
-//            throw new ArgumentOutOfRangeException("wantedDepth", "Wanted depth should not be less than zero.");
-//        }
-//
-//        var results = new RayIntersection(transform, (TTree)this, ray, false, wantedDepth).results;
-//
-//        if (results.Count > 0)
-//        {
-//            result = results[0];
-//            _intersecting = false;
-//            return true;
-//        }
-//
-//        foreach (var neighbourTree in _neighbourTrees.Values)
-//        {
-//            if (neighbourTree._intersecting || !neighbourTree.Intersect(transform, ray, out result, wantedDepth))
-//            {
-//                continue;
-//            }
-//
-//            _intersecting = false;
-//            return true;
-//        }
-//
-//        result = new RayIntersectionResult(false);
-//        _intersecting = false;
-//        return false;
+
+        var subIntersectionResult = new RayIntersectionResult(false);
+
+        var intersection = new RayIntersection(transform, GetOwnerNode().GetTree(), ray, false, null, intersectionResult => {
+            var intersectionSuperNode = intersectionResult.node as SuperVoxelTree.Node;
+            if (intersectionSuperNode == null)
+            {
+                return false;
+            }
+
+            var intersectedVoxel = intersectionSuperNode.GetItem();
+
+            if (intersectedVoxel == null)
+            {
+                return false;
+            }
+
+            if (intersectedVoxel.IntersectInternal(transform, ray, out subIntersectionResult, wantedDepth))
+            {
+                return true;
+            }
+
+            return false;
+        }, true);
+
+        result = subIntersectionResult;
+
+        if (intersection.results.Count > 0) {
+            return true;
+        }
+
+        return false;
     }
+
 
     private VoxelTree GetOrCreateNeighbour(NeighbourSide side, bool readOnly) {
         var ownerNeighbour = _ownerNode.GetOrCreateNeighbour(side, readOnly);

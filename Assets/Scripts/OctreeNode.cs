@@ -35,17 +35,17 @@ public abstract class OctreeNode {
     }
 
 
-    private static readonly Vector3 RightAboveBack = new Vector3(1, 1, -1);
-    private static readonly Vector3 LeftAboveBack = new Vector3(-1, 1, -1);
-
-    private static readonly Vector3 RightAboveForward = new Vector3(1, 1, 1);
-    private static readonly Vector3 LeftAboveForward = new Vector3(-1, 1, 1);
-
-    private static readonly Vector3 RightBelowBack = new Vector3(1, -1, -1);
     private static readonly Vector3 LeftBelowBack = new Vector3(-1, -1, -1);
+    private static readonly Vector3 RightBelowBack = new Vector3(1, -1, -1);
 
-    private static readonly Vector3 RightBelowForward = new Vector3(1, -1, 1);
+    private static readonly Vector3 LeftAboveBack = new Vector3(-1, 1, -1);
+    private static readonly Vector3 RightAboveBack = new Vector3(1, 1, -1);
+
     private static readonly Vector3 LeftBelowForward = new Vector3(-1, -1, 1);
+    private static readonly Vector3 RightBelowForward = new Vector3(1, -1, 1);
+
+    private static readonly Vector3 LeftAboveForward = new Vector3(-1, 1, 1);
+    private static readonly Vector3 RightAboveForward = new Vector3(1, 1, 1);
 
     public static readonly NeighbourSide[] AllSides = {
         NeighbourSide.Left,
@@ -360,13 +360,14 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
         return GetChildBoundsInternal(bounds, childIndex);
     }
 
-    //recursive, can be phantom bounds!
+    //recursive, can be phantom bounds!?
     [Pure]
     public Bounds GetChildBounds(Coords coords) {
         AssertNotDeleted();
 
-        var result = GetBounds();
-        var rootSize = result.size;
+        var myBounds = GetBounds();
+        var myBoundsCenter = myBounds.center;
+        var myBoundsSize = myBounds.size;
 
         var count = 1;
 
@@ -377,32 +378,21 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
         foreach (var coordinate in coords) {
             count++;
 
-            up = up * 2 + coordinate.y * 2 - 1;
             right = right * 2 + coordinate.x * 2 - 1;
+            up = up * 2 + coordinate.y * 2 - 1;
             forward = forward * 2 + coordinate.z * 2 - 1;
-            //            if (child != null) {
-            //                // current child (or self) isn't null, try to get the real child
-            //                child = child.GetChild(coordinate.ToIndex());
-            //
-            //                if (child != null) {
-            //                    // the child is there, no need to calculate!
-            //                    result = child.GetBounds();
-            //                    continue;
-            //                }
-            //            }
-            //            // no child there... get phantom bounds
-            //            result = GetChildBoundsInternal(result, coordinate.ToIndex());
         }
 
-        var upVector = Vector3.up;
         var rightVector = Vector3.right;
+        var upVector = Vector3.up;
         var forwardVector = Vector3.forward;
 
-        var center = (upVector * (rootSize.y * up) +
-                      rightVector * (rootSize.x * right) +
-                      forwardVector * (rootSize.z * forward)) / Mathf.Pow(2, count);
+        var center = myBoundsCenter + 
+            ( rightVector * (myBoundsSize.x * right) +
+            upVector * (myBoundsSize.y * up) +
+            forwardVector * (myBoundsSize.z * forward)) / Mathf.Pow(2, count);
 
-        var size = rootSize / Mathf.Pow(2, count - 1);
+        var size = myBoundsSize / Mathf.Pow(2, count - 1);
 
         return new Bounds(center, size);
     }
@@ -546,6 +536,7 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
         item = default(TItem);
     }
 
+    [Pure]
     public Bounds GetBounds() {
         AssertNotDeleted();
         return bounds;

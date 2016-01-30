@@ -201,6 +201,26 @@ public class Vox : MonoBehaviour {
                 if (node.IsLeafNode())
                 {
                     color = Color.green;
+                    if (node.GetItem() != null) {
+
+                        foreach (var subNode in node.GetItem().DepthFirst())
+                        {
+                            Color color2;
+
+                            if (subNode.IsLeafNode())
+                            {
+                                color2 = Color.red;
+                            }
+                            else {
+                                //                    continue;
+                                color2 = Color.white;
+                            }
+                            var bounds2 = subNode.GetBounds();
+
+                            DrawBounds(bounds2, color2);
+                        }
+
+                    }
                 }
                 else {
                     //                    continue;

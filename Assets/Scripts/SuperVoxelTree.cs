@@ -227,7 +227,7 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
         
             var neighbourBounds = neighbourNode.GetBounds();
         
-            Assert.IsTrue(neighbourBounds.extents == myRootBounds.extents);
+            Assert.AreEqual(neighbourBounds.extents, myRootBounds.extents);
         
             var myItem = GetItem();
 
@@ -285,6 +285,11 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
         }
 
         private void ReplaceChild(ChildIndex childIndex, Node newChild) {
+            Assert.AreEqual(newChild.bounds.extents * 2, bounds.extents);
+            var childCoords = new Coords(new []{ OctreeChildCoords.FromIndex(childIndex) });
+            var childBounds = GetChildBounds(childCoords);
+            Assert.AreEqual(newChild.bounds.center, childBounds.center);
+
             if (children == null) {
                 children = new Node[8];
             } else if (children[(int) childIndex] != null) {
@@ -301,8 +306,7 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
         private Bounds CreateParentBounds(ChildIndex wantedIndexInParent) {
             var myBounds = GetBounds();
         
-            var parentBoundsCenter = myBounds.center -
-                                        Vector3.Scale(myBounds.extents, GetChildDirection(wantedIndexInParent));
+            var parentBoundsCenter = myBounds.center - Vector3.Scale(myBounds.extents, GetChildDirection(wantedIndexInParent));
         
             return new Bounds(parentBoundsCenter, Vector3.zero) {extents = myBounds.extents * 2};
         }

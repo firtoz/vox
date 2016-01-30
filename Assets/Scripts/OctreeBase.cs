@@ -102,7 +102,7 @@ if(rems.length>0) {
     public virtual void NodeRemoved(TNode octreeNode, bool updateNeighbours) {}
 
     public bool Intersect(Transform transform, Ray ray, int? wantedDepth = null) {
-        return new RayIntersection(transform, (TTree) this, ray, false, wantedDepth).results.Count > 0;
+        return new RayIntersection(transform, this, ray, false, wantedDepth).results.Count > 0;
     }
 
     public virtual bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result,
@@ -111,7 +111,7 @@ if(rems.length>0) {
             throw new ArgumentOutOfRangeException("wantedDepth", "Wanted depth should not be less than zero.");
         }
 
-        var results = new RayIntersection(transform, (TTree) this, ray, false, wantedDepth).results;
+        var results = new RayIntersection(transform, this, ray, false, wantedDepth).results;
 
         if (results.Count > 0) {
             result = results[0];

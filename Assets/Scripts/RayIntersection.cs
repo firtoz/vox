@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class RayIntersection
-{
-    private readonly byte _dimensionFlipFlags;
+public class RayIntersection {
+    public delegate bool Filter(RayIntersectionResult result);
+
     private readonly bool _debug;
+    private readonly byte _dimensionFlipFlags;
+    private readonly Filter _filter;
     private readonly bool _intersectMultiple;
 
     private readonly INode _rootNode;
@@ -14,13 +16,13 @@ public class RayIntersection
     public readonly List<RayIntersectionResult> results = new List<RayIntersectionResult>();
     private Ray _ray;
 
-    public RayIntersection(Transform transform, IOctree octree, Ray r, bool intersectMultiple, int? wantedDepth = null,
-        bool debug = false)
-    {
+    public RayIntersection(Transform transform, IOctree octree, Ray r, bool intersectMultiple, int? wantedDepth,
+        Filter filter, bool debug = false) {
+        _filter = filter;
+
         _debug = debug;
         _rootNode = octree.GetRoot();
-        if (_rootNode == null)
-        {
+        if (_rootNode == null) {
             //we had a good run guys, time to call it a day
             return;
         }
@@ -34,6 +36,9 @@ public class RayIntersection
         var rd = transform.InverseTransformDirection(r.direction);
 
         var rootBounds = _rootNode.GetBounds();
+        if (_debug) {
+            DrawBounds(rootBounds, Color.gray);
+        }
 
         var rox = ro.x;
         var roy = ro.y;
@@ -47,22 +52,19 @@ public class RayIntersection
         var ocMax = rootBounds.max;
 
         var rootCenter = rootBounds.center;
-        if (rdx < 0.0f)
-        {
+        if (rdx < 0.0f) {
             rox = rootCenter.x - rox;
             rdx = -rdx;
             _dimensionFlipFlags |= 1;
         }
 
-        if (rdy < 0.0f)
-        {
+        if (rdy < 0.0f) {
             roy = rootCenter.y - roy;
             rdy = -rdy;
             _dimensionFlipFlags |= 2;
         }
 
-        if (rdz < 0.0f)
-        {
+        if (rdz < 0.0f) {
             roz = rootCenter.z - roz;
             rdz = -rdz;
             _dimensionFlipFlags |= 4;
@@ -70,55 +72,51 @@ public class RayIntersection
 
         float tx0, tx1, ty0, ty1, tz0, tz1;
 
-        if (!Mathf.Approximately(rdx, 0.0f))
-        {
+        if (!Mathf.Approximately(rdx, 0.0f)) {
             tx0 = (ocMin.x - rox) / rdx;
             tx1 = (ocMax.x - rox) / rdx;
-        }
-        else {
+        } else {
             tx0 = 99999.9f;
             tx1 = 99999.9f;
         }
 
-        if (!Mathf.Approximately(rdy, 0.0f))
-        {
+        if (!Mathf.Approximately(rdy, 0.0f)) {
             ty0 = (ocMin.y - roy) / rdy;
             ty1 = (ocMax.y - roy) / rdy;
-        }
-        else {
+        } else {
             ty0 = 99999.9f;
             ty1 = 99999.9f;
         }
 
-        if (!Mathf.Approximately(rdz, 0.0f))
-        {
+        if (!Mathf.Approximately(rdz, 0.0f)) {
             tz0 = (ocMin.z - roz) / rdz;
             tz1 = (ocMax.z - roz) / rdz;
-        }
-        else {
+        } else {
             tz0 = 99999.9f;
             tz1 = 99999.9f;
         }
 
-        if (Mathf.Max(tx0, ty0, tz0) < Mathf.Min(tx1, ty1, tz1))
-        {
+        if (_debug) {
+            Debug.DrawLine(_ray.origin, _ray.GetPoint(5000), Color.yellow);
+        }
+
+        if (Mathf.Max(tx0, ty0, tz0) < Mathf.Min(tx1, ty1, tz1)) {
             ProcSubtree(tx0, ty0, tz0, tx1, ty1, tz1, _rootNode, _rootNode.IsSolid(), 0, wantedDepth,
                 _rootNode.GetCoords());
         }
     }
 
-    private static EntryPlane GetEntryPlane(float tx0, float ty0, float tz0)
-    {
-        if (tx0 > ty0)
-        {
-            if (tx0 > tz0)
-            {
+    public RayIntersection(Transform transform, IOctree octree, Ray r, bool intersectMultiple, int? wantedDepth = null,
+        bool debug = false) : this(transform, octree, r, intersectMultiple, wantedDepth, null, debug) {}
+
+
+    private static EntryPlane GetEntryPlane(float tx0, float ty0, float tz0) {
+        if (tx0 > ty0) {
+            if (tx0 > tz0) {
                 //z greatest
                 return EntryPlane.YZ;
             }
-        }
-        else if (ty0 > tz0)
-        {
+        } else if (ty0 > tz0) {
             //y greatest
             return EntryPlane.XZ;
         }
@@ -129,41 +127,33 @@ public class RayIntersection
     }
 
 
-    private static int FirstNode(float tx0, float ty0, float tz0, float txm, float tym, float tzm)
-    {
+    private static int FirstNode(float tx0, float ty0, float tz0, float txm, float tym, float tzm) {
         var entryPlane = GetEntryPlane(tx0, ty0, tz0);
 
         var firstNode = 0;
 
-        switch (entryPlane)
-        {
+        switch (entryPlane) {
             case EntryPlane.XY:
-                if (txm < tz0)
-                {
+                if (txm < tz0) {
                     firstNode |= 1;
                 }
-                if (tym < tz0)
-                {
+                if (tym < tz0) {
                     firstNode |= 2;
                 }
                 break;
             case EntryPlane.XZ:
-                if (txm < ty0)
-                {
+                if (txm < ty0) {
                     firstNode |= 1;
                 }
-                if (tzm < ty0)
-                {
+                if (tzm < ty0) {
                     firstNode |= 4;
                 }
                 break;
             case EntryPlane.YZ:
-                if (tym < tx0)
-                {
+                if (tym < tx0) {
                     firstNode |= 2;
                 }
-                if (tzm < tx0)
-                {
+                if (tzm < tx0) {
                     firstNode |= 4;
                 }
                 break;
@@ -172,102 +162,91 @@ public class RayIntersection
         return firstNode;
     }
 
-    private static int NewNode(double x, int xi, double y, int yi, double z, int zi)
-    {
-        if (x < y)
-        {
-            if (x < z)
-            {
+    private static int NewNode(double x, int xi, double y, int yi, double z, int zi) {
+        if (x < y) {
+            if (x < z) {
                 return xi;
             }
-        }
-        else if (y < z)
-        {
+        } else if (y < z) {
             return yi;
         }
 
         return zi;
     }
 
-    private void DrawLocalLine(Vector3 a, Vector3 b, Color color, bool force = false)
-    {
-        if (_debug || force)
-        {
+    private void DrawLocalLine(Vector3 a, Vector3 b, Color color, bool force = false) {
+        if (_debug || force) {
             Debug.DrawLine(_transform.TransformPoint(a), _transform.TransformPoint(b), color, 0, false);
         }
     }
 
     private void ProcSubtree(float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, INode node,
         bool insideSolidNode, int currentDepth, int? wantedDepth,
-        Coords nodeCoords)
-    {
-        if (!_intersectMultiple && results.Count > 0)
-        {
+        Coords nodeCoords) {
+        if (!_intersectMultiple && results.Count > 0) {
             return;
         }
 
-        if (wantedDepth == null)
-        {
-            if (node == null)
-            {
+        if (_debug) {
+            var entryDistance = Mathf.Max(tx0, ty0, tz0);
+
+            Debug.DrawLine(_ray.origin, _ray.GetPoint(entryDistance), Color.red, 0, false);
+        }
+
+        if (wantedDepth == null) {
+            if (node == null) {
                 return;
             }
 
-            if (node.IsSolid())
-            {
+            if (node.IsSolid()) {
                 ProcessTerminal(node, tx0, ty0, tz0);
-                return;
+                if (results.Count > 0) {
+                    return;
+                }
             }
-        }
-        else {
-            if (!insideSolidNode)
-            {
+        } else {
+            if (!insideSolidNode) {
                 //didn't manage to get into a solid node
-                if (node == null)
-                {
+                if (node == null) {
                     return;
                 }
 
                 insideSolidNode = node.IsSolid();
             }
 
-            if (insideSolidNode && currentDepth >= wantedDepth)
-            {
-                if (currentDepth == wantedDepth)
-                {
+            if (insideSolidNode && currentDepth >= wantedDepth) {
+                if (currentDepth == wantedDepth) {
                     ProcessTerminal(nodeCoords, tx0, ty0, tz0);
-                }
-                else {
+                } else {
                     //oops, went too deep!!!
                     //trace back to wanted depth
 
                     var newCoords = new OctreeChildCoords[wantedDepth.Value];
 
-                    for (var i = 0; i < newCoords.Length; ++i)
-                    {
+                    for (var i = 0; i < newCoords.Length; ++i) {
                         newCoords[i] = nodeCoords.GetCoord(i);
                     }
 
                     ProcessTerminal(new Coords(newCoords), tx0, ty0,
                         tz0);
                 }
-                return;
+
+                if (results.Count > 0) {
+                    return;
+                }
             }
         }
 
-        if (node != null)
-        {
+        if (node != null) {
             var bounds = node.GetBounds();
             DrawBounds(bounds, Color.white);
-        }
-        else {
+        } else {
             //inside solid node and still going strong baby!
             var bounds = _rootNode.GetChildBounds(nodeCoords);
             DrawBounds(bounds, Color.cyan);
         }
 
-        if (tx1 < 0.0 || ty1 < 0.0 || tz1 < 0.0)
-        {
+        if (tx1 < 0.0 || ty1 < 0.0 || tz1 < 0.0) {
             return;
         }
 
@@ -277,11 +256,9 @@ public class RayIntersection
 
         var currNode = FirstNode(tx0, ty0, tz0, txm, tym, tzm);
 
-        while (currNode < 8)
-        {
-            var childIndex = (OctreeNode.ChildIndex)(currNode ^ _dimensionFlipFlags);
-            if (!_intersectMultiple && results.Count > 0)
-            {
+        while (currNode < 8) {
+            var childIndex = (OctreeNode.ChildIndex) (currNode ^ _dimensionFlipFlags);
+            if (!_intersectMultiple && results.Count > 0) {
                 return;
             }
 
@@ -291,16 +268,13 @@ public class RayIntersection
 
             INode childNode;
 
-            if (insideSolidNode)
-            {
+            if (insideSolidNode) {
                 childNode = null;
-            }
-            else {
+            } else {
                 childNode = node.GetChild(childIndex);
             }
 
-            switch (currNode)
-            {
+            switch (currNode) {
                 //0= none
                 //1 = only x
                 //2 = only y
@@ -363,13 +337,11 @@ public class RayIntersection
         }
     }
 
-    private void DrawBounds(Bounds bounds, bool force = false)
-    {
+    private void DrawBounds(Bounds bounds, bool force = false) {
         DrawBounds(bounds, Color.white, force);
     }
 
-    private void DrawBounds(Bounds bounds, Color color, bool force = false)
-    {
+    private void DrawBounds(Bounds bounds, Color color, bool force = false) {
         var min = bounds.min;
         var max = bounds.max;
 
@@ -391,36 +363,28 @@ public class RayIntersection
         DrawLocalLine(new Vector3(min.x, max.y, min.z), new Vector3(min.x, max.y, max.z), color, force);
     }
 
-    private Vector3 GetNormal(EntryPlane entryPlane)
-    {
+    private Vector3 GetNormal(EntryPlane entryPlane) {
         Vector3 normal;
-        switch (entryPlane)
-        {
+        switch (entryPlane) {
             case EntryPlane.XY:
-                if ((_dimensionFlipFlags & 4) == 0)
-                {
+                if ((_dimensionFlipFlags & 4) == 0) {
                     normal = Vector3.back;
-                }
-                else {
+                } else {
                     normal = Vector3.forward;
                 }
 
                 break;
             case EntryPlane.XZ:
-                if ((_dimensionFlipFlags & 2) == 0)
-                {
+                if ((_dimensionFlipFlags & 2) == 0) {
                     normal = Vector3.down;
-                }
-                else {
+                } else {
                     normal = Vector3.up;
                 }
                 break;
             case EntryPlane.YZ:
-                if ((_dimensionFlipFlags & 1) == 0)
-                {
+                if ((_dimensionFlipFlags & 1) == 0) {
                     normal = Vector3.left;
-                }
-                else {
+                } else {
                     normal = Vector3.right;
                 }
                 break;
@@ -432,25 +396,20 @@ public class RayIntersection
     }
 
 
-    private NeighbourSide GetNeighbourSide(EntryPlane entryPlane)
-    {
-        switch (entryPlane)
-        {
+    private NeighbourSide GetNeighbourSide(EntryPlane entryPlane) {
+        switch (entryPlane) {
             case EntryPlane.XY:
-                if ((_dimensionFlipFlags & 4) == 0)
-                {
+                if ((_dimensionFlipFlags & 4) == 0) {
                     return NeighbourSide.Back;
                 }
                 return NeighbourSide.Forward;
             case EntryPlane.XZ:
-                if ((_dimensionFlipFlags & 2) == 0)
-                {
+                if ((_dimensionFlipFlags & 2) == 0) {
                     return NeighbourSide.Below;
                 }
                 return NeighbourSide.Above;
             case EntryPlane.YZ:
-                if ((_dimensionFlipFlags & 1) == 0)
-                {
+                if ((_dimensionFlipFlags & 1) == 0) {
                     return NeighbourSide.Left;
                 }
                 return NeighbourSide.Right;
@@ -459,8 +418,7 @@ public class RayIntersection
         }
     }
 
-    private void ProcessTerminal(INode node, float tx0, float ty0, float tz0)
-    {
+    private void ProcessTerminal(INode node, float tx0, float ty0, float tz0) {
         var entryDistance = Mathf.Max(tx0, ty0, tz0);
 
         var entryPlane = GetEntryPlane(tx0, ty0, tz0);
@@ -484,27 +442,30 @@ public class RayIntersection
         DrawBounds(childBounds, Color.green, true);
 
         childBounds = node.GetChildBounds(new Coords(
-            new[] { OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.RightAboveBack) }));
+            new[] {OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.RightAboveBack)}));
 
         DrawBounds(childBounds, Color.green, true);
 
         childBounds = node.GetChildBounds(new Coords(
-            new[] { OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.RightAboveForward) }));
+            new[] {OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.RightAboveForward)}));
 
         DrawBounds(childBounds, Color.green, true);
 
         childBounds = node.GetChildBounds(new Coords(
-            new[] { OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.LeftAboveForward) }));
+            new[] {OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.LeftAboveForward)}));
 
         DrawBounds(childBounds, Color.green, true);
 
-        results.Add(new RayIntersectionResult(node, node.GetCoords(), entryDistance, _ray.GetPoint(entryDistance),
-            normal, GetNeighbourSide(entryPlane)));
+        var result = new RayIntersectionResult(node, node.GetCoords(), entryDistance, _ray.GetPoint(entryDistance),
+            normal, GetNeighbourSide(entryPlane));
+
+        if (_filter == null || _filter(result)) {
+            results.Add(result);
+        }
     }
 
     private void ProcessTerminal(Coords nodeCoords, float tx0, float ty0,
-        float tz0)
-    {
+        float tz0) {
         var entryDistance = Mathf.Max(tx0, ty0, tz0);
 
         var entryPlane = GetEntryPlane(tx0, ty0, tz0);
@@ -517,16 +478,18 @@ public class RayIntersection
         Debug.DrawLine(_ray.GetPoint(entryDistance),
             _ray.GetPoint(entryDistance) + _transform.TransformDirection(normal) * size, Color.green, 0, false);
 
-
         var bounds = _rootNode.GetChildBounds(nodeCoords);
         DrawBounds(bounds, Color.red, true);
 
-        results.Add(new RayIntersectionResult(null, nodeCoords, entryDistance, _ray.GetPoint(entryDistance),
-            normal, GetNeighbourSide(entryPlane)));
+        var result = new RayIntersectionResult(null, nodeCoords, entryDistance, _ray.GetPoint(entryDistance),
+            normal, GetNeighbourSide(entryPlane));
+
+        if (_filter == null || _filter(result)) {
+            results.Add(result);
+        }
     }
 
-    private enum EntryPlane
-    {
+    private enum EntryPlane {
         XY,
         XZ,
         YZ

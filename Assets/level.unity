@@ -132,7 +132,7 @@ MonoBehaviour:
   materials:
   - {fileID: 2100000, guid: 74eae52ddde6c6949ae81a97acccbec1, type: 2}
   - {fileID: 2100000, guid: fa1b49acaf9b64a41ae37001710847ae, type: 2}
-  showGizmos: 0
+  showGizmos: 1
   size: 100
   useDepth: 1
   wantedDepth: 5
@@ -310,8 +310,8 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1633759498}
-  m_LocalRotation: {x: 0.034225456, y: 0.9611685, z: -0.23553269, w: 0.1396715}
-  m_LocalPosition: {x: -4.977047, y: 77.00759, z: 81.66583}
+  m_LocalRotation: {x: 0.3928944, y: 0.30029017, z: -0.13747364, w: 0.85823125}
+  m_LocalPosition: {x: -211.93607, y: 361.9248, z: -258.27902}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
