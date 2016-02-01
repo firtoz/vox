@@ -3,30 +3,29 @@ using UnityEngine;
 using UnityEngine.Assertions;
 
 public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVoxelTree> {
-    private OctreeNode.ChildIndex _indexInParent;
+	private OctreeNode.ChildIndex _indexInParent;
 
-    public SuperVoxelTree(Func<SuperVoxelTree, Bounds, Node> nodeConstructor, Bounds bounds)
-        : base(nodeConstructor, bounds) {
-    }
+	public SuperVoxelTree(Func<SuperVoxelTree, Bounds, Node> nodeConstructor, Bounds bounds)
+		: base(nodeConstructor, bounds) {}
 
-    public SuperVoxelTree(Bounds bounds, VoxelTree voxelTree) : base(CreateRootNode, bounds) {
-        if (voxelTree == null) {
-            throw new ArgumentException("The voxelTree argument cannot be null.", "voxelTree");
-        }
+	public SuperVoxelTree(Bounds bounds, VoxelTree voxelTree) : base(CreateRootNode, bounds) {
+		if (voxelTree == null) {
+			throw new ArgumentException("The voxelTree argument cannot be null.", "voxelTree");
+		}
 
-        GetRoot().SetItem(voxelTree);
-    }
+		GetRoot().SetItem(voxelTree);
+	}
 
-    private SuperVoxelTree(Bounds bounds) : base(CreateRootNode, bounds) {
-    }
+	private SuperVoxelTree(Bounds bounds) : base(CreateRootNode, bounds) {}
 
-    public override Node ConstructNode(Bounds bounds, Node parent, OctreeNode.ChildIndex indexInParent) {
-        return new Node(bounds, parent, indexInParent, this);
-    }
+	public override Node ConstructNode(Bounds bounds, Node parent, OctreeNode.ChildIndex indexInParent) {
+		return new Node(bounds, parent, indexInParent, this);
+	}
 
-    private static Node CreateRootNode(SuperVoxelTree self, Bounds bounds) {
-        return new Node(bounds, self);
-    }
+	private static Node CreateRootNode(SuperVoxelTree self, Bounds bounds) {
+		return new Node(bounds, self);
+	}
+
 //
 //    public SuperVoxelTree GetOrCreateNeighbour(NeighbourSide side, bool readOnly) {
 //        if (_parentTree == null) {
@@ -176,158 +175,155 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 //        return rootItem.voxelTree;
 //    }
 
-    public class Node : OctreeNodeBase<VoxelTree, SuperVoxelTree, Node> {
-        public Node(Bounds bounds, SuperVoxelTree tree) : base(bounds, tree) {}
+	public class Node : OctreeNodeBase<VoxelTree, SuperVoxelTree, Node> {
+		public Node(Bounds bounds, SuperVoxelTree tree) : base(bounds, tree) {}
 
-        public Node(Bounds bounds, Node parent, ChildIndex indexInParent, SuperVoxelTree ocTree)
-            : base(bounds, parent, indexInParent, ocTree) {}
+		public Node(Bounds bounds, Node parent, ChildIndex indexInParent, SuperVoxelTree ocTree)
+			: base(bounds, parent, indexInParent, ocTree) {}
 
-        public Node GetOrCreateNeighbour(NeighbourSide side, bool readOnly) {
-            if (!CreateParentTowardsSide(side, readOnly)) {
-                return null;
-            }
+		public Node GetOrCreateNeighbour(NeighbourSide side, bool readOnly) {
+			if (!CreateParentTowardsSide(side, readOnly)) {
+				return null;
+			}
 
-            //
-            ////        var neighbourCoords =
-            ////            VoxelTree.GetNeighbourCoords(new Coords(new[] {OctreeChildCoords.FromIndex(_indexInParent)}), side);
-            //
-            ////        if (neighbourCoords == null) {
-            //        // uh oh, gotta go further
-            //
-                    // cases:
-                    // length 0: not gonna happen.
-                    // not at edge, if parent was null, we get neighbour coords result.
-                    // at edge: ??
-            
-                    var neighbourCoordsResult = GetNeighbourCoordsInfinite(ocTree,
-                        GetCoords(), side, ExpandRootAndReturnTree);
-            
-                    var neighbourParentTree = neighbourCoordsResult.tree;
-                    var neighbourCoords = neighbourCoordsResult.coordsResult;
-            
-                    var parentRoot = neighbourParentTree.GetRoot();
-            
-                    var neighbour = parentRoot.GetChildAtCoords(neighbourCoords);
-            
-                    if (neighbour == null) {
-                        if (readOnly) {
-                            return null;
-                        }
-            
-                        neighbour = parentRoot.AddRecursive(neighbourCoords, false);
-                        CreateNewNeighbourSuperVoxelTree(neighbour);
-                    }
-            
-                    return neighbour;
-        }
+			//
+			////        var neighbourCoords =
+			////            VoxelTree.GetNeighbourCoords(new Coords(new[] {OctreeChildCoords.FromIndex(_indexInParent)}), side);
+			//
+			////        if (neighbourCoords == null) {
+			//        // uh oh, gotta go further
+			//
+			// cases:
+			// length 0: not gonna happen.
+			// not at edge, if parent was null, we get neighbour coords result.
+			// at edge: ??
+
+			var neighbourCoordsResult = GetNeighbourCoordsInfinite(ocTree,
+				GetCoords(), side, ExpandRootAndReturnTree);
+
+			var neighbourCoords = neighbourCoordsResult.coordsResult;
+
+			var root = GetRoot();
+
+			var neighbour = root.GetChildAtCoords(neighbourCoords);
+
+			if (neighbour == null) {
+				if (readOnly) {
+					return null;
+				}
+
+				neighbour = root.AddRecursive(neighbourCoords, false);
+				CreateNewNeighbourSuperVoxelTree(neighbour);
+			}
+
+			return neighbour;
+		}
 
 
-        private void CreateNewNeighbourSuperVoxelTree(Node neighbourNode) {
-            var myRootBounds = GetBounds();
-        
-            var neighbourBounds = neighbourNode.GetBounds();
-        
-            Assert.AreEqual(neighbourBounds.extents, myRootBounds.extents);
-        
-            var myItem = GetItem();
+		private void CreateNewNeighbourSuperVoxelTree(Node neighbourNode) {
+			var myBounds = GetBounds();
 
-            var myVoxelTree = myItem;
-            if (myVoxelTree == null) {
-                return;
-            }
+			var neighbourBounds = neighbourNode.GetBounds();
 
-            var neighbourVoxelTree = new VoxelTree(neighbourBounds.center, neighbourBounds.size, false);
+			Assert.AreEqual(neighbourBounds.extents, myBounds.extents);
 
-            var newGameObject = new GameObject();
-        
-            var originalGameObject = myVoxelTree.GetGameObject();
-        
-            newGameObject.transform.position = originalGameObject.transform.position;
-            newGameObject.transform.rotation = originalGameObject.transform.rotation;
-            newGameObject.transform.localScale = originalGameObject.transform.lossyScale;
-        
-            neighbourVoxelTree.SetOwnerNode(neighbourNode);
-        
-            neighbourVoxelTree.SetGameObject(newGameObject);
-        
-            neighbourVoxelTree.CopyMaterialsFrom(myVoxelTree);
+			var myItem = GetItem();
 
-            neighbourNode.SetItem(neighbourVoxelTree);
-        }
+			var myVoxelTree = myItem;
+			if (myVoxelTree == null) {
+				return;
+			}
 
-        private bool CreateParentTowardsSide(NeighbourSide side, bool readOnly) {
-            if (parent == null) {
-                // we're the root
-                if (readOnly) {
-                    return false;
-                }
+			var neighbourVoxelTree = new VoxelTree(neighbourBounds.center, neighbourBounds.size, false);
 
-                var wantedIndexInParent = GetWantedIndexInParent(side);
+			var newGameObject = new GameObject();
 
-                parent = new Node(CreateParentBounds(wantedIndexInParent), ocTree);
+			var originalGameObject = myVoxelTree.GetGameObject();
 
-                ocTree.SetRoot(parent);
+			newGameObject.transform.position = originalGameObject.transform.position;
+			newGameObject.transform.rotation = originalGameObject.transform.rotation;
+			newGameObject.transform.localScale = originalGameObject.transform.lossyScale;
 
-                parent.ReplaceChild(wantedIndexInParent, this);
+			neighbourVoxelTree.SetOwnerNode(neighbourNode);
 
-                indexInParent = wantedIndexInParent;
-            }
+			neighbourVoxelTree.SetGameObject(newGameObject);
 
-            return true;
-        }
+			neighbourVoxelTree.CopyMaterialsFrom(myVoxelTree);
 
-        private SuperVoxelTree ExpandRootAndReturnTree(NeighbourSide side, bool isReadOnly) {
-            if (!GetRoot().CreateParentTowardsSide(side, isReadOnly)) {
-                return null;
-            }
+			neighbourNode.SetItem(neighbourVoxelTree);
+		}
 
-            return ocTree;
-        }
+		private bool CreateParentTowardsSide(NeighbourSide side, bool readOnly) {
+			if (parent == null) {
+				// we're the root
+				if (readOnly) {
+					return false;
+				}
 
-        private void ReplaceChild(ChildIndex childIndex, Node newChild) {
-            Assert.AreEqual(newChild.bounds.extents * 2, bounds.extents);
-            var childCoords = new Coords(new []{ OctreeChildCoords.FromIndex(childIndex) });
-            var childBounds = GetChildBounds(childCoords);
-            Assert.AreEqual(newChild.bounds.center, childBounds.center);
+				var wantedIndexInParent = GetWantedIndexInParent(side);
 
-            if (children == null) {
-                children = new Node[8];
-            } else if (children[(int) childIndex] != null) {
-                RemoveChild(childIndex);
-            }
+				parent = new Node(CreateParentBounds(wantedIndexInParent), ocTree);
 
-            childCount++;
+				ocTree.SetRoot(parent);
 
-            children[(int) childIndex] = newChild;
+				indexInParent = wantedIndexInParent;
 
-            SetChild(childIndex, newChild);
-        }
+				parent.ReplaceChild(wantedIndexInParent, this);
+			}
 
-        private Bounds CreateParentBounds(ChildIndex wantedIndexInParent) {
-            var myBounds = GetBounds();
-        
-            var parentBoundsCenter = myBounds.center - Vector3.Scale(myBounds.extents, GetChildDirection(wantedIndexInParent));
-        
-            return new Bounds(parentBoundsCenter, Vector3.zero) {extents = myBounds.extents * 2};
-        }
+			return true;
+		}
 
-        private static ChildIndex GetWantedIndexInParent(NeighbourSide sideToGrowTowards) {
-            switch (sideToGrowTowards) {
-                case NeighbourSide.Above:
-                case NeighbourSide.Right:
-                case NeighbourSide.Forward:
-                    return ChildIndex.LeftBelowBack;
-                case NeighbourSide.Left:
-                    return ChildIndex.RightBelowBack;
-                case NeighbourSide.Back:
-                    return ChildIndex.LeftBelowForward;
-                case NeighbourSide.Below:
-                    return ChildIndex.LeftAboveBack;
-                case NeighbourSide.Invalid:
-                    throw new ArgumentOutOfRangeException("sideToGrowTowards", sideToGrowTowards, null);
-                default:
-                    throw new ArgumentOutOfRangeException("sideToGrowTowards", sideToGrowTowards, null);
-            }
-        }
-    }
+		private SuperVoxelTree ExpandRootAndReturnTree(NeighbourSide side, bool isReadOnly) {
+			if (!GetRoot().CreateParentTowardsSide(side, isReadOnly)) {
+				return null;
+			}
+
+			return ocTree;
+		}
+
+		private void ReplaceChild(ChildIndex childIndex, Node newChild) {
+			Assert.AreEqual(newChild.bounds.extents * 2, bounds.extents);
+			var childCoords = new Coords(new[] {OctreeChildCoords.FromIndex(childIndex)});
+			var childBounds = GetChildBounds(childCoords);
+			Assert.AreEqual(newChild.bounds.center, childBounds.center);
+
+			if (children == null) {
+				children = new Node[8];
+			} else if (children[(int) childIndex] != null) {
+				RemoveChild(childIndex);
+			}
+
+			childCount++;
+
+			SetChild(childIndex, newChild);
+		}
+
+		private Bounds CreateParentBounds(ChildIndex wantedIndexInParent) {
+			var myBounds = GetBounds();
+
+			var parentBoundsCenter = myBounds.center - Vector3.Scale(myBounds.extents, GetChildDirection(wantedIndexInParent));
+
+			return new Bounds(parentBoundsCenter, Vector3.zero) {extents = myBounds.extents * 2};
+		}
+
+		private static ChildIndex GetWantedIndexInParent(NeighbourSide sideToGrowTowards) {
+			switch (sideToGrowTowards) {
+				case NeighbourSide.Above:
+				case NeighbourSide.Right:
+				case NeighbourSide.Forward:
+					return ChildIndex.LeftBelowBack;
+				case NeighbourSide.Left:
+					return ChildIndex.RightBelowBack;
+				case NeighbourSide.Back:
+					return ChildIndex.LeftBelowForward;
+				case NeighbourSide.Below:
+					return ChildIndex.LeftAboveBack;
+				case NeighbourSide.Invalid:
+					throw new ArgumentOutOfRangeException("sideToGrowTowards", sideToGrowTowards, null);
+				default:
+					throw new ArgumentOutOfRangeException("sideToGrowTowards", sideToGrowTowards, null);
+			}
+		}
+	}
 }
