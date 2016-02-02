@@ -127,14 +127,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   addBoundsNextFrame: 0
-  indices: 0400000005000000
   materialIndex: 0
-  materials:
-  - {fileID: 2100000, guid: 74eae52ddde6c6949ae81a97acccbec1, type: 2}
-  - {fileID: 2100000, guid: fa1b49acaf9b64a41ae37001710847ae, type: 2}
   showGizmos: 1
   size: 100
   useDepth: 1
+  voxelTree:
+    _materialsSerialized:
+      _keys: 0400000005000000
+      _values:
+      - {fileID: 2100000, guid: 74eae52ddde6c6949ae81a97acccbec1, type: 2}
+      - {fileID: 2100000, guid: fa1b49acaf9b64a41ae37001710847ae, type: 2}
   wantedDepth: 5
   debugRaycasts: 1
 --- !u!23 &916304649

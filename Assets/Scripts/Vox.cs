@@ -1,13 +1,10 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Vox : MonoBehaviour {
 	public bool addBoundsNextFrame;
 
-	public List<int> indices = new List<int> {4, 5};
 
 	public int materialIndex;
-	public List<Material> materials = new List<Material>();
 
 	private RayIntersectionResult _result;
 
@@ -20,16 +17,10 @@ public class Vox : MonoBehaviour {
 	public int wantedDepth = 5;
 
 	public void OnEnable() {
-		voxelTree = new VoxelTree(Vector3.zero, Vector3.one * size);
+//		voxelTree = new VoxelTree(Vector3.zero, Vector3.one * size);
 
 		voxelTree.SetGameObject(gameObject);
 
-		for (var i = 0; i < indices.Count; i++) {
-			var index = indices[i];
-
-			voxelTree.SetMaterial(index, materials[i]);
-//            voxelTree.SetMaterial(i, 
-		}
 		//                vox.octree.AddBounds(new Bounds(new Vector3(0, 0.1f, -0.4f), Vector3.one), 5, 8);
 		//                vox.octree.AddBounds(new Bounds(new Vector3(0, -.75f, -0.35f), Vector3.one*0.5f), 6, 8);
 		//                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one*0.7f), 7, 8);
@@ -83,10 +74,10 @@ public class Vox : MonoBehaviour {
 			wantedDepth++;
 		}
 		if (Input.GetKeyDown(KeyCode.I)) {
-			materialIndex = (materialIndex + indices.Count + 1) % indices.Count;
+			materialIndex = (materialIndex + voxelTree.GetNumMaterials() + 1) % voxelTree.GetNumMaterials();
 		}
 		if (Input.GetKeyDown(KeyCode.L)) {
-			materialIndex = (materialIndex + 1) % indices.Count;
+			materialIndex = (materialIndex + 1) % voxelTree.GetNumMaterials();
 		}
 		if (voxelTree == null) {
 			return;
@@ -122,7 +113,7 @@ public class Vox : MonoBehaviour {
 					Profiler.BeginSample("AddRecursive");
 
 					var final = neighbourTree.GetRoot().AddRecursive(neighbourCoords);
-					final.SetItem(indices[materialIndex], true);
+					final.SetItem(voxelTree.GetMaterialIndex(materialIndex), true);
 					Profiler.EndSample();
 
 					Profiler.BeginSample("Render");
