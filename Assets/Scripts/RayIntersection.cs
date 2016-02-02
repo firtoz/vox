@@ -15,7 +15,7 @@ public class RayIntersection {
 
 	public readonly List<RayIntersectionResult> results = new List<RayIntersectionResult>();
 	private Ray _ray;
-	private IOctree _tree;
+	private readonly IOctree _tree;
 
 	public RayIntersection(Transform transform, IOctree octree, Ray r, bool intersectMultiple, int? wantedDepth,
 		Filter filter, bool debug = false) {
@@ -246,13 +246,17 @@ public class RayIntersection {
 			}
 		}
 
-		if (node != null) {
-			var bounds = node.GetBounds();
-			DrawBounds(bounds, Color.white);
-		} else {
-			//inside solid node and still going strong baby!
-			var bounds = _rootNode.GetChildBounds(nodeCoords);
-			DrawBounds(bounds, Color.cyan);
+		if (_debug) {
+			if (node != null)
+			{
+				var bounds = node.GetBounds();
+				DrawBounds(bounds, Color.white);
+			}
+			else {
+				//inside solid node and still going strong baby!
+				var bounds = _rootNode.GetChildBounds(nodeCoords);
+				DrawBounds(bounds, Color.cyan);
+			}
 		}
 
 		var txm = 0.5f * (tx0 + tx1);
@@ -342,10 +346,6 @@ public class RayIntersection {
 		}
 	}
 
-	private void DrawBounds(Bounds bounds, bool force = false) {
-		DrawBounds(bounds, Color.white, force);
-	}
-
 	private void DrawBounds(Bounds bounds, Color color, bool force = false) {
 		var min = bounds.min;
 		var max = bounds.max;
@@ -429,37 +429,16 @@ public class RayIntersection {
 		var entryPlane = GetEntryPlane(tx0, ty0, tz0);
 
 		var normal = GetNormal(entryPlane);
+		if (_debug) {
+			const float normalSize = 1f;
+			Debug.DrawLine(_ray.origin, _ray.GetPoint(entryDistance), Color.white, 0, false);
 
-		var size = 1f;
-		Debug.DrawLine(_ray.origin, _ray.GetPoint(entryDistance), Color.white, 0, false);
+			Debug.DrawLine(_ray.GetPoint(entryDistance),
+				_ray.GetPoint(entryDistance) + _transform.TransformDirection(normal) * normalSize, Color.green, 0, false);
 
-		Debug.DrawLine(_ray.GetPoint(entryDistance),
-			_ray.GetPoint(entryDistance) + _transform.TransformDirection(normal) * size, Color.green, 0, false);
-
-		var bounds = node.GetBounds();
-		DrawBounds(bounds, Color.cyan, true);
-
-		var childBounds =
-			node.GetChildBounds(
-				new Coords(new[]
-				{OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.LeftAboveBack)}));
-
-		DrawBounds(childBounds, Color.magenta, true);
-
-		childBounds = node.GetChildBounds(new Coords(
-			new[] {OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.RightAboveBack)}));
-
-		DrawBounds(childBounds, Color.magenta, true);
-
-		childBounds = node.GetChildBounds(new Coords(
-			new[] {OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.RightAboveForward)}));
-
-		DrawBounds(childBounds, Color.green, true);
-
-		childBounds = node.GetChildBounds(new Coords(
-			new[] {OctreeChildCoords.FromIndex(OctreeNode.ChildIndex.LeftAboveForward)}));
-
-		DrawBounds(childBounds, Color.green, true);
+			var bounds = node.GetBounds();
+			DrawBounds(bounds, Color.cyan, true);
+		}
 
 		var result = new RayIntersectionResult(_tree, node, node.GetCoords(), entryDistance, _ray.GetPoint(entryDistance),
 			normal, GetNeighbourSide(entryPlane));
@@ -476,15 +455,16 @@ public class RayIntersection {
 		var entryPlane = GetEntryPlane(tx0, ty0, tz0);
 
 		var normal = GetNormal(entryPlane);
+		if (_debug) {
+			const float normalSize = 1f;
+			Debug.DrawLine(_ray.origin, _ray.GetPoint(entryDistance), Color.white, 0, false);
 
-		var size = 1f;
-		Debug.DrawLine(_ray.origin, _ray.GetPoint(entryDistance), Color.white, 0, false);
+			Debug.DrawLine(_ray.GetPoint(entryDistance),
+				_ray.GetPoint(entryDistance) + _transform.TransformDirection(normal) * normalSize, Color.green, 0, false);
 
-		Debug.DrawLine(_ray.GetPoint(entryDistance),
-			_ray.GetPoint(entryDistance) + _transform.TransformDirection(normal) * size, Color.green, 0, false);
-
-		var bounds = _rootNode.GetChildBounds(nodeCoords);
-		DrawBounds(bounds, Color.red, true);
+			var bounds = _rootNode.GetChildBounds(nodeCoords);
+			DrawBounds(bounds, Color.red, true);
+		}
 
 		var result = new RayIntersectionResult(_tree, null, nodeCoords, entryDistance, _ray.GetPoint(entryDistance),
 			normal, GetNeighbourSide(entryPlane));

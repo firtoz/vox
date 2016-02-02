@@ -50,6 +50,8 @@ public class Vox : MonoBehaviour {
 //        octree.ApplyToMesh(GetComponent<MeshFilter>().sharedMesh);
 	}
 
+	public bool debugRaycasts;
+
 	// Update is called once per frame
 	public void Update() {
 		if (addBoundsNextFrame) {
@@ -93,9 +95,9 @@ public class Vox : MonoBehaviour {
 		Profiler.BeginSample("Intersect");
 
 		if (useDepth) {
-			voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out _result, wantedDepth);
+			voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out _result, wantedDepth, debugRaycasts);
 		} else {
-			voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out _result);
+			voxelTree.Intersect(transform, Camera.main.ScreenPointToRay(Input.mousePosition), out _result, null, debugRaycasts);
 		}
 
 		Profiler.EndSample();

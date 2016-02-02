@@ -79,14 +79,11 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 //    private readonly Dictionary<NeighbourSide, TTree> _neighbourTrees = new Dictionary<NeighbourSide, TTree>();
 
-    private bool IntersectInternal(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth = null) {
-        return base.Intersect(transform, ray, out result, wantedDepth);
+    private bool IntersectInternal(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth, bool debugRaycasts) {
+        return base.Intersect(transform, ray, out result, wantedDepth, debugRaycasts);
     }
 
-
-    public override bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result,
-        int? wantedDepth = null) {
-
+    public override bool Intersect(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth = null, bool debugRaycasts = false) {
         var subIntersectionResult = new RayIntersectionResult(false);
 
         var intersection = new RayIntersection(transform, GetOwnerNode().GetTree(), ray, false, null, intersectionResult => {
@@ -103,13 +100,13 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
                 return false;
             }
 
-            if (intersectedVoxel.IntersectInternal(transform, ray, out subIntersectionResult, wantedDepth))
+            if (intersectedVoxel.IntersectInternal(transform, ray, out subIntersectionResult, wantedDepth, debugRaycasts))
             {
                 return true;
             }
 
             return false;
-        }, true);
+        }, debugRaycasts);
 
         result = subIntersectionResult;
 
