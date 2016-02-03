@@ -3,32 +3,26 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
-	private readonly Dictionary<NeighbourSide, HashSet<VoxelNode>> _sideSolidChildren =
-		new Dictionary<NeighbourSide, HashSet<VoxelNode>>();
+	private Dictionary<NeighbourSide, int> _sideSolidCount = null;
+	private Dictionary<NeighbourSide, HashSet<VoxelNode>> _sideSolidChildren = null;
 
-	private readonly Dictionary<NeighbourSide, int> _sideSolidCount = new Dictionary<NeighbourSide, int>();
-	private readonly Dictionary<NeighbourSide, int> _sideTransparentdCount = new Dictionary<NeighbourSide, int>();
+	private Dictionary<NeighbourSide, int> _sideTransparentCount = null;
 
 	private int _solidNodeCount;
+	private int _transparentNodeCount;
 
 	public VoxelNode(Bounds bounds, VoxelTree tree) : this(bounds, null, ChildIndex.Invalid, tree) {}
 
 	public VoxelNode(Bounds bounds, VoxelNode parent, ChildIndex indexInParent, VoxelTree ocTree)
 		: base(bounds, parent, indexInParent, ocTree) {
-		for (var i = 0; i < 6; ++i) {
-			var neighbourSide = (NeighbourSide) i;
-			_sideSolidCount[neighbourSide] = 0;
-			_sideTransparentdCount[neighbourSide] = 0;
-			_sideSolidChildren[neighbourSide] = new HashSet<VoxelNode>();
-		}
 	}
 
 	private bool SideSolid(NeighbourSide side) {
-		return _sideSolidCount[side] > 0;
+		return _sideSolidCount != null && _sideSolidCount[side] > 0;
 	}
 
 	private bool SideTransparent(NeighbourSide side) {
-		return _sideTransparentdCount[side] > 0;
+		return _sideTransparentCount != null && _sideTransparentCount[side] > 0;
 	}
 
 	private SideState GetSideState(Coords coords, NeighbourSide side) {
@@ -150,27 +144,57 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 #endif
 	}
 
-	private void AddSolidNode(ChildIndex childIndex, bool actuallySolid, bool isTransparent) {
+	private void AddTransparentNode(ChildIndex childIndex) {
+		if (childIndex != ChildIndex.Invalid) {
+			NeighbourSide verticalSide, depthSide, horizontalSide;
+
+			if (_sideTransparentCount == null)
+			{
+				_sideTransparentCount = new Dictionary<NeighbourSide, int>();
+				for (var i = 0; i < 6; ++i)
+				{
+					var neighbourSide = (NeighbourSide)i;
+					_sideTransparentCount[neighbourSide] = 0;
+				}
+			}
+
+			GetNeighbourSides(childIndex, out verticalSide, out horizontalSide, out depthSide);
+
+			_sideTransparentCount[verticalSide]++;
+			_sideTransparentCount[depthSide]++;
+			_sideTransparentCount[horizontalSide]++;
+		} 
+
+		if (parent != null && _transparentNodeCount == 0) {
+			parent.AddTransparentNode(indexInParent);
+		}
+
+		_transparentNodeCount++;
+	}
+
+	private void AddSolidNode(ChildIndex childIndex, bool actuallySolid) {
 		NeighbourSide verticalSide, depthSide, horizontalSide;
 
 		if (childIndex != ChildIndex.Invalid) {
 			GetNeighbourSides(childIndex, out verticalSide, out horizontalSide, out depthSide);
 
+			if (_sideSolidCount == null) {
+				_sideSolidCount = new Dictionary<NeighbourSide, int>();
+				for (var i = 0; i < 6; ++i) {
+					var neighbourSide = (NeighbourSide) i;
+					_sideSolidCount[neighbourSide] = 0;
+				}
+			}
+
 			_sideSolidCount[verticalSide]++;
 			_sideSolidCount[depthSide]++;
 			_sideSolidCount[horizontalSide]++;
-
-			if (isTransparent) {
-				_sideTransparentdCount[verticalSide]++;
-				_sideTransparentdCount[depthSide]++;
-				_sideTransparentdCount[horizontalSide]++;
-			}
 		} else {
 			GetNeighbourSides(indexInParent, out verticalSide, out horizontalSide, out depthSide);
 		}
 
 		if (parent != null && _solidNodeCount == 0) {
-			parent.AddSolidNode(indexInParent, false, isTransparent);
+			parent.AddSolidNode(indexInParent, false);
 		}
 
 		_solidNodeCount++;
@@ -182,6 +206,14 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 		if (childIndex != ChildIndex.Invalid) {
 			actualNode = GetChild(childIndex);
 
+			if (_sideSolidChildren == null) {
+				_sideSolidChildren = new Dictionary<NeighbourSide, HashSet<VoxelNode>>();
+				for (var i = 0; i < 6; ++i) {
+					var neighbourSide = (NeighbourSide) i;
+					_sideSolidChildren[neighbourSide] = new HashSet<VoxelNode>();
+				}
+			}
+
 			_sideSolidChildren[verticalSide].Add(actualNode);
 			_sideSolidChildren[depthSide].Add(actualNode);
 			_sideSolidChildren[horizontalSide].Add(actualNode);
@@ -191,6 +223,16 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
 		var currentParent = parent;
 		while (currentParent != null) {
+			if (currentParent._sideSolidChildren == null)
+			{
+				currentParent._sideSolidChildren = new Dictionary<NeighbourSide, HashSet<VoxelNode>>();
+				for (var i = 0; i < 6; ++i)
+				{
+					var neighbourSide = (NeighbourSide)i;
+					currentParent._sideSolidChildren[neighbourSide] = new HashSet<VoxelNode>();
+				}
+			}
+
 			currentParent._sideSolidChildren[verticalSide].Add(actualNode);
 			currentParent._sideSolidChildren[depthSide].Add(actualNode);
 			currentParent._sideSolidChildren[horizontalSide].Add(actualNode);
@@ -199,7 +241,25 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 		}
 	}
 
-	private void RemoveSolidNode(ChildIndex childIndex, bool wasActuallySolid, bool wasTransparent) {
+	private void RemoveTransparentNode(ChildIndex childIndex) {
+		if (childIndex != ChildIndex.Invalid) {
+			NeighbourSide verticalSide, depthSide, horizontalSide;
+
+			GetNeighbourSides(childIndex, out verticalSide, out horizontalSide, out depthSide);
+
+			_sideTransparentCount[verticalSide]--;
+			_sideTransparentCount[depthSide]--;
+			_sideTransparentCount[horizontalSide]--;
+		}
+
+		_transparentNodeCount--;
+
+		if (parent != null && _transparentNodeCount == 0) {
+			parent.RemoveTransparentNode(indexInParent);
+		}
+	}
+
+	private void RemoveSolidNode(ChildIndex childIndex, bool wasActuallySolid) {
 		NeighbourSide verticalSide, depthSide, horizontalSide;
 
 		if (childIndex != ChildIndex.Invalid) {
@@ -208,13 +268,6 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 			_sideSolidCount[verticalSide]--;
 			_sideSolidCount[depthSide]--;
 			_sideSolidCount[horizontalSide]--;
-
-			if (wasTransparent)
-			{
-				_sideTransparentdCount[verticalSide]--;
-				_sideTransparentdCount[depthSide]--;
-				_sideTransparentdCount[horizontalSide]--;
-			}
 		} else {
 			GetNeighbourSides(indexInParent, out verticalSide, out horizontalSide, out depthSide);
 		}
@@ -222,7 +275,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 		_solidNodeCount--;
 
 		if (parent != null && _solidNodeCount == 0) {
-			parent.RemoveSolidNode(indexInParent, false, wasTransparent);
+			parent.RemoveSolidNode(indexInParent, false);
 		}
 
 		if (!wasActuallySolid) {
@@ -258,6 +311,10 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 			// no need to update neighbours
 
 			RemoveAllChildren();
+
+			_sideSolidCount = null;
+			_sideSolidChildren = null;
+			_sideTransparentCount = null;
 		}
 
 		if (!hasItem) {
@@ -266,7 +323,10 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
 			hasItem = true;
 
-			AddSolidNode(ChildIndex.Invalid, true, IsItemTransparent(newItem));
+			AddSolidNode(ChildIndex.Invalid, true);
+			if (IsItemTransparent(newItem)) {
+				AddTransparentNode(ChildIndex.Invalid);
+			}
 
 			item = newItem;
 			ocTree.NodeAdded(this, false);
@@ -278,6 +338,13 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 			// remove from the previous item's mesh
 			// no need to update neighbours now, will be done below
 			ocTree.NodeRemoved(this, false);
+			if (IsItemTransparent(item)) {
+				if (!IsItemTransparent(newItem)) {
+					RemoveTransparentNode(ChildIndex.Invalid);
+				}
+			} else if (IsItemTransparent(newItem)) {
+				AddTransparentNode(ChildIndex.Invalid);
+			}
 			item = newItem;
 			//add to the next item's mesh!
 			ocTree.NodeAdded(this, false);
@@ -317,10 +384,13 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
 	protected override void RemoveItemInternal(bool updateNeighbours) {
 		if (hasItem) {
-			var item = GetItem();
+			var lastItem = GetItem();
 			ocTree.NodeRemoved(this, updateNeighbours);
 
-			RemoveSolidNode(ChildIndex.Invalid, true, IsItemTransparent(item));
+			RemoveSolidNode(ChildIndex.Invalid, true);
+			if (IsItemTransparent(lastItem)) {
+				RemoveTransparentNode(ChildIndex.Invalid);
+			}
 		}
 
 		base.RemoveItemInternal(updateNeighbours);
