@@ -3,14 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 
 [Serializable]
-public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCallbackReceiver {
-	[Serializable]
-	class IntMaterial : SerializableDictionary<int, Material> {
-		
-	}
+public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 	private const int MAX_VERTICES_FOR_MESH = 65000 - 4 * 100;
 	private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
@@ -24,10 +21,10 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCa
 	//    private readonly List<GameObject> _meshObjects = new List<GameObject>();
 	private readonly Dictionary<int, List<GameObject>> _gameObjectForMeshInfo = new Dictionary<int, List<GameObject>>();
 
-	private readonly Dictionary<int, Material> _materials = new Dictionary<int, Material>();
 
 	[SerializeField]
-	private IntMaterial _materialsSerialized;
+	[FormerlySerializedAs("_materials")]
+	public IntMaterial materials = new IntMaterial();
 
 	private readonly Dictionary<int, HashSet<OctreeRenderFace>> _nodeFaces =
 		new Dictionary<int, HashSet<OctreeRenderFace>>();
@@ -36,7 +33,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCa
 
 	//    private readonly List<Mesh> _meshes = new List<Mesh>();
 
-	private Dictionary<int, MeshInfo<VoxelNode>> _meshInfos = new Dictionary<int, MeshInfo<VoxelNode>>();
+	private readonly Dictionary<int, MeshInfo<VoxelNode>> _meshInfos = new Dictionary<int, MeshInfo<VoxelNode>>();
 
 	private SuperVoxelTree.Node _ownerNode;
 
@@ -64,8 +61,8 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCa
 	}
 
 	protected Material GetMeshMaterial(int meshId) {
-		if (_materials.ContainsKey(meshId)) {
-			return _materials[meshId];
+		if (materials.value.ContainsKey(meshId)) {
+			return materials.value[meshId];
 		}
 
 		return new Material(Shader.Find("Standard")) {
@@ -78,7 +75,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCa
 //
 //        var neighbour = new VoxelTree(neighbourBounds.center, neighbourBounds.size);
 //
-//        foreach (var material in _materials) {
+//        foreach (var material in materials) {
 //            neighbour.SetMaterial(material.Key, material.Value);
 //        }
 //
@@ -158,7 +155,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCa
 	}
 
 	public void SetMaterial(int index, Material material) {
-		_materials[index] = material;
+		materials.value[index] = material;
 	}
 
 	private static void UpdateMeshes(GameObject container, int meshId, MeshInfo<VoxelNode> meshInfo,
@@ -169,7 +166,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCa
 		var indicesArray = meshInfo.indices.ToArray();
 
 		var verticesCount = verticesArray.Length;
-		var numMeshObjects = verticesCount / MAX_VERTICES_FOR_MESH + 1;
+		var numMeshObjects = verticesCount == 0 ? 0 : verticesCount / MAX_VERTICES_FOR_MESH + 1;
 
 		var numExistingMeshObjects = objectsForMesh.Count;
 
@@ -496,6 +493,8 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCa
 				var meshInfo = meshPair.Value;
 				var meshId = meshPair.Key;
 
+				Debug.Log("mesh id for new game object" + meshId);
+
 				var objectsForMesh = new List<GameObject>();
 				_gameObjectForMeshInfo[meshId] = objectsForMesh;
 				RenderNewMeshes(_renderObject, meshId, meshInfo, objectsForMesh);
@@ -506,14 +505,14 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCa
 				var meshInfo = meshPair.Value;
 				var meshId = meshPair.Key;
 
-				if (_gameObjectForMeshInfo.ContainsKey(meshId)) {
-					var gameObjectForMeshInfo = _gameObjectForMeshInfo[meshId];
+//				Debug.Log("mesh id for new game object" + meshId);
 
-					UpdateMeshes(_renderObject, meshId, meshInfo, gameObjectForMeshInfo);
-				} else {
+				if (!_gameObjectForMeshInfo.ContainsKey(meshId)) {
 					var objectsForMesh = new List<GameObject>();
 					_gameObjectForMeshInfo[meshId] = objectsForMesh;
 				}
+
+				UpdateMeshes(_renderObject, meshId, meshInfo, _gameObjectForMeshInfo[meshId]);
 			}
 		}
 	}
@@ -873,7 +872,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCa
 	}
 
 	public void CopyMaterialsFrom(VoxelTree myVoxelTree) {
-		foreach (var material in myVoxelTree._materials)
+		foreach (var material in myVoxelTree.materials.value)
 		{
 			SetMaterial(material.Key, material.Value);
 		}
@@ -881,42 +880,42 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree>, ISerializationCa
 //        _meshInfos = myVoxelTree._meshInfos;
 	}
 
-	public void OnBeforeSerialize() {
-		if (_materials == null || _materials.Count == 0)
-		{
-			_materialsSerialized = null;
+	//public void OnBeforeSerialize() {
+	//	if (materials.value == null || materials.value.Count == 0)
+	//	{
+	//		materials = null;
 
-			return;
-		}
+	//		return;
+	//	}
 
-		if (_materialsSerialized == null) {
-			_materialsSerialized = new IntMaterial();
-		}
+	//	if (materials == null) {
+	//		materials = new IntMaterial();
+	//	}
 
-		_materialsSerialized.value.Clear();
+	//	materials.value.Clear();
 
-		foreach (var kvp in _materials) {
-			_materialsSerialized.value.Add(kvp.Key, kvp.Value);
-		}
-	}
+	//	foreach (var kvp in materials) {
+	//		materials.value.Add(kvp.Key, kvp.Value);
+	//	}
+	//}
 
-	public void OnAfterDeserialize() {
-		_materials.Clear();
+	//public void OnAfterDeserialize() {
+	//	materials.Clear();
 
-		if (_materialsSerialized == null) {
-			return;
-		}
+	//	if (materials == null) {
+	//		return;
+	//	}
 
-		foreach (var kvp in _materialsSerialized.value) {
-			_materials.Add(kvp.Key, kvp.Value);
-		}
-	}
+	//	foreach (var kvp in materials.value) {
+	//		materials.Add(kvp.Key, kvp.Value);
+	//	}
+	//}
 
 	public int GetNumMaterials() {
-		return _materials.Count;
+		return materials.value.Count;
 	}
 
 	public int GetMaterialIndex(int index) {
-		return _materials.Keys.ElementAt(index);
+		return materials.value.Keys.ElementAt(index);
 	}
 }

@@ -132,11 +132,12 @@ MonoBehaviour:
   size: 100
   useDepth: 1
   voxelTree:
-    _materialsSerialized:
-      _keys: 0400000005000000
+    materials:
+      _keys: 040000000500000006000000
       _values:
       - {fileID: 2100000, guid: 74eae52ddde6c6949ae81a97acccbec1, type: 2}
       - {fileID: 2100000, guid: d4b7fe2279cb61d4c8efa355c011defc, type: 2}
+      - {fileID: 2100000, guid: 19fe4f86520be3548825c48132473421, type: 2}
   wantedDepth: 5
   debugRaycasts: 1
 --- !u!23 &916304649
@@ -313,8 +314,8 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1633759498}
-  m_LocalRotation: {x: 0.0044216886, y: 0.9125383, z: -0.009875216, w: 0.40884826}
-  m_LocalPosition: {x: -3.66684, y: 32.339573, z: 60.185387}
+  m_LocalRotation: {x: 0.07632386, y: 0.922537, z: -0.29026717, w: 0.2425802}
+  m_LocalPosition: {x: -18.92389, y: 50.59387, z: 14.371461}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
