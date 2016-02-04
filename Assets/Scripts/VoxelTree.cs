@@ -191,7 +191,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			for (var i = numExistingMeshObjects; i < numMeshObjects; ++i) {
 				Profiler.BeginSample("Create new gameobject for mesh");
 				var meshObject = new GameObject(string.Empty, typeof (MeshFilter),
-					typeof (MeshRenderer));
+					typeof (MeshRenderer), typeof(MeshCollider));
 				Profiler.EndSample();
 
 				objectsForMesh.Add(meshObject);
@@ -200,7 +200,10 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 				meshObject.transform.SetParent(container.transform, false);
 				Profiler.EndSample();
 
-				meshObject.GetComponent<MeshFilter>().sharedMesh = new Mesh();
+				var meshFilter = meshObject.GetComponent<MeshFilter>();
+
+				meshFilter.sharedMesh = new Mesh();
+				meshObject.GetComponent<MeshCollider>().sharedMesh = meshFilter.sharedMesh;
 			}
 		}
 
@@ -220,6 +223,13 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		if (numMeshObjects == 1) // no need for loop or array copying
 		{
 			Profiler.BeginSample("Update mesh " + 0);
+
+
+			var meshCollider = objectsForMesh[0].GetComponent<MeshCollider>();
+			if (meshCollider)
+			{
+				meshCollider.enabled = false;
+			}
 
 			var newMesh = objectsForMesh[0].GetComponent<MeshFilter>().sharedMesh;
 
@@ -253,9 +263,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			Profiler.EndSample(); // create mesh
 
-			var meshCollider = objectsForMesh[0].GetComponent<MeshCollider>();
 			if (meshCollider) {
-				meshCollider.enabled = false;
 				meshCollider.enabled = true;
 			}
 		} else {
@@ -363,10 +371,11 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			Profiler.BeginSample("Create new gameobject for mesh");
 			var meshObject = new GameObject("mesh " + 0 + " for " + meshId, typeof (MeshFilter),
-				typeof (MeshRenderer));
+				typeof (MeshRenderer), typeof(MeshCollider));
 			Profiler.EndSample();
 			Profiler.BeginSample("Set mesh filter for new game object");
 			meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
+			meshObject.GetComponent<MeshCollider>().sharedMesh = newMesh;
 			Profiler.EndSample();
 
 			Profiler.BeginSample("Set mesh material for new game object");
@@ -431,10 +440,11 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 				Profiler.BeginSample("Create new gameobject for mesh");
 				var meshObject = new GameObject("mesh " + i + " for " + meshId, typeof (MeshFilter),
-					typeof (MeshRenderer));
+					typeof (MeshRenderer), typeof(MeshCollider));
 				Profiler.EndSample();
 				Profiler.BeginSample("Set mesh filter for new game object");
 				meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
+				meshObject.GetComponent<MeshCollider>().sharedMesh = newMesh;
 				Profiler.EndSample();
 
 				Profiler.BeginSample("Set mesh material for new game object");
