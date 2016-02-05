@@ -9,14 +9,24 @@ using Object = UnityEngine.Object;
 
 [Serializable]
 public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
-	private const int MAX_VERTICES_FOR_MESH = 1024 - 4 * 100;
-	private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
-	private const int MAX_INDICES_FOR_MESH = MAX_FACES_FOR_MESH * 6;
+	private const int NUM_VERTICES_FOR_FACE = 4;
+	private const int NUM_INDICES_FOR_FACE = 6;
+
+	public const int MaxVerticesForMesh = 65000 - NUM_VERTICES_FOR_FACE * 100; // -100 faces for good measure 
+	public const int MaxFacesForMesh = MaxVerticesForMesh / NUM_VERTICES_FOR_FACE;
+	public const int MaxIndicesForMesh = MaxFacesForMesh * NUM_INDICES_FOR_FACE;
+
+	static VoxelTree() {
+		Assert.IsTrue(MaxVerticesForMesh % NUM_VERTICES_FOR_FACE == 0);
+		Assert.IsTrue(MaxVerticesForMesh <= 65000);
+
+		Assert.IsTrue(MaxFacesForMesh > 0);
+	}
 
 
-	private static readonly Vector3[] VerticesArrayForMesh = new Vector3[MAX_VERTICES_FOR_MESH];
-	private static readonly Vector3[] NormalsArrayForMesh = new Vector3[MAX_VERTICES_FOR_MESH];
-	private static readonly Vector2[] UvsArrayForMesh = new Vector2[MAX_VERTICES_FOR_MESH];
+	private static readonly Vector3[] VerticesArrayForMesh = new Vector3[MaxVerticesForMesh];
+	private static readonly Vector3[] NormalsArrayForMesh = new Vector3[MaxVerticesForMesh];
+	private static readonly Vector2[] UvsArrayForMesh = new Vector2[MaxVerticesForMesh];
 
 	//    private readonly List<GameObject> _meshObjects = new List<GameObject>();
 	private readonly Dictionary<int, List<GameObject>> _gameObjectForMeshInfo = new Dictionary<int, List<GameObject>>();
@@ -166,13 +176,15 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 		meshInfo.isDirty = false;
 
-		var verticesArray = meshInfo.vertices.ToArray();
-		var normalsArray = meshInfo.normals.ToArray();
-		var uvsArray = meshInfo.uvs.ToArray();
-		var indicesArray = meshInfo.indices.ToArray();
+//		var verticesArray = meshInfo.vertices.ToArray();
+//		var normalsArray = meshInfo.normals.ToArray();
+//		var uvsArray = meshInfo.uvs.ToArray();
+//		var indicesArray = meshInfo.indices.ToArray();
+//
+//		var verticesCount = verticesArray.Length;
+//		var numMeshObjects = verticesCount == 0 ? 0 : verticesCount / MaxVerticesForMesh + 1;
 
-		var verticesCount = verticesArray.Length;
-		var numMeshObjects = verticesCount == 0 ? 0 : verticesCount / MAX_VERTICES_FOR_MESH + 1;
+		var numMeshObjects = meshInfo.meshSegments.Count;
 
 		var numExistingMeshObjects = objectsForMesh.Count;
 
@@ -229,6 +241,8 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			// update mesh of object
 		}
 
+		var numIndices = meshInfo.allFaces.Count * NUM_INDICES_FOR_FACE;
+
 		if (numMeshObjects == 1) // no need for loop or array copying
 		{
 			Profiler.BeginSample("Update mesh " + 0);
@@ -244,27 +258,33 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			newMesh.Clear();
 
+			var firstSegment = meshInfo.meshSegments[0];
+
 			Profiler.BeginSample("Get vertices range");
-			var vertexArray = verticesArray;
+//			var vertexArray = firstSegment.vertices;
 			Profiler.EndSample();
 
 			{
 				Profiler.BeginSample("Set mesh properties");
 				{
 					Profiler.BeginSample("Set mesh vertices");
-					newMesh.vertices = vertexArray;
+					newMesh.vertices = firstSegment.vertices;
 					Profiler.EndSample();
 
 					Profiler.BeginSample("Set mesh normals");
-					newMesh.normals = normalsArray;
+					newMesh.normals = firstSegment.normals;
 					Profiler.EndSample();
 
 					Profiler.BeginSample("Set mesh uvs");
-					newMesh.uv = uvsArray;
+					newMesh.uv = firstSegment.uvs;
 					Profiler.EndSample();
 				}
 				Profiler.EndSample(); // set mesh properties
 			}
+
+			var indicesArray = new int[numIndices];
+
+			Array.Copy(firstSegment.indices, indicesArray, numIndices);
 
 			Profiler.BeginSample("Set mesh triangles");
 			newMesh.triangles = indicesArray;
@@ -279,23 +299,26 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			var dirtyMeshes = meshInfo.dirtyMeshes;
 
-			foreach (var i in dirtyMeshes) {
-				if (objectsForMesh.Count <= i) {
-					Debug.Log("??? " + i + " > " + objectsForMesh.Count);
+			foreach (var segmentIndex in dirtyMeshes) {
+				if (objectsForMesh.Count <= segmentIndex) {
+					Debug.Log("??? " + segmentIndex + " > " + objectsForMesh.Count);
 				}
+
+				var segment = meshInfo.meshSegments[segmentIndex];
+
 //			for (var i = 0; i < numMeshObjects; ++i) {
-				Profiler.BeginSample("Create mesh " + i);
+				Profiler.BeginSample("Create mesh " + segmentIndex);
 				{
 					Profiler.BeginSample("get mesh");
-					var newMesh = objectsForMesh[i].GetComponent<MeshFilter>().sharedMesh;
+					var newMesh = objectsForMesh[segmentIndex].GetComponent<MeshFilter>().sharedMesh;
 					newMesh.Clear();
 					Profiler.EndSample();
 
-					var vertexStart = i * MAX_VERTICES_FOR_MESH;
-					var vertexCount = Mathf.Min(vertexStart + MAX_VERTICES_FOR_MESH, verticesCount) - vertexStart;
+//					var vertexStart = i * MaxVerticesForMesh;
+//					var vertexCount = Mathf.Min(vertexStart + MaxVerticesForMesh, verticesCount) - vertexStart;
 
 					Profiler.BeginSample("Get vertices range");
-					Array.Copy(verticesArray, vertexStart, VerticesArrayForMesh, 0, vertexCount);
+//					Array.Copy(verticesArray, vertexStart, VerticesArrayForMesh, 0, vertexCount);
 					Profiler.EndSample();
 
 					{
@@ -303,37 +326,54 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 						{
 							Profiler.BeginSample("Set mesh vertices");
-							newMesh.vertices = VerticesArrayForMesh;
+							newMesh.vertices = segment.vertices;
 							Profiler.EndSample();
 
 							Profiler.BeginSample("Set mesh normals");
-							Array.Copy(normalsArray, vertexStart, NormalsArrayForMesh, 0, vertexCount);
-							newMesh.normals = NormalsArrayForMesh;
+//							Array.Copy(normalsArray, vertexStart, NormalsArrayForMesh, 0, vertexCount);
+							newMesh.normals = segment.normals;
 							Profiler.EndSample();
 
 							Profiler.BeginSample("Set mesh uvs");
-							Array.Copy(uvsArray, vertexStart, UvsArrayForMesh, 0, vertexCount);
-							newMesh.uv = UvsArrayForMesh;
+//							Array.Copy(uvsArray, vertexStart, UvsArrayForMesh, 0, vertexCount);
+							newMesh.uv = segment.uvs;
 							Profiler.EndSample();
 						}
 
 						Profiler.EndSample(); // set mesh properties
 					}
 
-					var indexStart = i * MAX_INDICES_FOR_MESH;
-					var indexCount = vertexCount * 3 / 2;
+					var indexStart = segmentIndex * MaxIndicesForMesh;
+					if (indexStart > numIndices) {
+						Debug.Log("?!?! " + indexStart + " !!!! " + numIndices);
+						Assert.IsTrue(indexStart <= numIndices);
+					}
+
+					var indexEnd = indexStart + MaxIndicesForMesh;
+
+					int[] indicesForMesh;
+					if (indexEnd > numIndices && numIndices > indexStart) {
+						// need to cut indices :(
+						Profiler.BeginSample("Slice indices");
+
+						var numIndicesForSegment = numIndices - indexStart;
+
+						indicesForMesh = new int[numIndicesForSegment];
+						Array.Copy(segment.indices, indicesForMesh, numIndicesForSegment);
+
+						Profiler.EndSample(); // set mesh triangles
+
+					}
+					else {
+						// all good!
+
+						indicesForMesh = segment.indices;
+					}
 
 					Profiler.BeginSample("Set mesh triangles");
-					{
-						var trianglesArrayForMesh = new int[indexCount];
 
-						// manual copy and alter
-						for (var j = 0; j < indexCount; ++j) {
-							trianglesArrayForMesh[j] = indicesArray[indexStart + j] - vertexStart;
-						}
+					newMesh.triangles = indicesForMesh;
 
-						newMesh.triangles = trianglesArrayForMesh;
-					}
 					Profiler.EndSample(); // set mesh triangles
 				}
 
@@ -344,142 +384,142 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		}
 	}
 
-	private static void RenderNewMeshes(GameObject container, int meshId, MeshInfo<VoxelNode> meshInfo,
-		List<GameObject> objectsForMesh) {
-		var verticesArray = meshInfo.vertices.ToArray();
-		var normalsArray = meshInfo.normals.ToArray();
-		var uvsArray = meshInfo.uvs.ToArray();
-		var indicesArray = meshInfo.indices.ToArray();
-
-		var verticesCount = verticesArray.Length;
-		var numMeshObjects = verticesCount / MAX_VERTICES_FOR_MESH + 1;
-
-		if (numMeshObjects == 1) // no need for loop or array copying
-		{
-			Profiler.BeginSample("Create mesh " + 0);
-
-			Profiler.BeginSample("new mesh");
-			var newMesh = new Mesh();
-			Profiler.EndSample();
-
-			Profiler.BeginSample("Get vertices range");
-			var vertexArray = verticesArray;
-			Profiler.EndSample();
-
-			Profiler.BeginSample("Set mesh properties");
-
-			Profiler.BeginSample("Set mesh vertices");
-			newMesh.vertices = vertexArray;
-			Profiler.EndSample();
-
-			Profiler.BeginSample("Set mesh normals");
-			newMesh.normals = normalsArray;
-			Profiler.EndSample();
-
-			Profiler.BeginSample("Set mesh uvs");
-			newMesh.uv = uvsArray;
-			Profiler.EndSample();
-
-			Profiler.EndSample(); // mesh properties
-
-			Profiler.BeginSample("Set mesh triangles");
-			newMesh.triangles = indicesArray;
-			Profiler.EndSample();
-
-			Profiler.BeginSample("Create new gameobject for mesh");
-			var meshObject = new GameObject("mesh " + 0 + " for " + meshId, typeof (MeshFilter),
-				typeof (MeshRenderer), typeof(MeshCollider));
-			Profiler.EndSample();
-			Profiler.BeginSample("Set mesh filter for new game object");
-			meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
-			meshObject.GetComponent<MeshCollider>().sharedMesh = newMesh;
-			Profiler.EndSample();
-
-			Profiler.BeginSample("Set mesh material for new game object");
-			meshObject.GetComponent<MeshRenderer>().sharedMaterial =
-				meshInfo.material;
-			Profiler.EndSample();
-
-			//                    _meshes.Add(newMesh);
-			objectsForMesh.Add(meshObject);
-
-			Profiler.BeginSample("Set transform parent");
-			meshObject.transform.SetParent(container.transform, false);
-			Profiler.EndSample();
-
-			Profiler.EndSample();
-		} else {
-			for (var i = 0; i < numMeshObjects; ++i) {
-				Profiler.BeginSample("Create mesh " + i);
-
-				Profiler.BeginSample("new mesh");
-				var newMesh = new Mesh();
-				Profiler.EndSample();
-
-				var vertexStart = i * MAX_VERTICES_FOR_MESH;
-				var vertexCount = Mathf.Min(vertexStart + MAX_VERTICES_FOR_MESH, verticesCount) - vertexStart;
-
-				Profiler.BeginSample("Get vertices range");
-				Array.Copy(verticesArray, vertexStart, VerticesArrayForMesh, 0, vertexCount);
-				Profiler.EndSample();
-
-				Profiler.BeginSample("Set mesh properties");
-
-				Profiler.BeginSample("Set mesh vertices");
-				newMesh.vertices = VerticesArrayForMesh;
-				Profiler.EndSample();
-
-				Profiler.BeginSample("Set mesh normals");
-				Array.Copy(normalsArray, vertexStart, NormalsArrayForMesh, 0, vertexCount);
-				newMesh.normals = NormalsArrayForMesh;
-				Profiler.EndSample();
-
-				Profiler.BeginSample("Set mesh uvs");
-				Array.Copy(uvsArray, vertexStart, UvsArrayForMesh, 0, vertexCount);
-				newMesh.uv = UvsArrayForMesh;
-				Profiler.EndSample();
-
-				Profiler.EndSample(); // mesh properties
-
-				var indexStart = i * MAX_INDICES_FOR_MESH;
-				var indexCount = vertexCount * 3 / 2;
-
-				Profiler.BeginSample("Set mesh triangles");
-				var trianglesArrayForMesh = new int[indexCount];
-				// manual copy and alter
-				for (var j = 0; j < indexCount; ++j) {
-					trianglesArrayForMesh[j] = indicesArray[indexStart + j] - vertexStart;
-				}
-
-				newMesh.triangles = trianglesArrayForMesh;
-
-				Profiler.EndSample();
-
-				Profiler.BeginSample("Create new gameobject for mesh");
-				var meshObject = new GameObject("mesh " + i + " for " + meshId, typeof (MeshFilter),
-					typeof (MeshRenderer), typeof(MeshCollider));
-				Profiler.EndSample();
-				Profiler.BeginSample("Set mesh filter for new game object");
-				meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
-				meshObject.GetComponent<MeshCollider>().sharedMesh = newMesh;
-				Profiler.EndSample();
-
-				Profiler.BeginSample("Set mesh material for new game object");
-				meshObject.GetComponent<MeshRenderer>().sharedMaterial =
-					meshInfo.material;
-				Profiler.EndSample();
-
-				//                        _meshes.Add(newMesh);
-				objectsForMesh.Add(meshObject);
-
-				Profiler.BeginSample("Set transform parent");
-				meshObject.transform.SetParent(container.transform, false);
-				Profiler.EndSample();
-
-				Profiler.EndSample();
-			}
-		}
-	}
+//	private static void RenderNewMeshes(GameObject container, int meshId, MeshInfo<VoxelNode> meshInfo,
+//		List<GameObject> objectsForMesh) {
+//		var verticesArray = meshInfo.vertices.ToArray();
+//		var normalsArray = meshInfo.normals.ToArray();
+//		var uvsArray = meshInfo.uvs.ToArray();
+//		var indicesArray = meshInfo.indices.ToArray();
+//
+//		var verticesCount = verticesArray.Length;
+//		var numMeshObjects = verticesCount / MaxVerticesForMesh + 1;
+//
+//		if (numMeshObjects == 1) // no need for loop or array copying
+//		{
+//			Profiler.BeginSample("Create mesh " + 0);
+//
+//			Profiler.BeginSample("new mesh");
+//			var newMesh = new Mesh();
+//			Profiler.EndSample();
+//
+//			Profiler.BeginSample("Get vertices range");
+//			var vertexArray = verticesArray;
+//			Profiler.EndSample();
+//
+//			Profiler.BeginSample("Set mesh properties");
+//
+//			Profiler.BeginSample("Set mesh vertices");
+//			newMesh.vertices = vertexArray;
+//			Profiler.EndSample();
+//
+//			Profiler.BeginSample("Set mesh normals");
+//			newMesh.normals = normalsArray;
+//			Profiler.EndSample();
+//
+//			Profiler.BeginSample("Set mesh uvs");
+//			newMesh.uv = uvsArray;
+//			Profiler.EndSample();
+//
+//			Profiler.EndSample(); // mesh properties
+//
+//			Profiler.BeginSample("Set mesh triangles");
+//			newMesh.triangles = indicesArray;
+//			Profiler.EndSample();
+//
+//			Profiler.BeginSample("Create new gameobject for mesh");
+//			var meshObject = new GameObject("mesh " + 0 + " for " + meshId, typeof (MeshFilter),
+//				typeof (MeshRenderer), typeof(MeshCollider));
+//			Profiler.EndSample();
+//			Profiler.BeginSample("Set mesh filter for new game object");
+//			meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
+//			meshObject.GetComponent<MeshCollider>().sharedMesh = newMesh;
+//			Profiler.EndSample();
+//
+//			Profiler.BeginSample("Set mesh material for new game object");
+//			meshObject.GetComponent<MeshRenderer>().sharedMaterial =
+//				meshInfo.material;
+//			Profiler.EndSample();
+//
+//			//                    _meshes.Add(newMesh);
+//			objectsForMesh.Add(meshObject);
+//
+//			Profiler.BeginSample("Set transform parent");
+//			meshObject.transform.SetParent(container.transform, false);
+//			Profiler.EndSample();
+//
+//			Profiler.EndSample();
+//		} else {
+//			for (var i = 0; i < numMeshObjects; ++i) {
+//				Profiler.BeginSample("Create mesh " + i);
+//
+//				Profiler.BeginSample("new mesh");
+//				var newMesh = new Mesh();
+//				Profiler.EndSample();
+//
+//				var vertexStart = i * MaxVerticesForMesh;
+//				var vertexCount = Mathf.Min(vertexStart + MaxVerticesForMesh, verticesCount) - vertexStart;
+//
+//				Profiler.BeginSample("Get vertices range");
+//				Array.Copy(verticesArray, vertexStart, VerticesArrayForMesh, 0, vertexCount);
+//				Profiler.EndSample();
+//
+//				Profiler.BeginSample("Set mesh properties");
+//
+//				Profiler.BeginSample("Set mesh vertices");
+//				newMesh.vertices = VerticesArrayForMesh;
+//				Profiler.EndSample();
+//
+//				Profiler.BeginSample("Set mesh normals");
+//				Array.Copy(normalsArray, vertexStart, NormalsArrayForMesh, 0, vertexCount);
+//				newMesh.normals = NormalsArrayForMesh;
+//				Profiler.EndSample();
+//
+//				Profiler.BeginSample("Set mesh uvs");
+//				Array.Copy(uvsArray, vertexStart, UvsArrayForMesh, 0, vertexCount);
+//				newMesh.uv = UvsArrayForMesh;
+//				Profiler.EndSample();
+//
+//				Profiler.EndSample(); // mesh properties
+//
+//				var indexStart = i * MaxIndicesForMesh;
+//				var indexCount = vertexCount * 3 / 2;
+//
+//				Profiler.BeginSample("Set mesh triangles");
+//				var trianglesArrayForMesh = new int[indexCount];
+//				// manual copy and alter
+//				for (var j = 0; j < indexCount; ++j) {
+//					trianglesArrayForMesh[j] = indicesArray[indexStart + j] - vertexStart;
+//				}
+//
+//				newMesh.triangles = trianglesArrayForMesh;
+//
+//				Profiler.EndSample();
+//
+//				Profiler.BeginSample("Create new gameobject for mesh");
+//				var meshObject = new GameObject("mesh " + i + " for " + meshId, typeof (MeshFilter),
+//					typeof (MeshRenderer), typeof(MeshCollider));
+//				Profiler.EndSample();
+//				Profiler.BeginSample("Set mesh filter for new game object");
+//				meshObject.GetComponent<MeshFilter>().sharedMesh = newMesh;
+//				meshObject.GetComponent<MeshCollider>().sharedMesh = newMesh;
+//				Profiler.EndSample();
+//
+//				Profiler.BeginSample("Set mesh material for new game object");
+//				meshObject.GetComponent<MeshRenderer>().sharedMaterial =
+//					meshInfo.material;
+//				Profiler.EndSample();
+//
+//				//                        _meshes.Add(newMesh);
+//				objectsForMesh.Add(meshObject);
+//
+//				Profiler.BeginSample("Set transform parent");
+//				meshObject.transform.SetParent(container.transform, false);
+//				Profiler.EndSample();
+//
+//				Profiler.EndSample();
+//			}
+//		}
+//	}
 
 
 	public bool ItemsBelongInSameMesh(int a, int b) {
@@ -515,32 +555,39 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			//recreate meshes
 			_renderObject = _gameObject;
 
-			Profiler.BeginSample("Recreate meshes");
-			foreach (var meshPair in meshInfos) {
-				var meshInfo = meshPair.Value;
-				var meshId = meshPair.Key;
+//			Profiler.BeginSample("Recreate meshes");
+//			foreach (var meshPair in meshInfos) {
+//				var meshInfo = meshPair.Value;
+//				var meshId = meshPair.Key;
+//
+//				Debug.Log("mesh id for new game object" + meshId);
+//
+//				var objectsForMesh = new List<GameObject>();
+//				_gameObjectForMeshInfo[meshId] = objectsForMesh;
+////				RenderNewMeshes(_renderObject, meshId, meshInfo, objectsForMesh);
+//
+//				UpdateMeshes(_renderObject, meshId, meshInfo, _gameObjectForMeshInfo[meshId]);
+//
+//			}
+//			Profiler.EndSample();
+		} else {
+			
+		}
 
-				Debug.Log("mesh id for new game object" + meshId);
+		foreach (var meshPair in meshInfos)
+		{
+			var meshInfo = meshPair.Value;
+			var meshId = meshPair.Key;
 
+			//				Debug.Log("mesh id for new game object" + meshId);
+
+			if (!_gameObjectForMeshInfo.ContainsKey(meshId))
+			{
 				var objectsForMesh = new List<GameObject>();
 				_gameObjectForMeshInfo[meshId] = objectsForMesh;
-				RenderNewMeshes(_renderObject, meshId, meshInfo, objectsForMesh);
 			}
-			Profiler.EndSample();
-		} else {
-			foreach (var meshPair in meshInfos) {
-				var meshInfo = meshPair.Value;
-				var meshId = meshPair.Key;
 
-//				Debug.Log("mesh id for new game object" + meshId);
-
-				if (!_gameObjectForMeshInfo.ContainsKey(meshId)) {
-					var objectsForMesh = new List<GameObject>();
-					_gameObjectForMeshInfo[meshId] = objectsForMesh;
-				}
-
-				UpdateMeshes(_renderObject, meshId, meshInfo, _gameObjectForMeshInfo[meshId]);
-			}
+			UpdateMeshes(_renderObject, meshId, meshInfo, _gameObjectForMeshInfo[meshId]);
 		}
 	}
 
@@ -588,10 +635,10 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		var meshInfo = GetMeshInfo(octreeNode.GetItem());
 
 		meshInfo.isDirty = true;
-		var vertices = meshInfo.vertices;
-		var uvs = meshInfo.uvs;
-		var normals = meshInfo.normals;
-		var indices = meshInfo.indices;
+//		var vertices = meshInfo.vertices;
+//		var uvs = meshInfo.uvs;
+//		var normals = meshInfo.normals;
+//		var indices = meshInfo.indices;
 
 		var allFaces = meshInfo.allFaces;
 
@@ -606,22 +653,30 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			for (var i = 0; i < numFacesToReplace; ++i) {
 				var face = newFacesEnumerator.Current;
+				if (face == null) {
+					throw new Exception("Face cannot be null.");
+				}
+
 				newFacesEnumerator.MoveNext();
 
 				var removalFaceIndex = removalQueue[i];
 
 				allFaces[removalFaceIndex] = face;
 
-				var removalVertexIndex = removalFaceIndex * 4;
+				var removalVertexIndex = removalFaceIndex * NUM_VERTICES_FOR_FACE;
 
-				for (var j = 0; j < 4; ++j) {
-					vertices[removalVertexIndex + j] = face.vertices[j];
-					uvs[removalVertexIndex + j] = face.uvs[j];
-					normals[removalVertexIndex + j] = face.normal;
+				var segmentIndex = removalFaceIndex / MaxFacesForMesh;
+				var segment = meshInfo.meshSegments[segmentIndex];
+
+				var segmentVertexIndex = removalVertexIndex - (segmentIndex * MaxVerticesForMesh);
+
+				for (var j = 0; j < NUM_VERTICES_FOR_FACE; ++j) {
+					segment.vertices[segmentVertexIndex + j] = face.vertices[j];
+					segment.uvs[segmentVertexIndex + j] = face.uvs[j];
+					segment.normals[segmentVertexIndex + j] = face.normal;
 				}
 
 				face.faceIndexInTree = removalFaceIndex;
-				face.vertexIndexInMesh = removalVertexIndex;
 			}
 
 			removalQueue.RemoveRange(0, numFacesToReplace);
@@ -632,41 +687,65 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		var numFacesToAdd = newFaces.Count - numFacesToReplace;
 
 		if (numFacesToAdd > 0) {
-			allFaces.Capacity = allFaces.Count + numFacesToAdd;
+			var wantedNumFaces = allFaces.Count + numFacesToAdd;
+			allFaces.Capacity = wantedNumFaces;
 
-			meshInfo.dirtyMeshes.Add(allFaces.Count / MAX_FACES_FOR_MESH);
+			var lastSegmentIndex = wantedNumFaces / MaxFacesForMesh;
 
-			normals.Capacity = normals.Count + 4 * numFacesToAdd;
-			vertices.Capacity = vertices.Count + 4 * numFacesToAdd;
-			uvs.Capacity = uvs.Count + 4 * numFacesToAdd;
-			indices.Capacity = indices.Count + 6 * numFacesToAdd;
+			meshInfo.dirtyMeshes.Add(allFaces.Count / MaxFacesForMesh);
+
+			while (meshInfo.meshSegments.Count <= lastSegmentIndex) {
+				meshInfo.dirtyMeshes.Add(meshInfo.meshSegments.Count);
+
+				meshInfo.meshSegments.Add(new MeshSegment());
+			}
 
 			for (var j = numFacesToReplace; j < newFaces.Count; ++j)
 			{
 				var face = newFacesEnumerator.Current;
-				newFacesEnumerator.MoveNext();
-
-				var vertexIndex = meshInfo.vertices.Count;
-
-				face.faceIndexInTree = allFaces.Count;
-				face.vertexIndexInMesh = vertexIndex;
-
-				allFaces.Add(face);
-
-				for (var i = 0; i < 4; ++i)
+				if (face == null)
 				{
-					vertices.Add(face.vertices[i]);
-					uvs.Add(face.uvs[i]);
-					normals.Add(face.normal);
+					throw new Exception("Face cannot be null.");
 				}
 
-				indices.Add(vertexIndex);
-				indices.Add(vertexIndex + 1);
-				indices.Add(vertexIndex + 2);
+				newFacesEnumerator.MoveNext();
 
-				indices.Add(vertexIndex);
-				indices.Add(vertexIndex + 2);
-				indices.Add(vertexIndex + 3);
+				var indexInAllFaces = allFaces.Count;
+
+				var segmentIndex = indexInAllFaces / MaxFacesForMesh;
+				var segment = meshInfo.meshSegments[segmentIndex];
+
+				var firstTriangleIndexInSegment = segmentIndex * MaxFacesForMesh;
+
+				var faceIndexInSegment = indexInAllFaces - firstTriangleIndexInSegment;
+
+				var vertexIndexForSegment = faceIndexInSegment * NUM_VERTICES_FOR_FACE;
+
+				face.faceIndexInTree = indexInAllFaces;
+
+				var vertices = segment.vertices;
+				var uvs = segment.uvs;
+				var normals = segment.normals;
+
+				for (var i = 0; i < NUM_VERTICES_FOR_FACE; ++i) {
+					vertices[vertexIndexForSegment + i] = face.vertices[i];
+					uvs[vertexIndexForSegment + i] = face.uvs[i];
+					normals[vertexIndexForSegment + i] = face.normal;
+				}
+
+				var indices = segment.indices;
+
+				var triangleIndexInSegment = faceIndexInSegment * NUM_INDICES_FOR_FACE;
+
+				indices[triangleIndexInSegment] = vertexIndexForSegment;
+				indices[triangleIndexInSegment + 1] = vertexIndexForSegment + 1;
+				indices[triangleIndexInSegment + 2] = vertexIndexForSegment + 2;
+
+				indices[triangleIndexInSegment + 3] = vertexIndexForSegment;
+				indices[triangleIndexInSegment + 4] = vertexIndexForSegment + 2;
+				indices[triangleIndexInSegment + 5] = vertexIndexForSegment + 3;
+
+				allFaces.Add(face);
 			}
 		}
 
@@ -689,7 +768,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 				meshInfo.removalQueue.Add(face.faceIndexInTree);
 
-				meshInfo.dirtyMeshes.Add(face.faceIndexInTree / MAX_FACES_FOR_MESH);
+				meshInfo.dirtyMeshes.Add(face.faceIndexInTree / MaxFacesForMesh);
 			}
 		}
 
@@ -727,8 +806,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 		var removalQueueIndex = 0;
 
-		var firstRemovalQueueElement = removalQueueArray[removalQueueIndex];
-		var faceIndexOfFirstFaceToRemove = firstRemovalQueueElement;
+		var faceIndexToRemove = removalQueueArray[removalQueueIndex];
 		// [y, y, y, n, y, y, y]
 		// [y, y, y, n, y, y] ^ take this and move it left
 		// [y, y, y, Y, y, y]
@@ -738,13 +816,13 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		//iterate backwards to fill up any blanks
 		for (var i = allFacesOfMesh.Count - 1; i >= 0; --i) {
 			//iterate only until the first face index
-			if (i < faceIndexOfFirstFaceToRemove) {
+			if (i < faceIndexToRemove) {
 				break;
 			}
 
 			var currentFace = allFacesOfMesh[i];
 
-			meshInfo.dirtyMeshes.Add(currentFace.faceIndexInTree / MAX_FACES_FOR_MESH);
+			meshInfo.dirtyMeshes.Add(currentFace.faceIndexInTree / MaxFacesForMesh);
 
 			numFacesToPop++;
 
@@ -755,24 +833,33 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			//replace the current face with the last non-null face
 
-			allFacesOfMesh[faceIndexOfFirstFaceToRemove] = currentFace;
+			allFacesOfMesh[faceIndexToRemove] = currentFace;
 
-			var vertexIndex = firstRemovalQueueElement * 4;
+//			var vertexIndex = firstRemovalQueueElement * 4;
 
-			var vertices = meshInfo.vertices;
-			var uvs = meshInfo.uvs;
-			var normals = meshInfo.normals;
+			var segmentIndex = faceIndexToRemove / MaxFacesForMesh;
+
+			var firstFaceIndexInSegment = segmentIndex * MaxFacesForMesh;
+			var faceIndexInSegment = faceIndexToRemove - firstFaceIndexInSegment;
+			var vertexIndexForSegment = faceIndexInSegment * NUM_VERTICES_FOR_FACE;
+
+			var segment = meshInfo.meshSegments[segmentIndex];
+
+			var vertices = segment.vertices;
+			var uvs = segment.uvs;
+			var normals = segment.normals;
 
 			for (var j = 0; j < 4; j++) {
-				vertices[vertexIndex + j] = currentFace.vertices[j];
-				uvs[vertexIndex + j] = currentFace.uvs[j];
-				normals[vertexIndex + j] = currentFace.normal;
+				var vertexIndex = vertexIndexForSegment + j;
+
+				vertices[vertexIndex] = currentFace.vertices[j];
+				uvs[vertexIndex] = currentFace.uvs[j];
+				normals[vertexIndex] = currentFace.normal;
 			}
 
 			//indices don't change, right?
 
-			currentFace.faceIndexInTree = faceIndexOfFirstFaceToRemove;
-			currentFace.vertexIndexInMesh = vertexIndex;
+			currentFace.faceIndexInTree = faceIndexToRemove;
 
 			//this face is replaced, try to replace the next one
 
@@ -782,13 +869,12 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 				break;
 			}
 
-			firstRemovalQueueElement = removalQueueArray[removalQueueIndex];
-			faceIndexOfFirstFaceToRemove = firstRemovalQueueElement;
+			faceIndexToRemove = removalQueueArray[removalQueueIndex];
 		}
 
 		if (numFacesToPop > 0) {
 			var index = allFacesOfMesh.Count - numFacesToPop;
-			meshInfo.PopFaces(index, numFacesToPop, index * 4);
+			meshInfo.PopFacesFromEnd(index, numFacesToPop, index * 4);
 		}
 
 		removalQueue.Clear();
