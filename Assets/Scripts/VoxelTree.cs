@@ -3,13 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 
 [Serializable]
 public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
-
-	private const int MAX_VERTICES_FOR_MESH = 65000 - 4 * 100;
+	private const int MAX_VERTICES_FOR_MESH = 1024 - 4 * 100;
 	private const int MAX_FACES_FOR_MESH = MAX_VERTICES_FOR_MESH / 4;
 	private const int MAX_INDICES_FOR_MESH = MAX_FACES_FOR_MESH * 6;
 
@@ -160,6 +160,12 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 	private static void UpdateMeshes(GameObject container, int meshId, MeshInfo<VoxelNode> meshInfo,
 		List<GameObject> objectsForMesh) {
+		if (!meshInfo.isDirty) {
+			return;
+		}
+
+		meshInfo.isDirty = false;
+
 		var verticesArray = meshInfo.vertices.ToArray();
 		var normalsArray = meshInfo.normals.ToArray();
 		var uvsArray = meshInfo.uvs.ToArray();
@@ -174,6 +180,9 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			// destroy additional mesh objects
 
 			for (var i = numMeshObjects; i < numExistingMeshObjects; ++i) {
+				if (meshInfo.dirtyMeshes.Contains(i)) {
+					meshInfo.dirtyMeshes.Remove(i);
+				}
 				var meshObject = objectsForMesh[i];
 
 				if (Application.isPlaying) {
@@ -268,7 +277,13 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			}
 		} else {
 
-			for (var i = 0; i < numMeshObjects; ++i) {
+			var dirtyMeshes = meshInfo.dirtyMeshes;
+
+			foreach (var i in dirtyMeshes) {
+				if (objectsForMesh.Count <= i) {
+					Debug.Log("??? " + i + " > " + objectsForMesh.Count);
+				}
+//			for (var i = 0; i < numMeshObjects; ++i) {
 				Profiler.BeginSample("Create mesh " + i);
 				{
 					Profiler.BeginSample("get mesh");
@@ -324,6 +339,8 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 				Profiler.EndSample();
 			}
+
+			dirtyMeshes.Clear();
 		}
 	}
 
@@ -564,65 +581,93 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 
 	private void AddNodeInternal(VoxelNode octreeNode) {
-		//        Profiler.BeginSample("AddNodeInternal");
 		var meshId = GetItemMeshId(octreeNode.GetItem());
 
-		//        Profiler.BeginSample("Create Faces for octreeNode");
 		var newFaces = octreeNode.CreateFaces(meshId);
-		//        Profiler.EndSample();
 
 		var meshInfo = GetMeshInfo(octreeNode.GetItem());
 
+		meshInfo.isDirty = true;
 		var vertices = meshInfo.vertices;
 		var uvs = meshInfo.uvs;
 		var normals = meshInfo.normals;
 		var indices = meshInfo.indices;
 
-		//        var removalQueue = meshInfo.removalQueue;
 		var allFaces = meshInfo.allFaces;
 
+		var removalQueue = meshInfo.removalQueue;
 
-		//        Profiler.BeginSample("Process new faces: " + newFaces.Count);
+		var newFacesEnumerator = newFaces.GetEnumerator();
+		newFacesEnumerator.MoveNext();
 
-		//        var numFacesToRemove = removalQueue.Count;
-		var numFacesToAdd = newFaces.Count;
+		int numFacesToReplace;
+		if (removalQueue.Any()) {
+			numFacesToReplace = Mathf.Min(newFaces.Count, removalQueue.Count);
 
-		//        var numFacesToReplace = Mathf.Min(numFacesToAdd, numFacesToRemove);
+			for (var i = 0; i < numFacesToReplace; ++i) {
+				var face = newFacesEnumerator.Current;
+				newFacesEnumerator.MoveNext();
 
-		//        for (var i = 0; i < numFacesToReplace; ++i)
-		//        {
+				var removalFaceIndex = removalQueue[i];
 
-		//        }
-		allFaces.Capacity = allFaces.Count + numFacesToAdd;
+				allFaces[removalFaceIndex] = face;
 
-		normals.Capacity = normals.Count + 4 * numFacesToAdd;
-		vertices.Capacity = vertices.Count + 4 * numFacesToAdd;
-		uvs.Capacity = uvs.Count + 4 * numFacesToAdd;
-		indices.Capacity = indices.Count + 6 * numFacesToAdd;
+				var removalVertexIndex = removalFaceIndex * 4;
 
-		foreach (var face in newFaces) {
-			//if the removal queue isn't empty, replace the last one from there!
+				for (var j = 0; j < 4; ++j) {
+					vertices[removalVertexIndex + j] = face.vertices[j];
+					uvs[removalVertexIndex + j] = face.uvs[j];
+					normals[removalVertexIndex + j] = face.normal;
+				}
 
-			var vertexIndex = meshInfo.vertices.Count;
-
-			face.faceIndexInTree = allFaces.Count;
-			face.vertexIndexInMesh = vertexIndex;
-
-			allFaces.Add(face);
-
-			for (var i = 0; i < 4; ++i) {
-				vertices.Add(face.vertices[i]);
-				uvs.Add(face.uvs[i]);
-				normals.Add(face.normal);
+				face.faceIndexInTree = removalFaceIndex;
+				face.vertexIndexInMesh = removalVertexIndex;
 			}
 
-			indices.Add(vertexIndex);
-			indices.Add(vertexIndex + 1);
-			indices.Add(vertexIndex + 2);
+			removalQueue.RemoveRange(0, numFacesToReplace);
+		} else {
+			numFacesToReplace = 0;
+		}
 
-			indices.Add(vertexIndex);
-			indices.Add(vertexIndex + 2);
-			indices.Add(vertexIndex + 3);
+		var numFacesToAdd = newFaces.Count - numFacesToReplace;
+
+		if (numFacesToAdd > 0) {
+			allFaces.Capacity = allFaces.Count + numFacesToAdd;
+
+			meshInfo.dirtyMeshes.Add(allFaces.Count / MAX_FACES_FOR_MESH);
+
+			normals.Capacity = normals.Count + 4 * numFacesToAdd;
+			vertices.Capacity = vertices.Count + 4 * numFacesToAdd;
+			uvs.Capacity = uvs.Count + 4 * numFacesToAdd;
+			indices.Capacity = indices.Count + 6 * numFacesToAdd;
+
+			for (var j = numFacesToReplace; j < newFaces.Count; ++j)
+			{
+				var face = newFacesEnumerator.Current;
+				newFacesEnumerator.MoveNext();
+
+				var vertexIndex = meshInfo.vertices.Count;
+
+				face.faceIndexInTree = allFaces.Count;
+				face.vertexIndexInMesh = vertexIndex;
+
+				allFaces.Add(face);
+
+				for (var i = 0; i < 4; ++i)
+				{
+					vertices.Add(face.vertices[i]);
+					uvs.Add(face.uvs[i]);
+					normals.Add(face.normal);
+				}
+
+				indices.Add(vertexIndex);
+				indices.Add(vertexIndex + 1);
+				indices.Add(vertexIndex + 2);
+
+				indices.Add(vertexIndex);
+				indices.Add(vertexIndex + 2);
+				indices.Add(vertexIndex + 3);
+			}
 		}
 
 		_nodeFaces.Add(octreeNode.GetHashCode(), newFaces);
@@ -640,7 +685,11 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 				meshInfo.allFaces[face.faceIndexInTree].isRemoved = true;
 
+				meshInfo.isDirty = true;
+
 				meshInfo.removalQueue.Add(face.faceIndexInTree);
+
+				meshInfo.dirtyMeshes.Add(face.faceIndexInTree / MAX_FACES_FOR_MESH);
 			}
 		}
 
@@ -670,14 +719,16 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			return;
 		}
 
+		meshInfo.isDirty = true;
+
 		removalQueue.Sort();
 
-		var removedFaces = removalQueue.ToArray();
+		var removalQueueArray = removalQueue.ToArray();
 
-		var indexOfFirstFaceToReplace = 0;
+		var removalQueueIndex = 0;
 
-		var firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace];
-		var faceIndexOfFirstFaceToRemove = firstFaceToRemove;
+		var firstRemovalQueueElement = removalQueueArray[removalQueueIndex];
+		var faceIndexOfFirstFaceToRemove = firstRemovalQueueElement;
 		// [y, y, y, n, y, y, y]
 		// [y, y, y, n, y, y] ^ take this and move it left
 		// [y, y, y, Y, y, y]
@@ -693,6 +744,8 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			var currentFace = allFacesOfMesh[i];
 
+			meshInfo.dirtyMeshes.Add(currentFace.faceIndexInTree / MAX_FACES_FOR_MESH);
+
 			numFacesToPop++;
 
 			//this face is already removed
@@ -704,7 +757,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			allFacesOfMesh[faceIndexOfFirstFaceToRemove] = currentFace;
 
-			var vertexIndex = firstFaceToRemove * 4;
+			var vertexIndex = firstRemovalQueueElement * 4;
 
 			var vertices = meshInfo.vertices;
 			var uvs = meshInfo.uvs;
@@ -723,14 +776,14 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			//this face is replaced, try to replace the next one
 
-			indexOfFirstFaceToReplace++;
+			removalQueueIndex++;
 
-			if (indexOfFirstFaceToReplace == removedFaces.Length) {
+			if (removalQueueIndex == removalQueueArray.Length) {
 				break;
 			}
 
-			firstFaceToRemove = removedFaces[indexOfFirstFaceToReplace];
-			faceIndexOfFirstFaceToRemove = firstFaceToRemove;
+			firstRemovalQueueElement = removalQueueArray[removalQueueIndex];
+			faceIndexOfFirstFaceToRemove = firstRemovalQueueElement;
 		}
 
 		if (numFacesToPop > 0) {

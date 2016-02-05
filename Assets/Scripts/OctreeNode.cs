@@ -564,9 +564,12 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
 			currentParent = currentParent.parent;
 		}
 
-		coords.Reverse();
+		var coordsArray = new OctreeChildCoords[coords.Count];
+		for (var i = 0; i < coordsArray.Length; ++i) {
+			coordsArray[i] = coords[coords.Count - 1 - i];
+		}
 
-		return new Coords(coords.ToArray());
+		return new Coords(coordsArray);
 	}
 
 	// https://en.wikipedia.org/wiki/Breadth-first_search#Pseudocode

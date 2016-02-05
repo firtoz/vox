@@ -128,7 +128,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   addBoundsNextFrame: 0
   materialIndex: 0
-  showGizmos: 1
+  showGizmos: 0
   size: 100
   useDepth: 1
   voxelTree:
@@ -139,7 +139,7 @@ MonoBehaviour:
       - {fileID: 2100000, guid: d4b7fe2279cb61d4c8efa355c011defc, type: 2}
       - {fileID: 2100000, guid: 19fe4f86520be3548825c48132473421, type: 2}
   wantedDepth: 5
-  debugRaycasts: 1
+  debugRaycasts: 0
 --- !u!23 &916304649
 MeshRenderer:
   m_ObjectHideFlags: 0
