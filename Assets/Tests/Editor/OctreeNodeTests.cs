@@ -60,7 +60,6 @@ namespace OctreeTest {
 				Vector3.back * (rootSize.z * 0.125f)
 				);
 
-			var oldChild = childNode;
 			var parentChildBounds = childNode.GetChildBounds(new Coords(new[] { leftAboveBackIndex }));
 
 			Assert.AreEqual(childBounds.center, parentChildBounds.center);

@@ -236,13 +236,11 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 
 			var neighbourVoxelTree = new VoxelTree(neighbourBounds.center, neighbourBounds.size, false);
 
-			var newGameObject = new GameObject();
-
 			var originalGameObject = myVoxelTree.GetGameObject();
 
-			newGameObject.transform.position = originalGameObject.transform.position;
-			newGameObject.transform.rotation = originalGameObject.transform.rotation;
-			newGameObject.transform.localScale = originalGameObject.transform.lossyScale;
+			var newGameObject = new GameObject("neighbour for " + originalGameObject.name);
+
+			newGameObject.transform.SetParent(originalGameObject.transform, false);
 
 			neighbourVoxelTree.SetOwnerNode(neighbourNode);
 

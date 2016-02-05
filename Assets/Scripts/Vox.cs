@@ -41,6 +41,10 @@ public class Vox : MonoBehaviour {
 //        octree.ApplyToMesh(GetComponent<MeshFilter>().sharedMesh);
 	}
 
+	public void OnDisable() {
+		voxelTree.Clear();
+	}
+
 	public bool debugRaycasts;
 
 	// Update is called once per frame

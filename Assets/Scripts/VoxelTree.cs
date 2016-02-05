@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -23,14 +22,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		Assert.IsTrue(MaxFacesForMesh > 0);
 	}
 
-
-	private static readonly Vector3[] VerticesArrayForMesh = new Vector3[MaxVerticesForMesh];
-	private static readonly Vector3[] NormalsArrayForMesh = new Vector3[MaxVerticesForMesh];
-	private static readonly Vector2[] UvsArrayForMesh = new Vector2[MaxVerticesForMesh];
-
-	//    private readonly List<GameObject> _meshObjects = new List<GameObject>();
 	private readonly Dictionary<int, List<GameObject>> _gameObjectForMeshInfo = new Dictionary<int, List<GameObject>>();
-
 
 	[SerializeField]
 	[FormerlySerializedAs("_materials")]
@@ -40,8 +32,6 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		new Dictionary<int, HashSet<OctreeRenderFace>>();
 
 	private GameObject _gameObject;
-
-	//    private readonly List<Mesh> _meshes = new List<Mesh>();
 
 	private readonly Dictionary<int, MeshInfo<VoxelNode>> _meshInfos = new Dictionary<int, MeshInfo<VoxelNode>>();
 
@@ -79,22 +69,6 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			hideFlags = HideFlags.DontSave
 		};
 	}
-
-//    public VoxelTree CreateNeighbour(NeighbourSide side) {
-//        var neighbourBounds = GetNeighbourBounds(side);
-//
-//        var neighbour = new VoxelTree(neighbourBounds.center, neighbourBounds.size);
-//
-//        foreach (var material in materials) {
-//            neighbour.SetMaterial(material.Key, material.Value);
-//        }
-//
-//        neighbour._meshInfos = _meshInfos;
-//
-//        return neighbour;
-//    }
-
-//    private readonly Dictionary<NeighbourSide, TTree> _neighbourTrees = new Dictionary<NeighbourSide, TTree>();
 
 	private bool IntersectInternal(Transform transform, Ray ray, out RayIntersectionResult result, int? wantedDepth, bool debugRaycasts) {
 		return base.Intersect(transform, ray, out result, wantedDepth, debugRaycasts);
@@ -1025,40 +999,8 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		{
 			SetMaterial(material.Key, material.Value);
 		}
-
-//        _meshInfos = myVoxelTree._meshInfos;
 	}
 
-	//public void OnBeforeSerialize() {
-	//	if (materials.value == null || materials.value.Count == 0)
-	//	{
-	//		materials = null;
-
-	//		return;
-	//	}
-
-	//	if (materials == null) {
-	//		materials = new IntMaterial();
-	//	}
-
-	//	materials.value.Clear();
-
-	//	foreach (var kvp in materials) {
-	//		materials.value.Add(kvp.Key, kvp.Value);
-	//	}
-	//}
-
-	//public void OnAfterDeserialize() {
-	//	materials.Clear();
-
-	//	if (materials == null) {
-	//		return;
-	//	}
-
-	//	foreach (var kvp in materials.value) {
-	//		materials.Add(kvp.Key, kvp.Value);
-	//	}
-	//}
 
 	public int GetNumMaterials() {
 		return materials.value.Count;
@@ -1066,5 +1008,14 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 	public int GetMaterialIndex(int index) {
 		return materials.value.Keys.ElementAt(index);
+	}
+
+	public void Clear() {
+		foreach (var gameObject in _gameObjectForMeshInfo
+			.SelectMany(meshInfoObjects => meshInfoObjects.Value)) {
+			Object.Destroy(gameObject);
+		}
+
+		_gameObjectForMeshInfo.Clear();
 	}
 }
