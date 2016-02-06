@@ -96,16 +96,6 @@ public abstract class SerializeDictionaryEditor<TKey, TValue> : PropertyDrawer {
 				}
 			}
 		}
-//
-//		// Calculate rects
-//		var amountRect = new Rect(position.x, position.y, position.width, position.height);
-		//		var unitRect = new Rect(position.x + 35, position.y, 50, position.height);
-		//		var nameRect = new Rect(position.x + 90, position.y, position.width - 90, position.height);
-		//
-		//		// Draw fields - passs GUIContent.none to each so they are drawn without labels
-		var firstProperty = keys.GetArrayElementAtIndex(0);
-
-//		EditorGUI.PropertyField(amountRect, firstProperty, GUIContent.none, true);
 
 		EditorGUI.EndProperty();
 
