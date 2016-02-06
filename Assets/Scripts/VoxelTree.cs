@@ -34,6 +34,8 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 	[SerializeField] [FormerlySerializedAs("_materials")] public IntMaterial materials = new IntMaterial();
 
+
+
 	static VoxelTree() {
 		Assert.IsTrue(MaxVerticesForMesh % NUM_VERTICES_FOR_FACE == 0);
 		Assert.IsTrue(MaxVerticesForMesh <= 65000);
@@ -804,7 +806,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		}
 	}
 
-	public NeighbourCoordsResult GetNeighbourCoordsInfinite(Coords coords, NeighbourSide side, bool readOnly = false) {
+	public NeighbourCoordsResult? GetNeighbourCoordsInfinite(Coords coords, NeighbourSide side, bool readOnly = false) {
 		return GetNeighbourCoordsInfinite(this, coords, side, GetOrCreateNeighbour, readOnly);
 	}
 

@@ -3,8 +3,6 @@ using UnityEngine;
 using UnityEngine.Assertions;
 
 public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVoxelTree> {
-	private OctreeNode.ChildIndex _indexInParent;
-
 	public SuperVoxelTree(Func<SuperVoxelTree, Bounds, Node> nodeConstructor, Bounds bounds)
 		: base(nodeConstructor, bounds) {}
 
@@ -15,8 +13,6 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 
 		GetRoot().SetItem(voxelTree);
 	}
-
-	private SuperVoxelTree(Bounds bounds) : base(CreateRootNode, bounds) {}
 
 	public override Node ConstructNode(Bounds bounds, Node parent, OctreeNode.ChildIndex indexInParent) {
 		return new Node(bounds, parent, indexInParent, this);
@@ -46,7 +42,7 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 //
 //        // cases:
 //        // length 0: not gonna happen.
-//        // not at edge, if parent was null, we get neighbour coords result.
+//        // not at edge, if parent was null, we get neighbour Coords result.
 //        // at edge: ??
 //
 //        var neighbourCoordsResult = GetNeighbourCoordsInfinite(_parentTree,
@@ -195,28 +191,33 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 			//
 			// cases:
 			// length 0: not gonna happen.
-			// not at edge, if parent was null, we get neighbour coords result.
+			// not at edge, if parent was null, we get neighbour Coords result.
 			// at edge: ??
 
-			var neighbourCoordsResult = GetNeighbourCoordsInfinite(ocTree,
+			var neighbourCoordsInfinite = GetNeighbourCoordsInfinite(ocTree,
 				GetCoords(), side, ExpandRootAndReturnTree);
+			if (neighbourCoordsInfinite == null) {
+				throw new Exception("Neighbour coords are null!");
+			} else {
+				var neighbourCoordsResult = neighbourCoordsInfinite.Value;
 
-			var neighbourCoords = neighbourCoordsResult.coordsResult;
+				var neighbourCoords = neighbourCoordsResult.coordsResult;
 
-			var root = GetRoot();
+				var root = GetRoot();
 
-			var neighbour = root.GetChildAtCoords(neighbourCoords);
+				var neighbour = root.GetChildAtCoords(neighbourCoords);
 
-			if (neighbour == null) {
-				if (readOnly) {
-					return null;
+				if (neighbour == null) {
+					if (readOnly) {
+						return null;
+					}
+
+					neighbour = root.AddRecursive(neighbourCoords, false);
+					CreateNewNeighbourSuperVoxelTree(neighbour);
 				}
 
-				neighbour = root.AddRecursive(neighbourCoords, false);
-				CreateNewNeighbourSuperVoxelTree(neighbour);
+				return neighbour;
 			}
-
-			return neighbour;
 		}
 
 

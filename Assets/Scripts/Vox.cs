@@ -3,7 +3,6 @@
 public class Vox : MonoBehaviour {
 	public bool addBoundsNextFrame;
 
-
 	public int materialIndex;
 
 	private RayIntersectionResult _result;
@@ -100,19 +99,18 @@ public class Vox : MonoBehaviour {
 		if (_result.hit) {
 			var resultTree = (VoxelTree) _result.tree;
 
-			DrawBounds(resultTree.GetNeighbourBoundsForChild(_result.coords, _result.neighbourSide), Color.yellow, false);
+			DrawBounds(resultTree.GetNeighbourBoundsForChild(_result.GetCoords(), _result.neighbourSide), Color.yellow, false);
 
 			if (Press(0)) {
-				var neighbourCoordsResult = resultTree.GetNeighbourCoordsInfinite(_result.coords, _result.neighbourSide);
+				var neighbourCoordsInfinite = resultTree.GetNeighbourCoordsInfinite(_result.GetCoords(), _result.neighbourSide);
+				if (neighbourCoordsInfinite != null) {
+					var neighbourCoordsResult = neighbourCoordsInfinite.Value;
 
-				var neighbourTree = neighbourCoordsResult.tree;
-				DrawBounds(neighbourTree.GetRoot().GetChildBounds(neighbourCoordsResult.coordsResult), Color.green, false);
+					var neighbourTree = (VoxelTree) neighbourCoordsResult.tree;
+					DrawBounds(neighbourTree.GetRoot().GetChildBounds(neighbourCoordsResult.coordsResult), Color.green, false);
 
-				var neighbourCoords = neighbourCoordsResult.coordsResult;
+					var neighbourCoords = neighbourCoordsResult.coordsResult;
 
-				if (neighbourCoords != null
-//                    && neighbourCoords.GetTree() != null
-					) {
 //                    Debug.Log(neighbourCoords);
 					Profiler.BeginSample("AddRecursive");
 
@@ -127,7 +125,7 @@ public class Vox : MonoBehaviour {
 			}
 			if (Press(1)) {
 				Profiler.BeginSample("RemoveRecursive");
-				resultTree.GetRoot().RemoveRecursive(_result.coords, true);
+				resultTree.GetRoot().RemoveRecursive(_result.GetCoords(), true);
 				Profiler.EndSample();
 
 				Profiler.BeginSample("Render");
@@ -135,7 +133,7 @@ public class Vox : MonoBehaviour {
 				Profiler.EndSample();
 			}
 			if (Press(2)) {
-				Debug.Log(_result.coords + " : " + _result.neighbourSide);
+				Debug.Log(_result.GetCoords() + " : " + _result.neighbourSide);
 			}
 		}
 	}

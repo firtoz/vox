@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEditor;
 
 public abstract class SerializeDictionaryEditor<TKey, TValue> : PropertyDrawer {

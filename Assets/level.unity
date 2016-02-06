@@ -132,6 +132,8 @@ MonoBehaviour:
   size: 100
   useDepth: 1
   voxelTree:
+    withCollision: 1
+    convexCollision: 0
     materials:
       _keys: 040000000500000006000000
       _values:

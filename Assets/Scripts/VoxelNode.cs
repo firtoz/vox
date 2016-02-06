@@ -27,12 +27,13 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
 	private SideState GetSideState(Coords coords, NeighbourSide side) {
 		AssertNotDeleted();
-		var neighbourCoordsResult = GetTree().GetNeighbourCoordsInfinite(coords, side, true);
+		var neighbourCoordsInfinite = GetTree().GetNeighbourCoordsInfinite(coords, side, true);
 
 		//out of the boundaries
-		if (neighbourCoordsResult == null) {
+		if (neighbourCoordsInfinite == null) {
 			return SideState.Empty;
-		}
+		} else {
+			var neighbourCoordsResult = neighbourCoordsInfinite.Value;
 
 #if USE_ALL_NODES
 		OctreeNode<T> neighbourNode;
@@ -88,10 +89,30 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 //            return SideState.Empty;
 //        }
 
-		var currentNode = neighbourCoordsResult.tree.GetRoot(); // neighbourCoords.GetTree().GetRoot();
+			var currentNode = (VoxelNode) neighbourCoordsResult.tree.GetRoot(); // neighbourCoords.GetTree().GetRoot();
 
-		// follow the children until you get to the node
-		foreach (var coord in neighbourCoordsResult.coordsResult) {
+			// follow the children until you get to the node
+			foreach (var coord in neighbourCoordsResult.coordsResult) {
+				if (currentNode == null) {
+					return SideState.Empty;
+				}
+
+				if (currentNode.IsLeafNode()) {
+					if (currentNode.HasItem()) {
+						if (currentNode.IsTransparent()) {
+							return SideState.FullButTransparent;
+						}
+						return SideState.Full;
+					} else {
+						return SideState.Empty;
+					}
+				}
+
+				currentNode = currentNode.GetChild(coord.ToIndex());
+			}
+
+			//last currentNode is the actual node at the neighbour Coords
+
 			if (currentNode == null) {
 				return SideState.Empty;
 			}
@@ -107,40 +128,21 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 				}
 			}
 
-			currentNode = currentNode.GetChild(coord.ToIndex());
-		}
-
-		//last currentNode is the actual node at the neighbour Coords
-
-		if (currentNode == null) {
-			return SideState.Empty;
-		}
-
-		if (currentNode.IsLeafNode()) {
-			if (currentNode.HasItem()) {
-				if (currentNode.IsTransparent()) {
-					return SideState.FullButTransparent;
+			// not null and not leaf, so it must be partial
+			// try to recursively get all nodes on this side
+			SideState sideState;
+			if (currentNode.SideSolid(GetOpposite(side))) {
+				if (currentNode.SideTransparent(side)) {
+					sideState = SideState.PartialButTransparent;
+				} else {
+					// if the opposite side of current node is solid, then this is a partial node.
+					sideState = SideState.Partial;
 				}
-				return SideState.Full;
 			} else {
-				return SideState.Empty;
+				sideState = SideState.Empty;
 			}
+			return sideState;
 		}
-
-		// not null and not leaf, so it must be partial
-		// try to recursively get all nodes on this side
-		SideState sideState;
-		if (currentNode.SideSolid(GetOpposite(side))) {
-			if (currentNode.SideTransparent(side)) {
-				sideState = SideState.PartialButTransparent;
-			} else {
-				// if the opposite side of current node is solid, then this is a partial node.
-				sideState = SideState.Partial;
-			}
-		} else {
-			sideState = SideState.Empty;
-		}
-		return sideState;
 #endif
 	}
 
@@ -397,12 +399,12 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 	}
 
 	public IEnumerable<VoxelNode> GetAllSolidNeighbours(NeighbourSide side) {
-		var neighbourCoordsResult = GetTree().GetNeighbourCoordsInfinite(GetCoords(), side, true);
-
+		var neighbourCoordsInfinite = GetTree().GetNeighbourCoordsInfinite(GetCoords(), side, true);
 		//out of the map!
-		if (neighbourCoordsResult == null) {
+		if (neighbourCoordsInfinite == null) {
 			return null;
-		}
+		} else {
+			var neighbourCoordsResult = neighbourCoordsInfinite.Value;
 
 #if USE_ALL_NODES
 		OctreeNode<T> neighbourNode;
@@ -444,9 +446,21 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 //            return null;
 //        }
 
-		var currentNeighbourNode = neighbourCoordsResult.tree.GetRoot();
+			var currentNeighbourNode = (VoxelNode) neighbourCoordsResult.tree.GetRoot();
 
-		foreach (var coord in neighbourCoordsResult.coordsResult) {
+			foreach (var coord in neighbourCoordsResult.coordsResult) {
+				if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
+					return null;
+				}
+
+				if (currentNeighbourNode.IsSolid()) {
+					return new HashSet<VoxelNode> {currentNeighbourNode};
+				}
+
+				currentNeighbourNode = currentNeighbourNode.GetChild(coord.ToIndex());
+			}
+
+			//        last currentNode is the actual node at the neighbour Coords
 			if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
 				return null;
 			}
@@ -455,19 +469,8 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 				return new HashSet<VoxelNode> {currentNeighbourNode};
 			}
 
-			currentNeighbourNode = currentNeighbourNode.GetChild(coord.ToIndex());
+			return currentNeighbourNode._sideSolidChildren[GetOpposite(side)];
 		}
-
-		//        last currentNode is the actual node at the neighbour Coords
-		if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
-			return null;
-		}
-
-		if (currentNeighbourNode.IsSolid()) {
-			return new HashSet<VoxelNode> {currentNeighbourNode};
-		}
-
-		return currentNeighbourNode._sideSolidChildren[GetOpposite(side)];
 #endif
 	}
 
