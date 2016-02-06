@@ -593,7 +593,7 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
 		var queue = new Queue<TNode>();
 		queue.Enqueue((TNode) this);
 
-		var discovered = new HashSet<INode> {GetRoot()};
+		var discovered = new HashSet<INode> {this};
 
 		while (queue.Count > 0) {
 			var node = queue.Dequeue();

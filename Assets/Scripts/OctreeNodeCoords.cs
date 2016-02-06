@@ -43,6 +43,10 @@ public struct Coords : IEnumerable<OctreeChildCoords> {
 	}
 
 	public IEnumerator<OctreeChildCoords> GetEnumerator() {
+		if (_coords == null) {
+			return Enumerable.Empty<OctreeChildCoords>().GetEnumerator();
+		}
+
 		return _coords.AsEnumerable().GetEnumerator();
 	}
 
@@ -65,6 +69,10 @@ public struct Coords : IEnumerable<OctreeChildCoords> {
 	}
 
 	public override int GetHashCode() {
+		if (_coords == null) {
+			return 0;
+		}
+
 		// ReSharper disable NonReadonlyMemberInGetHashCode
 		var hashCode = _coords.Length;
 
@@ -97,7 +105,7 @@ public struct Coords : IEnumerable<OctreeChildCoords> {
 	}
 
 	public override bool Equals(object obj) {
-		return obj.GetType() == GetType() && Equals((Coords) obj);
+		return obj != null && obj.GetType() == GetType() && Equals((Coords) obj);
 	}
 
 	public OctreeChildCoords GetCoord(int i) {
