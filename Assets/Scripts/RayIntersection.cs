@@ -12,10 +12,10 @@ public class RayIntersection {
 
 	private readonly INode _rootNode;
 	private readonly Transform _transform;
+	private readonly IOctree _tree;
 
 	public readonly List<RayIntersectionResult> results = new List<RayIntersectionResult>();
 	private Ray _ray;
-	private readonly IOctree _tree;
 
 	public RayIntersection(Transform transform, IOctree octree, Ray r, bool intersectMultiple, int? wantedDepth,
 		Filter filter, bool debug = false) {
@@ -40,7 +40,9 @@ public class RayIntersection {
 			DrawBounds(rootBounds, Color.gray);
 		}
 
-		var ro = transform.InverseTransformPoint(r.origin - rootBounds.center);
+		var rootCenter = rootBounds.center;
+
+		var ro = transform.InverseTransformPoint(r.origin) - rootCenter;
 		var rd = transform.InverseTransformDirection(r.direction);
 
 		var rox = ro.x;
@@ -51,24 +53,23 @@ public class RayIntersection {
 		var rdy = rd.y;
 		var rdz = rd.z;
 
-		var ocMin = rootBounds.min - rootBounds.center;
-		var ocMax = rootBounds.max - rootBounds.center;
+		var ocMin = rootBounds.min - rootCenter;
+		var ocMax = rootBounds.max - rootCenter;
 
-		var rootCenter = Vector3.zero; // rootBounds.center;
 		if (rdx < 0.0f) {
-			rox = rootCenter.x - rox;
+			rox = -rox;
 			rdx = -rdx;
 			_dimensionFlipFlags |= 1;
 		}
 
 		if (rdy < 0.0f) {
-			roy = rootCenter.y - roy;
+			roy = -roy;
 			rdy = -rdy;
 			_dimensionFlipFlags |= 2;
 		}
 
 		if (rdz < 0.0f) {
-			roz = rootCenter.z - roz;
+			roz = -roz;
 			rdz = -rdz;
 			_dimensionFlipFlags |= 4;
 		}
@@ -191,8 +192,7 @@ public class RayIntersection {
 		}
 
 
-		if (tx1 < 0.0 || ty1 < 0.0 || tz1 < 0.0)
-		{
+		if (tx1 < 0.0 || ty1 < 0.0 || tz1 < 0.0) {
 			return;
 		}
 
@@ -247,12 +247,10 @@ public class RayIntersection {
 		}
 
 		if (_debug) {
-			if (node != null)
-			{
+			if (node != null) {
 				var bounds = node.GetBounds();
 				DrawBounds(bounds, Color.white);
-			}
-			else {
+			} else {
 				//inside solid node and still going strong baby!
 				var bounds = _rootNode.GetChildBounds(nodeCoords);
 				DrawBounds(bounds, Color.cyan);
