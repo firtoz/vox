@@ -16,6 +16,9 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 	public const int MaxIndicesForMesh = MaxFacesForMesh * NUM_INDICES_FOR_FACE;
 	private readonly HashSet<VoxelTree> _dirtyTrees = new HashSet<VoxelTree>();
 
+	public bool withCollision = true;
+	public bool convexCollision = false;
+
 	private readonly Dictionary<int, List<GameObject>> _gameObjectForMeshInfo = new Dictionary<int, List<GameObject>>();
 
 	private readonly Dictionary<int, MeshInfo<VoxelNode>> _meshInfos = new Dictionary<int, MeshInfo<VoxelNode>>();
@@ -121,7 +124,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		materials.value[index] = material;
 	}
 
-	private static void UpdateMeshes(GameObject container, int meshId, MeshInfo<VoxelNode> meshInfo,
+	private void UpdateMeshes(GameObject container, int meshId, MeshInfo<VoxelNode> meshInfo,
 		List<GameObject> objectsForMesh) {
 		if (!meshInfo.isDirty) {
 			return;
@@ -155,10 +158,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		if (numExistingMeshObjects < numMeshObjects) {
 			// create missing mesh objects?
 			for (var i = numExistingMeshObjects; i < numMeshObjects; ++i) {
-				Profiler.BeginSample("Create new gameobject for mesh");
-				var meshObject = new GameObject(string.Empty, typeof (MeshFilter),
-					typeof (MeshRenderer), typeof (MeshCollider));
-				Profiler.EndSample();
+				var meshObject = CreateNewMesh();
 
 				objectsForMesh.Add(meshObject);
 
@@ -169,7 +169,9 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 				var meshFilter = meshObject.GetComponent<MeshFilter>();
 
 				meshFilter.sharedMesh = new Mesh();
-				meshObject.GetComponent<MeshCollider>().sharedMesh = meshFilter.sharedMesh;
+				if (withCollision) {
+					meshObject.GetComponent<MeshCollider>().sharedMesh = meshFilter.sharedMesh;
+				}
 			}
 		}
 
@@ -186,16 +188,20 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			// update mesh of object
 		}
 
-		var numIndices = meshInfo.allFaces.Count * NUM_INDICES_FOR_FACE;
+		var numFaces = meshInfo.allFaces.Count;
+		var numIndices = numFaces * NUM_INDICES_FOR_FACE;
 
 		if (numMeshObjects == 1) // no need for loop or array copying
 		{
 			Profiler.BeginSample("Update mesh " + 0);
 
 
-			var meshCollider = objectsForMesh[0].GetComponent<MeshCollider>();
-			if (meshCollider) {
-				meshCollider.enabled = false;
+			if (withCollision) {
+				var meshCollider = objectsForMesh[0].GetComponent<MeshCollider>();
+				if (meshCollider)
+				{
+					meshCollider.enabled = false;
+				}
 			}
 
 			var newMesh = objectsForMesh[0].GetComponent<MeshFilter>().sharedMesh;
@@ -203,11 +209,40 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			newMesh.Clear();
 
 			var firstSegment = meshInfo.meshSegments[0];
+			if (withCollision) {
+				// colliders don't like unreferences vertices it seems
 
-			Profiler.BeginSample("Get vertices range");
-			Profiler.EndSample();
+				var numVertices = numFaces * NUM_VERTICES_FOR_FACE;
 
-			{
+				Profiler.BeginSample("Set mesh properties");
+
+				{
+					var vector3Array = new Vector3[numVertices];
+
+					Array.Copy(firstSegment.vertices, vector3Array, numVertices);
+
+					Profiler.BeginSample("Set mesh vertices");
+					newMesh.vertices = vector3Array;
+					Profiler.EndSample();
+
+					Array.Copy(firstSegment.normals, vector3Array, numVertices);
+
+					Profiler.BeginSample("Set mesh normals");
+					newMesh.normals = vector3Array;
+					Profiler.EndSample();
+
+					var uvArray = new Vector2[numVertices];
+
+					Array.Copy(firstSegment.uvs, uvArray, numVertices);
+
+					Profiler.BeginSample("Set mesh uvs");
+					newMesh.uv = uvArray;
+					Profiler.EndSample();
+				}
+
+				Profiler.EndSample(); // set mesh pr
+			}
+			else {
 				Profiler.BeginSample("Set mesh properties");
 				{
 					Profiler.BeginSample("Set mesh vertices");
@@ -235,8 +270,12 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			Profiler.EndSample(); // create mesh
 
-			if (meshCollider) {
-				meshCollider.enabled = true;
+			if (withCollision) {
+				var meshCollider = objectsForMesh[0].GetComponent<MeshCollider>();
+				if (meshCollider)
+				{
+					meshCollider.enabled = true;
+				}
 			}
 		} else {
 			var dirtyMeshes = meshInfo.dirtyMeshes;
@@ -255,45 +294,58 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 					newMesh.Clear();
 					Profiler.EndSample();
 
-					{
-						Profiler.BeginSample("Set mesh properties");
+					Profiler.BeginSample("Set mesh properties");
 
-						{
-							Profiler.BeginSample("Set mesh vertices");
-							newMesh.vertices = segment.vertices;
-							Profiler.EndSample();
+					var numFacesInSegment = numFaces - segmentIndex * MaxFacesForMesh;
+					var numVerticesInSegment = numFacesInSegment * NUM_VERTICES_FOR_FACE;
+					var numIndicesInSegment = numFacesInSegment * NUM_INDICES_FOR_FACE;
 
-							Profiler.BeginSample("Set mesh normals");
-							newMesh.normals = segment.normals;
-							Profiler.EndSample();
+					if (withCollision && numVerticesInSegment < MaxVerticesForMesh) {
+						var vector3Array = new Vector3[numVerticesInSegment];
 
-							Profiler.BeginSample("Set mesh uvs");
-							newMesh.uv = segment.uvs;
-							Profiler.EndSample();
-						}
+						Array.Copy(segment.vertices, vector3Array, numVerticesInSegment);
 
-						Profiler.EndSample(); // set mesh properties
+						Profiler.BeginSample("Set mesh vertices");
+						newMesh.vertices = vector3Array;
+						Profiler.EndSample();
+
+						Array.Copy(segment.normals, vector3Array, numVerticesInSegment);
+
+						Profiler.BeginSample("Set mesh normals");
+						newMesh.normals = vector3Array;
+						Profiler.EndSample();
+
+						var uvArray = new Vector2[numVerticesInSegment];
+
+						Array.Copy(segment.uvs, uvArray, numVerticesInSegment);
+
+						Profiler.BeginSample("Set mesh uvs");
+						newMesh.uv = uvArray;
+						Profiler.EndSample();
+					} else {
+						Profiler.BeginSample("Set mesh vertices");
+						newMesh.vertices = segment.vertices;
+						Profiler.EndSample();
+
+						Profiler.BeginSample("Set mesh normals");
+						newMesh.normals = segment.normals;
+						Profiler.EndSample();
+
+						Profiler.BeginSample("Set mesh uvs");
+						newMesh.uv = segment.uvs;
+						Profiler.EndSample();
 					}
-
-					var indexStart = segmentIndex * MaxIndicesForMesh;
-					if (indexStart > numIndices) {
-						Debug.Log("?!?! " + indexStart + " !!!! " + numIndices);
-						Assert.IsTrue(indexStart <= numIndices);
-					}
-
-					var indexEnd = indexStart + MaxIndicesForMesh;
+					Profiler.EndSample(); // set mesh properties
 
 					int[] indicesForMesh;
-					if (indexEnd > numIndices && numIndices > indexStart) {
-						// need to cut indices :(
+
+					if (numIndicesInSegment < MaxIndicesForMesh) {
 						Profiler.BeginSample("Slice indices");
 
-						var numIndicesForSegment = numIndices - indexStart;
+						indicesForMesh = new int[numIndicesInSegment];
+						Array.Copy(segment.indices, indicesForMesh, numIndicesInSegment);
 
-						indicesForMesh = new int[numIndicesForSegment];
-						Array.Copy(segment.indices, indicesForMesh, numIndicesForSegment);
-
-						Profiler.EndSample(); // set mesh triangles
+						Profiler.EndSample(); // slice indices
 					} else {
 						// all good!
 
@@ -312,6 +364,34 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			dirtyMeshes.Clear();
 		}
+	}
+
+	private GameObject CreateNewMesh() {
+		Profiler.BeginSample("Create new gameobject for mesh");
+
+
+		Type[] types;
+		if (withCollision) {
+			types = new[] {
+				typeof (MeshFilter),
+				typeof (MeshRenderer),
+				typeof (MeshCollider)
+			};
+		} else {
+			types = new[] {
+				typeof (MeshFilter),
+				typeof (MeshRenderer)
+			};
+		}
+
+		var meshObject = new GameObject(string.Empty, types);
+
+		if (withCollision && convexCollision) {
+			meshObject.GetComponent<MeshCollider>().convex = true;
+		}
+
+		Profiler.EndSample();
+		return meshObject;
 	}
 
 	public bool ItemsBelongInSameMesh(int a, int b) {
@@ -777,10 +857,13 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		return _ownerNode;
 	}
 
-	public void CopyMaterialsFrom(VoxelTree myVoxelTree) {
-		foreach (var material in myVoxelTree.materials.value) {
+	public void CopyPropertiesFrom(VoxelTree other) {
+		foreach (var material in other.materials.value) {
 			SetMaterial(material.Key, material.Value);
 		}
+
+		withCollision = other.withCollision;
+		convexCollision = other.convexCollision;
 	}
 
 

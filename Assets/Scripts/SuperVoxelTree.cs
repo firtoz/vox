@@ -121,7 +121,7 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 //
 //            neighbourVoxelTree.SetGameObject(newGameObject);
 //
-//            neighbourVoxelTree.CopyMaterialsFrom(myVoxelTree);
+//            neighbourVoxelTree.CopyPropertiesFrom(myVoxelTree);
 //        } else {
 //            var newNeighbourSuperVoxelTree = new SuperVoxelTree(neighbourBounds) {
 //                _indexInParent = ownerNode.GetIndexInParent(),
@@ -246,7 +246,7 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 
 			neighbourVoxelTree.SetGameObject(newGameObject);
 
-			neighbourVoxelTree.CopyMaterialsFrom(myVoxelTree);
+			neighbourVoxelTree.CopyPropertiesFrom(myVoxelTree);
 
 			neighbourNode.SetItem(neighbourVoxelTree);
 		}
