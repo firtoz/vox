@@ -30,7 +30,6 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 	private SuperVoxelTree.Node _ownerNode;
 
-	private GameObject _renderObject;
 
 	[SerializeField] [FormerlySerializedAs("_materials")] public IntMaterial materials = new IntMaterial();
 
@@ -134,14 +133,14 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 		meshInfo.isDirty = false;
 
-		var numMeshObjects = meshInfo.meshSegments.Count;
+		var numMeshSegments = meshInfo.meshSegments.Count;
 
 		var numExistingMeshObjects = objectsForMesh.Count;
 
-		if (numExistingMeshObjects > numMeshObjects) {
+		if (numExistingMeshObjects > numMeshSegments) {
 			// destroy additional mesh objects
 
-			for (var i = numMeshObjects; i < numExistingMeshObjects; ++i) {
+			for (var i = numMeshSegments; i < numExistingMeshObjects; ++i) {
 				if (meshInfo.dirtyMeshes.Contains(i)) {
 					meshInfo.dirtyMeshes.Remove(i);
 				}
@@ -152,14 +151,18 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 				} else {
 					Object.DestroyImmediate(meshObject);
 				}
+
+				objectsForMesh[i] = null;
 			}
 
-			objectsForMesh.RemoveRange(numMeshObjects, numExistingMeshObjects - numMeshObjects);
+			objectsForMesh.RemoveRange(numMeshSegments, numExistingMeshObjects - numMeshSegments);
+
+			numExistingMeshObjects = objectsForMesh.Count;
 		}
 
-		if (numExistingMeshObjects < numMeshObjects) {
-			// create missing mesh objects?
-			for (var i = numExistingMeshObjects; i < numMeshObjects; ++i) {
+		if (numExistingMeshObjects < numMeshSegments) {
+			// create missing mesh objects
+			for (var i = numExistingMeshObjects; i < numMeshSegments; ++i) {
 				var meshObject = CreateNewMesh();
 
 				objectsForMesh.Add(meshObject);
@@ -177,9 +180,13 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			}
 		}
 
-		for (var i = 0; i < numMeshObjects; ++i) {
+		Assert.AreEqual(objectsForMesh.Count, meshInfo.meshSegments.Count);
+
+		for (var i = 0; i < numMeshSegments; ++i) {
 			var meshObject = objectsForMesh[i];
 
+			Assert.IsNotNull(meshObject, "Mesh should not be null!");
+			Assert.IsTrue(meshObject.activeInHierarchy, "Mesh should not be disabled!");
 			meshObject.name = "mesh " + i + " for " + meshId;
 
 			Profiler.BeginSample("Set mesh material for new game object");
@@ -193,7 +200,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		var numFaces = meshInfo.allFaces.Count;
 		var numIndices = numFaces * NUM_INDICES_FOR_FACE;
 
-		if (numMeshObjects == 1) // no need for loop or array copying
+		if (numMeshSegments == 1) // no need for loop or array copying
 		{
 			Profiler.BeginSample("Update mesh " + 0);
 
@@ -400,11 +407,25 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		return GetItemMeshId(a) == GetItemMeshId(b);
 	}
 
+	private bool _lockDirty;
+	private bool _isRendering;
+
 	public void Render() {
-		foreach (var dirtyTree in _dirtyTrees) {
+		if (_isRendering) {
+			return;
+		}
+
+		_isRendering = true;
+		_lockDirty = true;
+		foreach (var dirtyTree in _dirtyTrees.ToArray()) {
+			if (dirtyTree == this) {
+				Debug.Log("How dare you");
+				continue;
+			}
 			dirtyTree.Render();
 		}
 
+		_lockDirty = false;
 		_dirtyTrees.Clear();
 
 		Profiler.BeginSample("Process draw queue");
@@ -412,35 +433,19 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		Profiler.EndSample();
 
 		var meshInfos = _meshInfos;
-		if (_renderObject != _gameObject) {
-			var numChildren = _gameObject.transform.childCount;
-
-			Profiler.BeginSample("Destroy children");
-			for (var i = numChildren - 1; i >= 0; i--) {
-				var child = _gameObject.transform.GetChild(i).gameObject;
-				if (Application.isPlaying) {
-					Object.Destroy(child);
-				} else {
-					Object.DestroyImmediate(child);
-				}
-			}
-			Profiler.EndSample();
-
-			//recreate meshes
-			_renderObject = _gameObject;
-		}
 
 		foreach (var meshPair in meshInfos) {
 			var meshInfo = meshPair.Value;
 			var meshId = meshPair.Key;
 
 			if (!_gameObjectForMeshInfo.ContainsKey(meshId)) {
-				var objectsForMesh = new List<GameObject>();
-				_gameObjectForMeshInfo[meshId] = objectsForMesh;
+				_gameObjectForMeshInfo[meshId] = new List<GameObject>();
 			}
 
-			UpdateMeshes(_renderObject, meshId, meshInfo, _gameObjectForMeshInfo[meshId]);
+			UpdateMeshes(_gameObject, meshId, meshInfo, _gameObjectForMeshInfo[meshId]);
 		}
+
+		_isRendering = false;
 	}
 
 
@@ -747,6 +752,9 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 							neighbourDrawQueue.Add(neighbour);
 
 							if (neighbourTree != this) {
+								if (_lockDirty) {
+									Debug.Log("?!?!");
+								}
 								_dirtyTrees.Add(neighbourTree);
 							}
 						}
@@ -799,6 +807,9 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 					neighbourDrawQueue.Add(neighbour);
 
 					if (neighbourTree != this) {
+						if (_lockDirty) {
+							Debug.Log("!?!?!");
+						}
 						_dirtyTrees.Add(neighbourTree);
 					}
 				}
