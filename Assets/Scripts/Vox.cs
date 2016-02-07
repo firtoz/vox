@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public class Vox : MonoBehaviour {
 	public bool addBoundsNextFrame;
@@ -25,19 +26,60 @@ public class Vox : MonoBehaviour {
 		//                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one*0.7f), 7, 8);
 
 		//                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.RightAboveBack);
-		voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.LeftAboveBack).SetItem(4);
-		voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.RightAboveForward).SetItem(5);
-//        octree.GetRoot().AddChild(OctreeNode.ChildIndex.LeftAboveForward).SetItem(4);
+//		root.AddChild(OctreeNode.ChildIndex.LeftAboveBack).SetItem(4);
+//		root.AddChild(OctreeNode.ChildIndex.RightAboveForward).SetItem(5);
 
-//        topFwdLeft.SetItem(4);
-//        topFwdLeft.SubDivide();
-//
-//        topFwdLeft.RemoveChild(OctreeNode.ChildIndex.RightAboveBack);
+		AddRandomList();
+		//        octree.GetRoot().AddChild(OctreeNode.ChildIndex.LeftAboveForward).SetItem(4);
+
+		//        topFwdLeft.SetItem(4);
+		//        topFwdLeft.SubDivide();
+		//
+		//        topFwdLeft.RemoveChild(OctreeNode.ChildIndex.RightAboveBack);
 
 		//                topFwdLeft.SubDivide();
-		voxelTree.Render();
 
-//        octree.ApplyToMesh(GetComponent<MeshFilter>().sharedMesh);
+		//        octree.ApplyToMesh(GetComponent<MeshFilter>().sharedMesh);
+	}
+
+	public int numAdd = 500;
+
+	private void AddRandomList() {
+		var coords = new Coords(new[] {
+			new OctreeChildCoords(0, 0, 0),
+			new OctreeChildCoords(0, 1, 0),
+			new OctreeChildCoords(0, 0, 1),
+			new OctreeChildCoords(1, 0, 0),
+		});
+
+		var wantedTree = voxelTree;
+
+		var dirtyTrees = new HashSet<VoxelTree>();
+
+		for (var i = 0; i < numAdd; ++i) {
+			var result = wantedTree.GetNeighbourCoordsInfinite(coords, (NeighbourSide) Random.Range(0, 6));
+
+			if (result == null) {
+				Debug.Log("wut");
+				break;
+			}
+
+			var neighbourCoordsResult = result.Value;
+
+			wantedTree = (VoxelTree) neighbourCoordsResult.tree;
+
+			coords = neighbourCoordsResult.coordsResult;
+
+			wantedTree.GetRoot()
+				.AddRecursive(coords)
+				.SetItem(wantedTree.GetMaterialIndex(Random.Range(0, 3)));
+
+			dirtyTrees.Add(wantedTree);
+		}
+
+		foreach (var dirtyTree in dirtyTrees) {
+			dirtyTree.Render();
+		}
 	}
 
 	public void OnDisable() {
@@ -45,9 +87,15 @@ public class Vox : MonoBehaviour {
 	}
 
 	public bool debugRaycasts;
+	public bool addRandomNextFrame;
 
 	// Update is called once per frame
 	public void Update() {
+		if (addRandomNextFrame) {
+			addRandomNextFrame = false;
+			AddRandomList();
+		}
+
 		if (addBoundsNextFrame) {
 			addBoundsNextFrame = false;
 
