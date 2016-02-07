@@ -213,7 +213,7 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 					}
 
 					neighbour = root.AddRecursive(neighbourCoords, false);
-					CreateNewNeighbourSuperVoxelTree(neighbour);
+					CreateNewNeighbourSuperVoxelTree(neighbour, side);
 				}
 
 				return neighbour;
@@ -221,7 +221,7 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 		}
 
 
-		private void CreateNewNeighbourSuperVoxelTree(Node neighbourNode) {
+		private void CreateNewNeighbourSuperVoxelTree(Node neighbourNode, NeighbourSide side) {
 			var myBounds = GetBounds();
 
 			var neighbourBounds = neighbourNode.GetBounds();
@@ -238,8 +238,9 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 			var neighbourVoxelTree = new VoxelTree(neighbourBounds.center, neighbourBounds.size, false);
 
 			var originalGameObject = myVoxelTree.GetGameObject();
+			Assert.IsNotNull(originalGameObject, "Original game object should not be null!");
 
-			var newGameObject = new GameObject("neighbour for " + originalGameObject.name);
+			var newGameObject = new GameObject( side + " neighbour for " + originalGameObject.name);
 
 			newGameObject.transform.SetParent(originalGameObject.transform, false);
 
