@@ -725,8 +725,6 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		removalQueue.Clear();
 	}
 
-	private readonly HashSet<ulong> _solidNodeHashes = new HashSet<ulong>();
-
 	public override void NodeAdded(VoxelNode octreeNode, bool updateNeighbours) {
 		var meshInfo = GetMeshInfo(octreeNode.GetItem());
 
@@ -735,12 +733,6 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 		if (!drawQueue.Contains(octreeNode)) {
 			drawQueue.Add(octreeNode);
 		}
-
-		var hashCoords = octreeNode.GetCoordsHash();
-
-		Assert.IsFalse(_solidNodeHashes.Contains(hashCoords));
-
-		_solidNodeHashes.Add(hashCoords);
 
 		if (updateNeighbours) {
 			foreach (var side in OctreeNode.AllSides) {
@@ -778,12 +770,6 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			var drawQueue = GetMeshInfo(octreeNode.GetItem()).drawQueue;
 
 			var nodeHashCode = octreeNode.GetHashCode();
-
-			var coordsHash = octreeNode.GetCoordsHash();
-			if (!_solidNodeHashes.Contains(coordsHash)) {
-				Assert.IsFalse(true);
-			}
-			_solidNodeHashes.Remove(coordsHash);
 
 			if (_nodeFaces.ContainsKey(nodeHashCode)) {
 				RemoveNodeInternal(nodeHashCode);

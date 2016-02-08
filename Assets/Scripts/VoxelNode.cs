@@ -14,33 +14,15 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 	private int _transparentNodeCount;
 
 	private readonly Coords _coords;
-	private readonly ulong _hashCode;
 
 	public VoxelNode(Bounds bounds, VoxelTree tree) : base(bounds, null, ChildIndex.Invalid, tree) {
 		_coords = new Coords();
-		_hashCode = GetCoordsHash(_coords);
 	}
 
-	public ulong GetCoordsHash() {
-		return _hashCode;
-	}
-
-	private static ulong GetCoordsHash(Coords coords)
-	{
-		var length = (ulong)coords.Length;
-
-		Assert.IsTrue(length <= 24);
-
-		var hash = length;
-
-		return coords.Select(coord => (ulong)coord.ToIndex())
-			.Aggregate(hash, (current, idx) => current * 6u + idx);
-	}
 
 	public VoxelNode(Bounds bounds, VoxelNode parent, ChildIndex indexInParent, VoxelTree ocTree)
 		: base(bounds, parent, indexInParent, ocTree) {
 		_coords = new Coords(parent._coords, OctreeChildCoords.FromIndex(indexInParent));
-		_hashCode = GetCoordsHash(_coords);
 	}
 
 	private bool SideSolid(NeighbourSide side) {
@@ -489,7 +471,7 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 				}
 
 				currentNeighbourNode = currentNeighbourNode.GetChild(coord.ToIndex());
-			}
+				}
 
 			//        last currentNode is the actual node at the neighbour Coords
 			if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {

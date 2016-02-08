@@ -26,10 +26,8 @@ public class Vox : MonoBehaviour {
 		//                vox.octree.AddBounds(new Bounds(new Vector3(0.25f, -.35f, -0.93f), Vector3.one*0.7f), 7, 8);
 
 		//                vox.octree.GetRoot().RemoveChild(OctreeNode.ChildIndex.RightAboveBack);
-//		root.AddChild(OctreeNode.ChildIndex.LeftAboveBack).SetItem(4);
-//		root.AddChild(OctreeNode.ChildIndex.RightAboveForward).SetItem(5);
-
-		AddRandomList();
+		voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.LeftAboveBack).SetItem(4);
+		voxelTree.GetRoot().AddChild(OctreeNode.ChildIndex.RightAboveForward).SetItem(5);
 		//        octree.GetRoot().AddChild(OctreeNode.ChildIndex.LeftAboveForward).SetItem(4);
 
 		//        topFwdLeft.SetItem(4);
@@ -38,6 +36,7 @@ public class Vox : MonoBehaviour {
 		//        topFwdLeft.RemoveChild(OctreeNode.ChildIndex.RightAboveBack);
 
 		//                topFwdLeft.SubDivide();
+		voxelTree.Render();
 
 		//        octree.ApplyToMesh(GetComponent<MeshFilter>().sharedMesh);
 	}
@@ -45,12 +44,14 @@ public class Vox : MonoBehaviour {
 	public int numAdd = 500;
 
 	private void AddRandomList() {
-		var coords = new Coords(new[] {
-			new OctreeChildCoords(0, 0, 0),
-			new OctreeChildCoords(0, 1, 0),
-			new OctreeChildCoords(0, 0, 1),
-			new OctreeChildCoords(1, 0, 0),
-		});
+		var coordsList = new List<OctreeChildCoords>();
+
+		for (var i = 0; i < wantedDepth; ++i) {
+			coordsList.Add(OctreeChildCoords.FromIndex((OctreeNode.ChildIndex) Random.Range(0, 8)));
+		}
+
+
+		var coords = new Coords(coordsList.ToArray());
 
 		var wantedTree = voxelTree;
 
