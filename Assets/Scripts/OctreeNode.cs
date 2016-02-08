@@ -547,7 +547,7 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
 		return bounds;
 	}
 
-	public Coords GetCoords() {
+	public virtual Coords GetCoords() {
 		AssertNotDeleted();
 
 		if (parent == null) {

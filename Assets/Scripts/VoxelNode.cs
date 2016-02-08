@@ -1,20 +1,46 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
-	private Dictionary<NeighbourSide, int> _sideSolidCount = null;
-	private Dictionary<NeighbourSide, HashSet<VoxelNode>> _sideSolidChildren = null;
+	private Dictionary<NeighbourSide, int> _sideSolidCount;
+	private Dictionary<NeighbourSide, HashSet<VoxelNode>> _sideSolidChildren;
 
-	private Dictionary<NeighbourSide, int> _sideTransparentCount = null;
+	private Dictionary<NeighbourSide, int> _sideTransparentCount;
 
 	private int _solidNodeCount;
 	private int _transparentNodeCount;
 
-	public VoxelNode(Bounds bounds, VoxelTree tree) : this(bounds, null, ChildIndex.Invalid, tree) {}
+	private readonly Coords _coords;
+	private readonly ulong _hashCode;
+
+	public VoxelNode(Bounds bounds, VoxelTree tree) : base(bounds, null, ChildIndex.Invalid, tree) {
+		_coords = new Coords();
+		_hashCode = GetCoordsHash(_coords);
+	}
+
+	public ulong GetCoordsHash() {
+		return _hashCode;
+	}
+
+	private static ulong GetCoordsHash(Coords coords)
+	{
+		var length = (ulong)coords.Length;
+
+		Assert.IsTrue(length <= 24);
+
+		var hash = length;
+
+		return coords.Select(coord => (ulong)coord.ToIndex())
+			.Aggregate(hash, (current, idx) => current * 6u + idx);
+	}
 
 	public VoxelNode(Bounds bounds, VoxelNode parent, ChildIndex indexInParent, VoxelTree ocTree)
 		: base(bounds, parent, indexInParent, ocTree) {
+		_coords = new Coords(parent._coords, OctreeChildCoords.FromIndex(indexInParent));
+		_hashCode = GetCoordsHash(_coords);
 	}
 
 	private bool SideSolid(NeighbourSide side) {
@@ -397,6 +423,11 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
 		base.RemoveItemInternal(updateNeighbours);
 	}
+
+	public override Coords GetCoords() {
+		return _coords;
+	}
+
 
 	public IEnumerable<VoxelNode> GetAllSolidNeighbours(NeighbourSide side) {
 		var neighbourCoordsInfinite = GetTree().GetNeighbourCoordsInfinite(GetCoords(), side, true);
