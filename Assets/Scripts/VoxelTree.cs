@@ -780,7 +780,9 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 			var nodeHashCode = octreeNode.GetHashCode();
 
 			var coordsHash = octreeNode.GetCoordsHash();
-			Assert.IsTrue(_solidNodeHashes.Contains(coordsHash));
+			if (!_solidNodeHashes.Contains(coordsHash)) {
+				Assert.IsFalse(true);
+			}
 			_solidNodeHashes.Remove(coordsHash);
 
 			if (_nodeFaces.ContainsKey(nodeHashCode)) {

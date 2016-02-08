@@ -461,11 +461,13 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
 #if USE_ALL_NODES
 			_allNodes.Remove(octreeNode.nodeCoords.GetHashCode());
 #endif
-			ocTree.NodeRemoved(octreeNode, updateNeighbours);
 
 			if (octreeNode.hasItem) {
 				octreeNode.RemoveItemInternal(updateNeighbours);
+			} else {
+				ocTree.NodeRemoved(octreeNode, updateNeighbours);
 			}
+
 			octreeNode.deleted = true;
 		}
 	}
