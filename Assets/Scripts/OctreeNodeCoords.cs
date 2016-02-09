@@ -42,9 +42,11 @@ public struct Coords : IEnumerable<OctreeChildCoords> {
 		return GetEnumerator();
 	}
 
+	private static readonly IEnumerator<OctreeChildCoords> EmptyCoordsEnumerator = Enumerable.Empty<OctreeChildCoords>().GetEnumerator();
+
 	public IEnumerator<OctreeChildCoords> GetEnumerator() {
 		if (_coords == null) {
-			return Enumerable.Empty<OctreeChildCoords>().GetEnumerator();
+			return EmptyCoordsEnumerator;
 		}
 
 		return _coords.AsEnumerable().GetEnumerator();
@@ -81,7 +83,7 @@ public struct Coords : IEnumerable<OctreeChildCoords> {
 
 			// ReSharper disable once LoopCanBeConvertedToQuery
 			foreach (var coord in _coords) {
-				hashCode = hashCode * 31 + coord.GetHashCode();
+				hashCode = hashCode * 8 + coord.GetHashCode();
 			}
 		}
 

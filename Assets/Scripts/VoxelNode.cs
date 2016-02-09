@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
+
+#if USE_ALL_NODE_HASH
+using System.Linq;
+
 using UnityEngine.Assertions;
+#endif
 
 public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 	private Dictionary<NeighbourSide, int> _sideSolidCount;
@@ -15,15 +19,45 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 
 	private readonly Coords _coords;
 
+#if USE_ALL_NODE_HASH
+	private readonly ulong _hashCode;
+#endif
+
 	public VoxelNode(Bounds bounds, VoxelTree tree) : base(bounds, null, ChildIndex.Invalid, tree) {
 		_coords = new Coords();
+#if USE_ALL_NODE_HASH
+		_hashCode = GetCoordsHash(_coords);
+#endif
+
 	}
 
 
 	public VoxelNode(Bounds bounds, VoxelNode parent, ChildIndex indexInParent, VoxelTree ocTree)
 		: base(bounds, parent, indexInParent, ocTree) {
 		_coords = new Coords(parent._coords, OctreeChildCoords.FromIndex(indexInParent));
+#if USE_ALL_NODE_HASH
+		_hashCode = GetCoordsHash(_coords);
+#endif
 	}
+
+#if USE_ALL_NODE_HASH
+	public ulong GetCoordsHash()
+	{
+		return _hashCode;
+	}
+
+	private static ulong GetCoordsHash(Coords coords)
+	{
+		var length = (ulong)coords.Length;
+
+		Assert.IsTrue(length <= 24);
+
+		var hash = length;
+
+		return coords.Select(coord => (ulong)coord.ToIndex())
+			.Aggregate(hash, (current, idx) => current * 8u + idx);
+	}
+#endif
 
 	private bool SideSolid(NeighbourSide side) {
 		return _sideSolidCount != null && _sideSolidCount[side] > 0;
@@ -251,6 +285,24 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 		}
 	}
 
+#if USE_ALL_NODE_HASH
+	protected override VoxelNode AddChildInternal(ChildIndex index) {
+		var childNode = base.AddChildInternal(index);
+
+		ocTree.NodeCreated(childNode);
+
+		return childNode;
+	}
+
+
+
+	protected override void RemoveChildInternal(ChildIndex index, bool cleanup, bool updateNeighbours) {
+		ocTree.NodeDestroyed(children[(int) index]);
+
+		base.RemoveChildInternal(index, cleanup, updateNeighbours);
+	}
+#endif
+
 	private void RemoveTransparentNode(ChildIndex childIndex) {
 		if (childIndex != ChildIndex.Invalid) {
 			NeighbourSide verticalSide, depthSide, horizontalSide;
@@ -416,64 +468,16 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 		//out of the map!
 		if (neighbourCoordsInfinite == null) {
 			return null;
-		} else {
-			var neighbourCoordsResult = neighbourCoordsInfinite.Value;
-
-#if USE_ALL_NODES
-		OctreeNode<T> neighbourNode;
-
-		if (_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
-			if (neighbourNode.IsSolid()) {
-				return new HashSet<OctreeNode<T>> {neighbourNode};
-			}
-
-			return neighbourNode._sideSolidChildren[GetOpposite(side)];
 		}
+		var neighbourCoordsResult = neighbourCoordsInfinite.Value;
 
-		// that child doesn't exist
+		var currentNeighbourNode = (VoxelNode) neighbourCoordsResult.tree.GetRoot();
 
-		//let's check the parents
-		while (neighbourCoords.Length > 0) {
-			// get the next parent
-			neighbourCoords = neighbourCoords.GetParentCoords();
+		var coordsResult = neighbourCoordsResult.coordsResult;
+//		var coordsHash = GetCoordsHash(coordsResult);
 
-			//does the next parent exist?
-			if (!_allNodes.TryGetValue(neighbourCoords.GetHashCode(), out neighbourNode)) {
-				continue;
-			}
 
-			// is the parent a leaf?
-			if (neighbourNode.IsSolid()) {
-				return new HashSet<OctreeNode<T>> {neighbourNode};
-			}
-
-			// is not a leaf so cannot have an item
-
-			break;
-		}
-
-		return null;
-#else
-
-//        if (neighbourCoords.GetTree() == null) {
-//            return null;
-//        }
-
-			var currentNeighbourNode = (VoxelNode) neighbourCoordsResult.tree.GetRoot();
-
-			foreach (var coord in neighbourCoordsResult.coordsResult) {
-				if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
-					return null;
-				}
-
-				if (currentNeighbourNode.IsSolid()) {
-					return new HashSet<VoxelNode> {currentNeighbourNode};
-				}
-
-				currentNeighbourNode = currentNeighbourNode.GetChild(coord.ToIndex());
-				}
-
-			//        last currentNode is the actual node at the neighbour Coords
+		foreach (var coord in coordsResult) {
 			if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
 				return null;
 			}
@@ -482,9 +486,18 @@ public class VoxelNode : OctreeNodeBase<int, VoxelTree, VoxelNode> {
 				return new HashSet<VoxelNode> {currentNeighbourNode};
 			}
 
-			return currentNeighbourNode._sideSolidChildren[GetOpposite(side)];
+			currentNeighbourNode = currentNeighbourNode.GetChild(coord.ToIndex());
 		}
-#endif
+
+		if (currentNeighbourNode == null || currentNeighbourNode.IsDeleted()) {
+			return null;
+		}
+
+		if (currentNeighbourNode.IsSolid()) {
+			return new HashSet<VoxelNode> {currentNeighbourNode};
+		}
+
+		return currentNeighbourNode._sideSolidChildren[GetOpposite(side)];
 	}
 
 

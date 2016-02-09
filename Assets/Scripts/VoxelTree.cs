@@ -17,7 +17,7 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 	private readonly HashSet<VoxelTree> _dirtyTrees = new HashSet<VoxelTree>();
 
 	public bool withCollision = true;
-	public bool convexCollision = false;
+	public bool convexCollision;
 
 	private readonly Dictionary<int, List<GameObject>> _gameObjectForMeshInfo = new Dictionary<int, List<GameObject>>();
 
@@ -34,7 +34,6 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 	[SerializeField] [FormerlySerializedAs("_materials")] public IntMaterial materials = new IntMaterial();
 
 
-
 	static VoxelTree() {
 		Assert.IsTrue(MaxVerticesForMesh % NUM_VERTICES_FOR_FACE == 0);
 		Assert.IsTrue(MaxVerticesForMesh <= 65000);
@@ -49,7 +48,18 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 			_ownerNode = superTree.GetRoot();
 		}
+#if USE_ALL_NODE_HASH
+		NodeCreated(GetRoot());
+#endif
 	}
+#if USE_ALL_NODE_HASH
+
+	protected override void SetRoot(VoxelNode newRoot) {
+		NodeDestroyed(GetRoot());
+		base.SetRoot(newRoot);
+		NodeCreated(newRoot);
+	}
+#endif
 
 	private static VoxelNode RootConstructor(VoxelTree self, Bounds bounds) {
 		return new VoxelNode(bounds, self);
@@ -895,4 +905,34 @@ public class VoxelTree : OctreeBase<int, VoxelNode, VoxelTree> {
 
 		_gameObjectForMeshInfo.Clear();
 	}
+
+#if USE_ALL_NODE_HASH
+	private readonly Dictionary<ulong, VoxelNode> _allNodes = new Dictionary<ulong, VoxelNode>();
+
+	public void NodeCreated(VoxelNode node) {
+		var coordsHash = node.GetCoordsHash();
+
+		Assert.IsFalse(_allNodes.ContainsKey(coordsHash));
+
+		_allNodes[coordsHash] = node;
+	}
+
+	public void NodeDestroyed(VoxelNode node) {
+		var coordsHash = node.GetCoordsHash();
+
+		Assert.IsTrue(_allNodes.ContainsKey(coordsHash));
+
+		_allNodes.Remove(coordsHash);
+	}
+
+	public VoxelNode GetNodeFromHash(ulong coordsHash) {
+		VoxelNode node;
+
+		if (_allNodes.TryGetValue(coordsHash, out node)) {
+			return node;
+		}
+
+		return null;
+	}
+#endif
 }

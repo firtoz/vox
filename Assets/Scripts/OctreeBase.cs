@@ -19,7 +19,7 @@ public abstract partial class OctreeBase<TItem, TNode, TTree> : IOctree
 		return _root;
 	}
 
-	protected void SetRoot(TNode newRoot) {
+	protected virtual void SetRoot(TNode newRoot) {
 		_root = newRoot;
 	}
 

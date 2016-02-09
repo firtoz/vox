@@ -113,8 +113,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_Father: {fileID: 1124469595}
+  m_RootOrder: 0
 --- !u!114 &916304648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -141,6 +141,7 @@ MonoBehaviour:
       - {fileID: 2100000, guid: d4b7fe2279cb61d4c8efa355c011defc, type: 2}
       - {fileID: 2100000, guid: 19fe4f86520be3548825c48132473421, type: 2}
   wantedDepth: 5
+  numAdd: 500
   debugRaycasts: 0
   addRandomNextFrame: 0
 --- !u!23 &916304649
@@ -237,6 +238,34 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 1
+--- !u!1 &1124469594
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 4
+  m_Component:
+  - 4: {fileID: 1124469595}
+  m_Layer: 0
+  m_Name: Vox Owner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1124469595
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1124469594}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 916304647}
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
 --- !u!1 &1633759498
 GameObject:
   m_ObjectHideFlags: 0
@@ -397,4 +426,4 @@ Transform:
   m_LocalScale: {x: 14.184174, y: 14.18417, z: 14.18417}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2

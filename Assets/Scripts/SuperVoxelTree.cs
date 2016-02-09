@@ -144,16 +144,16 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 //            case NeighbourSide.Above:
 //            case NeighbourSide.Right:
 //            case NeighbourSide.Forward:
-//                _indexInParent = OctreeNode.ChildIndex.LeftBelowBack;
+//                _indexInParent = OctreeNode.ChildIndex.leftBelowBack;
 //                break;
 //            case NeighbourSide.Left:
-//                _indexInParent = OctreeNode.ChildIndex.RightBelowBack;
+//                _indexInParent = OctreeNode.ChildIndex.rightBelowBack;
 //                break;
 //            case NeighbourSide.Back:
-//                _indexInParent = OctreeNode.ChildIndex.LeftBelowForward;
+//                _indexInParent = OctreeNode.ChildIndex.leftBelowForward;
 //                break;
 //            case NeighbourSide.Below:
-//                _indexInParent = OctreeNode.ChildIndex.LeftAboveBack;
+//                _indexInParent = OctreeNode.ChildIndex.leftAboveBack;
 //                break;
 //            case NeighbourSide.Invalid:
 //                throw new ArgumentOutOfRangeException("sideToGrowTowards", sideToGrowTowards, null);
@@ -242,7 +242,13 @@ public class SuperVoxelTree : OctreeBase<VoxelTree, SuperVoxelTree.Node, SuperVo
 
 			var newGameObject = new GameObject( side + " neighbour for " + originalGameObject.name);
 
-			newGameObject.transform.SetParent(originalGameObject.transform, false);
+			var rootTransform = originalGameObject.transform;
+
+			while (rootTransform.parent != null) {
+				rootTransform = rootTransform.parent;
+			}
+
+			newGameObject.transform.SetParent(rootTransform, false);
 
 			neighbourVoxelTree.SetOwnerNode(neighbourNode);
 

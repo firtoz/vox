@@ -404,29 +404,36 @@ public abstract class OctreeNodeBase<TItem, TTree, TNode> : OctreeNode, INode
 
 
 	public TNode AddChild(ChildIndex index) {
-		if (index == ChildIndex.Invalid) {
+		return AddChildInternal(index);
+	}
+
+	protected virtual TNode AddChildInternal(ChildIndex index) {
+		if (index == ChildIndex.Invalid)
+		{
 			throw new ArgumentOutOfRangeException("index", "Cannot create a child at an invalid index.");
 		}
 
 		AssertNotDeleted();
 
-		if (children == null) {
+		if (children == null)
+		{
 			children = new TNode[8];
 		}
 
-		if (GetChild(index) != null) {
+		if (GetChild(index) != null)
+		{
 			throw new ArgumentException("There is already a child at this index", "index");
 		}
 
 		childCount++;
-		return SetChild(index, ocTree.ConstructNode(GetChildBounds(index), (TNode) this, index));
+		return SetChild(index, ocTree.ConstructNode(GetChildBounds(index), (TNode)this, index));
 	}
 
 	public void RemoveChild(ChildIndex index, bool cleanup = false) {
 		RemoveChildInternal(index, cleanup, true);
 	}
 
-	private void RemoveChildInternal(ChildIndex index, bool cleanup, bool updateNeighbours) {
+	protected virtual void RemoveChildInternal(ChildIndex index, bool cleanup, bool updateNeighbours) {
 		AssertNotDeleted();
 		if (children == null) {
 			throw new ArgumentException("The child at that index is already removed!", "index");
